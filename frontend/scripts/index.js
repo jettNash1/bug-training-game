@@ -796,7 +796,7 @@ class IndexPage {
                         enabled: guideSetting.enabled
                     });
                     
-                    // Instead of setting href (which gets overridden), use data attributes and click handler
+                    // Store the URL in data attribute
                     guideButton.setAttribute('data-guide-url', guideSetting.url);
                     guideButton.setAttribute('data-guide-enabled', 'true');
                     guideButton.style.display = 'block';
@@ -805,40 +805,43 @@ class IndexPage {
                     // Remove href attribute entirely to prevent showing URL/# on hover
                     guideButton.removeAttribute('href');
                     
-                    // Remove any existing click handlers to avoid duplicates
-                    const newButton = guideButton.cloneNode(true);
-                    guideButton.parentNode.replaceChild(newButton, guideButton);
-                    
-                    // Add click handler that directly opens the URL
-                    newButton.addEventListener('click', function(e) {
+                    // Replace the onclick attribute directly to ensure it works
+                    guideButton.onclick = function(e) {
+                        console.log(`[Index] Guide button clicked for ${quizId}`);
                         e.preventDefault();
                         e.stopPropagation();
                         const url = this.getAttribute('data-guide-url');
                         if (url) {
-                            console.log(`[Index] Opening guide for ${quizId}: ${url}`);
+                            console.log(`[Index] Opening guide URL: ${url}`);
                             window.open(url, '_blank', 'noopener,noreferrer');
+                            return false; // Extra safety to prevent default behavior
                         }
-                    });
+                    };
                     
-                    // Add keyboard support
-                    newButton.addEventListener('keydown', function(e) {
+                    // Also add keyboard support
+                    guideButton.onkeydown = function(e) {
                         if (e.key === 'Enter' || e.key === ' ') {
+                            console.log(`[Index] Guide button activated via keyboard for ${quizId}`);
                             e.preventDefault();
                             e.stopPropagation();
                             const url = this.getAttribute('data-guide-url');
                             if (url) {
-                                console.log(`[Index] Opening guide for ${quizId} via keyboard: ${url}`);
+                                console.log(`[Index] Opening guide URL via keyboard: ${url}`);
                                 window.open(url, '_blank', 'noopener,noreferrer');
+                                return false;
                             }
                         }
-                    });
+                    };
                     
-                    console.log(`[Index] Guide button setup complete for ${quizId}`);
+                    console.log(`[Index] Guide button setup complete for ${quizId} with URL: ${guideSetting.url}`);
                     
                 } else {
                     console.log(`[Index] No enabled guide found for ${quizId} (${normalizedQuizId}). Guide setting:`, guideSetting);
                     // Hide the guide button if no guide is configured
                     guideButton.style.display = 'none';
+                    // Clear any existing handlers
+                    guideButton.onclick = null;
+                    guideButton.onkeydown = null;
                 }
             });
             
