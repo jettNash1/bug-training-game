@@ -767,7 +767,15 @@ class IndexPage {
                 
                 quizIdsToFind.add(normalizedQuizId);
                 
-                const buttonContainer = item.querySelector('.guide-button-container');
+                // Look for guide button container in the parent wrapper (quiz-item-wrapper)
+                // because the container is a sibling of the quiz-item, not a child
+                const parentWrapper = item.closest('.quiz-item-wrapper');
+                if (!parentWrapper) {
+                    console.log('[Index] Parent quiz-item-wrapper not found for quiz:', quizId);
+                    return;
+                }
+                
+                const buttonContainer = parentWrapper.querySelector('.guide-button-container');
                 if (!buttonContainer) {
                     console.log('[Index] Guide button container not found for quiz:', quizId);
                     return;
@@ -891,13 +899,17 @@ class IndexPage {
             
             // Clear any existing guide button states
             this.quizItems.forEach(item => {
-                const guideButton = item.querySelector('.quiz-guide-button');
-                if (guideButton) {
-                    // Reset guide button to default state
-                    guideButton.href = '#';
-                    guideButton.style.display = 'none';
-                    guideButton.removeAttribute('target');
-                    guideButton.removeAttribute('rel');
+                // Look for guide button in the parent wrapper since it's a sibling
+                const parentWrapper = item.closest('.quiz-item-wrapper');
+                if (parentWrapper) {
+                    const guideButton = parentWrapper.querySelector('.quiz-guide-button');
+                    if (guideButton) {
+                        // Reset guide button to default state
+                        guideButton.href = '#';
+                        guideButton.style.display = 'none';
+                        guideButton.removeAttribute('target');
+                        guideButton.removeAttribute('rel');
+                    }
                 }
             });
             
