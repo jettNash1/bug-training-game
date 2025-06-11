@@ -736,7 +736,7 @@ class IndexPage {
             // Get guide settings from API
             const response = await this.apiService.fetchGuideSettings();
             console.log('[Index] Guide settings full response:', response);
-            console.log('[Index] Guide settings data:', response?.data);
+            console.log('[Index] Guide settings data:', response.data);
             
             if (!response || !response.success) {
                 console.warn('[Index] Failed to load guide settings:', response);
@@ -748,108 +748,21 @@ class IndexPage {
                 console.log(`[Index] Available guide for ${quiz}:`, settings);
             });
             
-            // Get all quiz items
-            const allQuizItems = this.quizItems;
-            console.log('[Index] Found quiz items:', allQuizItems.length);
-            
-            // Track which quiz IDs we're looking for guides for
-            const quizIdsToFind = new Set();
-            
-            allQuizItems.forEach(item => {
-                const quizId = item.dataset.quiz;
-                if (!quizId) {
-                    console.log('[Index] Quiz item missing data-quiz attribute:', item);
-                    return;
-                }
-                
-                // Normalize the quiz ID to match how admin panel saves guide settings
-                const normalizedQuizId = this.apiService.normalizeQuizName(quizId);
-                
-                quizIdsToFind.add(normalizedQuizId);
-                
-                // Look for guide button container in the parent wrapper (quiz-item-wrapper)
-                // because the container is a sibling of the quiz-item, not a child
-                const parentWrapper = item.closest('.quiz-item-wrapper');
-                if (!parentWrapper) {
-                    console.log(`[Index] Parent wrapper not found for quiz: ${quizId}`);
-                    return;
-                }
-                
-                const buttonContainer = parentWrapper.querySelector('.guide-button-container');
-                if (!buttonContainer) {
-                    console.log(`[Index] Guide button container not found for quiz: ${quizId}`);
-                    return;
-                }
-                
-                const guideButton = buttonContainer.querySelector('.quiz-guide-button');
-                if (!guideButton) {
-                    console.log(`[Index] Guide button not found for quiz: ${quizId}`);
-                    return;
-                }
-                
-                console.log(`[Index] Looking up guide setting for ${quizId} → ${normalizedQuizId}:`, response.data[normalizedQuizId]);
-                
-                const guideSetting = response.data[normalizedQuizId];
+            // Simple approach: For each guide setting, find the matching button and set its href
+            Object.entries(response.data || {}).forEach(([quizName, guideSetting]) => {
                 if (guideSetting && guideSetting.enabled && guideSetting.url) {
-                    console.log(`[Index] Found enabled guide for ${quizId} (${normalizedQuizId}):`, {
-                        url: guideSetting.url,
-                        enabled: guideSetting.enabled
-                    });
-                    
-                    // Store the URL in data attribute
-                    guideButton.setAttribute('data-guide-url', guideSetting.url);
-                    guideButton.setAttribute('data-guide-enabled', 'true');
-                    guideButton.style.display = 'block';
-                    guideButton.style.cursor = 'pointer';
-                    
-                    // Remove href attribute entirely to prevent showing URL/# on hover
-                    guideButton.removeAttribute('href');
-                    
-                    // Replace the onclick attribute directly to ensure it works
-                    guideButton.onclick = function(e) {
-                        console.log(`[Index] Guide button clicked for ${quizId}`);
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const url = this.getAttribute('data-guide-url');
-                        if (url) {
-                            console.log(`[Index] Opening guide URL: ${url}`);
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                            return false; // Extra safety to prevent default behavior
-                        }
-                    };
-                    
-                    // Also add keyboard support
-                    guideButton.onkeydown = function(e) {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            console.log(`[Index] Guide button activated via keyboard for ${quizId}`);
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const url = this.getAttribute('data-guide-url');
-                            if (url) {
-                                console.log(`[Index] Opening guide URL via keyboard: ${url}`);
-                                window.open(url, '_blank', 'noopener,noreferrer');
-                                return false;
-                            }
-                        }
-                    };
-                    
-                    console.log(`[Index] Guide button setup complete for ${quizId} with URL: ${guideSetting.url}`);
-                    
-                } else {
-                    console.log(`[Index] No enabled guide found for ${quizId} (${normalizedQuizId}). Guide setting:`, guideSetting);
-                    // Hide the guide button if no guide is configured
-                    guideButton.style.display = 'none';
-                    // Clear any existing handlers
-                    guideButton.onclick = null;
-                    guideButton.onkeydown = null;
+                    // Find the guide button with matching data-quiz attribute
+                    const guideButton = document.querySelector(`.quiz-guide-button[data-quiz="${quizName}"]`);
+                    if (guideButton) {
+                        console.log(`[Index] Setting href for ${quizName} button to: ${guideSetting.url}`);
+                        guideButton.href = guideSetting.url;
+                        guideButton.target = '_blank';
+                        guideButton.rel = 'noopener noreferrer';
+                        guideButton.style.display = 'block';
+                    } else {
+                        console.warn(`[Index] Could not find guide button for quiz: ${quizName}`);
+                    }
                 }
-            });
-            
-            // Log summary of what we found vs what we were looking for
-            console.log('[Index] Guide button summary:', {
-                quizIdsWeWereLookingFor: Array.from(quizIdsToFind),
-                guideSettingsReceived: Object.keys(response.data || {}),
-                matchedGuides: Array.from(quizIdsToFind).filter(id => response.data[id]?.enabled && response.data[id]?.url)
             });
             
             console.log('[Index] Guide buttons update complete');
