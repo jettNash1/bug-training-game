@@ -802,6 +802,9 @@ class IndexPage {
                     guideButton.style.display = 'block';
                     guideButton.style.cursor = 'pointer';
                     
+                    // Remove href attribute entirely to prevent showing URL/# on hover
+                    guideButton.removeAttribute('href');
+                    
                     // Remove any existing click handlers to avoid duplicates
                     const newButton = guideButton.cloneNode(true);
                     guideButton.parentNode.replaceChild(newButton, guideButton);
@@ -938,6 +941,7 @@ class IndexPage {
                         guideButton.style.display = 'none';
                         guideButton.removeAttribute('data-guide-url');
                         guideButton.removeAttribute('data-guide-enabled');
+                        guideButton.removeAttribute('href'); // Remove href to prevent URL/# showing
                     }
                 }
             });
