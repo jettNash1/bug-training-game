@@ -771,63 +771,70 @@ class IndexPage {
                 // because the container is a sibling of the quiz-item, not a child
                 const parentWrapper = item.closest('.quiz-item-wrapper');
                 if (!parentWrapper) {
-                    console.log('[Index] Parent quiz-item-wrapper not found for quiz:', quizId);
+                    console.log(`[Index] Parent wrapper not found for quiz: ${quizId}`);
                     return;
                 }
                 
                 const buttonContainer = parentWrapper.querySelector('.guide-button-container');
                 if (!buttonContainer) {
-                    console.log('[Index] Guide button container not found for quiz:', quizId);
+                    console.log(`[Index] Guide button container not found for quiz: ${quizId}`);
                     return;
                 }
                 
                 const guideButton = buttonContainer.querySelector('.quiz-guide-button');
                 if (!guideButton) {
-                    console.log('[Index] Guide button not found in container for quiz:', quizId);
+                    console.log(`[Index] Guide button not found for quiz: ${quizId}`);
                     return;
                 }
                 
-                // Get guide settings using the normalized quiz ID (to match admin panel behavior)
-                const guideSetting = response.data[normalizedQuizId];
-                console.log(`[Index] Looking up guide setting for ${quizId} → ${normalizedQuizId}:`, guideSetting);
+                console.log(`[Index] Looking up guide setting for ${quizId} → ${normalizedQuizId}:`, response.data[normalizedQuizId]);
                 
+                const guideSetting = response.data[normalizedQuizId];
                 if (guideSetting && guideSetting.enabled && guideSetting.url) {
                     console.log(`[Index] Found enabled guide for ${quizId} (${normalizedQuizId}):`, {
                         url: guideSetting.url,
-                        enabled: guideSetting.enabled,
-                        buttonElement: guideButton
+                        enabled: guideSetting.enabled
                     });
                     
-                    // Debug: Log before setting href
-                    console.log(`[Index] Before setting href for ${quizId}: current href = "${guideButton.href}"`);
-                    console.log(`[Index] Guide button element details:`, {
-                        tagName: guideButton.tagName,
-                        className: guideButton.className,
-                        dataQuiz: guideButton.dataset.quiz,
-                        textContent: guideButton.textContent
-                    });
-                    
-                    guideButton.href = guideSetting.url;
+                    // Instead of setting href (which gets overridden), use data attributes and click handler
+                    guideButton.setAttribute('data-guide-url', guideSetting.url);
+                    guideButton.setAttribute('data-guide-enabled', 'true');
                     guideButton.style.display = 'block';
+                    guideButton.style.cursor = 'pointer';
                     
-                    // Debug: Log after setting href
-                    console.log(`[Index] After setting href for ${quizId}: new href = "${guideButton.href}"`);
+                    // Remove any existing click handlers to avoid duplicates
+                    const newButton = guideButton.cloneNode(true);
+                    guideButton.parentNode.replaceChild(newButton, guideButton);
                     
-                    // Add target="_blank" to open guides in new tab
-                    guideButton.target = '_blank';
-                    guideButton.rel = 'noopener noreferrer';
+                    // Add click handler that directly opens the URL
+                    newButton.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const url = this.getAttribute('data-guide-url');
+                        if (url) {
+                            console.log(`[Index] Opening guide for ${quizId}: ${url}`);
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                        }
+                    });
                     
-                    // Final verification with a slight delay to ensure DOM changes persist
-                    setTimeout(() => {
-                        console.log(`[Index] Delayed verification for ${quizId}:`, {
-                            href: guideButton.href,
-                            display: guideButton.style.display,
-                            target: guideButton.target,
-                            actualElement: guideButton
-                        });
-                    }, 100);
+                    // Add keyboard support
+                    newButton.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const url = this.getAttribute('data-guide-url');
+                            if (url) {
+                                console.log(`[Index] Opening guide for ${quizId} via keyboard: ${url}`);
+                                window.open(url, '_blank', 'noopener,noreferrer');
+                            }
+                        }
+                    });
+                    
+                    console.log(`[Index] Guide button setup complete for ${quizId}`);
+                    
                 } else {
                     console.log(`[Index] No enabled guide found for ${quizId} (${normalizedQuizId}). Guide setting:`, guideSetting);
+                    // Hide the guide button if no guide is configured
                     guideButton.style.display = 'none';
                 }
             });
@@ -927,11 +934,10 @@ class IndexPage {
                 if (parentWrapper) {
                     const guideButton = parentWrapper.querySelector('.quiz-guide-button');
                     if (guideButton) {
-                        // Reset guide button to default state
-                        guideButton.href = '#';
+                        // Reset guide button to default state (no longer reset href since we use click handlers)
                         guideButton.style.display = 'none';
-                        guideButton.removeAttribute('target');
-                        guideButton.removeAttribute('rel');
+                        guideButton.removeAttribute('data-guide-url');
+                        guideButton.removeAttribute('data-guide-enabled');
                     }
                 }
             });
