@@ -483,22 +483,15 @@ class IndexPage {
             item.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
             item.classList.add(statusClass);
             
-            // Apply background color while preserving other styles
-            const existingStyle = item.getAttribute('style') || '';
-            const newStyle = existingStyle
-                .split(';')
-                .filter(s => !s.includes('background-color') && !s.includes('border'))
-                .join(';');
-            const finalStyle = `${newStyle}; background-color: ${backgroundColor} !important; border: none !important;`;
-            
-            console.log(`[Index] Quiz ${normalizedQuizId}: Setting style to: ${finalStyle}`);
-            item.setAttribute('style', finalStyle);
-            
-            // Double-check the style was applied
-            setTimeout(() => {
-                const appliedStyle = window.getComputedStyle(item).backgroundColor;
-                console.log(`[Index] Quiz ${normalizedQuizId}: Computed background-color: ${appliedStyle}`);
-            }, 100);
+            // Also update the wrapper's status class (this controls the visible background)
+            const wrapper = item.closest('.quiz-item-wrapper');
+            if (wrapper) {
+                wrapper.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
+                wrapper.classList.add(statusClass);
+                console.log(`[Index] Quiz ${normalizedQuizId}: Applied status class '${statusClass}' to wrapper`);
+            } else {
+                console.warn(`[Index] Quiz ${normalizedQuizId}: Could not find wrapper element`);
+            }
             
             // Update progress text
             progressElement.textContent = progressText;

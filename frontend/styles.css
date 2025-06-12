@@ -109,23 +109,23 @@ body {
 }
 
 .quiz-item-wrapper.not-started {
-    background-color: #FFFFFF !important;
-    border: none !important;
+    background-color: #FFF8E7;
+    border: 2px solid #EEE8D7;
 }
 
 .quiz-item-wrapper.in-progress {
-    background-color: #FFC107 !important;
-    border: none !important;
+    background-color: #FFFFCC;
+    border: 2px solid #EEEEAA;
 }
 
 .quiz-item-wrapper.completed-partial {
-    background-color: #FF9800 !important;
-    border: none !important;
+    background-color: #F0D080;
+    border: 2px solid #E0B060;
 }
 
 .quiz-item-wrapper.completed-perfect {
-    background-color: #4CAF50 !important;
-    border: none !important;
+    background-color: #4CAF50;
+    border: 2px solid #45A049;
 }
 
 .quiz-item {
