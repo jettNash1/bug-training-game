@@ -255,18 +255,18 @@ body {
 }
 
 .quiz-item.in-progress {
-    background-color: #FFC107 !important;
-    border: none !important;
+    background-color: #FFFFCC;
+    border: 2px solid #EEEEAA;
 }
 
 .quiz-item.completed-partial {
-    background-color: #FF9800 !important;
-    border: none !important;
+    background-color: #F0D080;
+    border: 2px solid #E0B060;
 }
 
 .quiz-item.completed-perfect {
-    background-color: #4CAF50 !important;
-    border: none !important;
+    background-color: #4CAF50;
+    border: 2px solid #45A049;
 }
 
 /* Guide Button Styles */
