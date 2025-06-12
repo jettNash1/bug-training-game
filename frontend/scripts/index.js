@@ -448,23 +448,26 @@ class IndexPage {
             let statusClass = 'not-started';
             let progressText = '';
             
-            if (!quizScore) {
-                statusClass = 'not-started';
+            if (questionsAnswered === 0) {
+                // No progress at all (based purely on questions answered)
+                statusClass = 'not-started';  // White
                 progressText = '';
             } else if (questionsAnswered === 15) {
+                // Quiz is completed (all 15 questions answered)
                 progressText = '15/15';
-                // Use score (which was 88 in your example) or scorePercentage as fallback
                 const effectiveScore = score > 0 ? score : scorePercentage;
                 if (effectiveScore >= 80) {
-                    statusClass = 'completed-perfect';
+                    statusClass = 'completed-perfect';  // Green
                 } else {
-                    statusClass = 'completed-partial';
+                    statusClass = 'completed-partial';  // Orange
                 }
             } else if (questionsAnswered > 0) {
-                statusClass = 'in-progress';
+                // Quiz is in progress (some questions answered but not finished)
+                statusClass = 'in-progress';  // Yellow
                 progressText = `${questionsAnswered}/15`;
             } else {
-                statusClass = 'not-started';
+                // Fallback for any edge cases
+                statusClass = 'not-started';  // White
                 progressText = '';
             }
             
