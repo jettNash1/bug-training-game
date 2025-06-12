@@ -102,6 +102,18 @@ export class QuizList {
                     const score = quizScore.score || 0;
                     const scorePercentage = quizScore.scorePercentage || 0;
                     
+                    // Debug for communication quiz
+                    if (normalizedQuizId === 'communication') {
+                        console.log('[QuizList] Communication quiz data:', {
+                            normalizedQuizId,
+                            quizScore,
+                            questionsAnswered,
+                            score,
+                            scorePercentage,
+                            rawQuizLower: quizLower
+                        });
+                    }
+                    
                     // Determine quiz status and styling - SAME LOGIC AS INDEX.JS
                     let statusClass = 'not-started';
                     let progressText = '';
@@ -110,6 +122,16 @@ export class QuizList {
                         progressText = '15/15';
                         // Use same effective score logic as index.js
                         const effectiveScore = score > 0 ? score : scorePercentage;
+                        
+                        if (normalizedQuizId === 'communication') {
+                            console.log('[QuizList] Communication effective score calculation:', {
+                                score,
+                                scorePercentage,
+                                effectiveScore,
+                                willBePerfect: effectiveScore >= 80
+                            });
+                        }
+                        
                         if (effectiveScore >= 80) {
                             statusClass = 'completed-perfect';
                         } else {
