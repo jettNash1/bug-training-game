@@ -439,48 +439,59 @@ class IndexPage {
                 this.quizProgressService.normalizeQuizName(score.quizName) === normalizedQuizId
             );
             
-            if (!quizScore) {
-                // No score data - white background
-                console.log(`[Index] No score found for quiz: ${normalizedQuizId}`);
-                // Preserve guide buttons by only updating background and border
-                const existingStyle = item.getAttribute('style') || '';
-                const newStyle = existingStyle
-                    .split(';')
-                    .filter(s => !s.includes('background-color') && !s.includes('border'))
-                    .join(';');
-                item.setAttribute('style', `${newStyle}; background-color: #FFFFFF !important; border: none !important;`);
-                progressElement.setAttribute('style', 'display: none !important;');
-                return;
-            }
-            
             // Update progress display
-            const questionsAnswered = quizScore.questionsAnswered || 0;
-            const score = quizScore.score || 0;
+            const questionsAnswered = quizScore?.questionsAnswered || 0;
+            const score = quizScore?.score || 0;
             
             // Determine quiz status and styling
             let statusClass = 'not-started';
             let progressText = '';
+            let backgroundColor = '#FFFFFF'; // White - Not started
             
-            if (questionsAnswered === 15) {
+            if (!quizScore) {
+                // No score data - white background
+                console.log(`[Index] No score found for quiz: ${normalizedQuizId}`);
+                statusClass = 'not-started';
+                backgroundColor = '#FFFFFF';
+                progressText = '';
+            } else if (questionsAnswered === 15) {
+                progressText = '15/15';
                 if (score >= 80) {
                     statusClass = 'completed-perfect';
-                    progressText = '15/15';
+                    backgroundColor = '#4CAF50'; // Green - Completed with >80%
                 } else {
                     statusClass = 'completed-partial';
-                    progressText = '15/15';
+                    backgroundColor = '#FF9800'; // Orange - Completed with <80%
                 }
             } else if (questionsAnswered > 0) {
                 statusClass = 'in-progress';
+                backgroundColor = '#FFC107'; // Yellow - In Progress
                 progressText = `${questionsAnswered}/15`;
+            } else {
+                statusClass = 'not-started';
+                backgroundColor = '#FFFFFF'; // White - Not started
+                progressText = '';
             }
             
             // Update the quiz item's status class
             item.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
             item.classList.add(statusClass);
             
+            // Apply background color while preserving other styles
+            const existingStyle = item.getAttribute('style') || '';
+            const newStyle = existingStyle
+                .split(';')
+                .filter(s => !s.includes('background-color') && !s.includes('border'))
+                .join(';');
+            item.setAttribute('style', `${newStyle}; background-color: ${backgroundColor} !important; border: none !important;`);
+            
             // Update progress text
             progressElement.textContent = progressText;
-            progressElement.style.display = progressText ? '' : 'none';
+            if (!quizScore) {
+                progressElement.setAttribute('style', 'display: none !important;');
+            } else {
+                progressElement.style.display = progressText ? '' : 'none';
+            }
         });
     }
 
