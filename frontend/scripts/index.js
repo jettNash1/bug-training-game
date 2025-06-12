@@ -489,7 +489,16 @@ class IndexPage {
                 .split(';')
                 .filter(s => !s.includes('background-color') && !s.includes('border'))
                 .join(';');
-            item.setAttribute('style', `${newStyle}; background-color: ${backgroundColor} !important; border: none !important;`);
+            const finalStyle = `${newStyle}; background-color: ${backgroundColor} !important; border: none !important;`;
+            
+            console.log(`[Index] Quiz ${normalizedQuizId}: Setting style to: ${finalStyle}`);
+            item.setAttribute('style', finalStyle);
+            
+            // Double-check the style was applied
+            setTimeout(() => {
+                const appliedStyle = window.getComputedStyle(item).backgroundColor;
+                console.log(`[Index] Quiz ${normalizedQuizId}: Computed background-color: ${appliedStyle}`);
+            }, 100);
             
             // Update progress text
             progressElement.textContent = progressText;

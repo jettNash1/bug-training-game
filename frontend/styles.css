@@ -109,23 +109,23 @@ body {
 }
 
 .quiz-item-wrapper.not-started {
-    background-color: #FFF8E7;
-    border: 2px solid #EEE8D7;
+    background-color: #FFFFFF !important;
+    border: none !important;
 }
 
 .quiz-item-wrapper.in-progress {
-    background-color: #FFFFCC;
-    border: 2px solid #EEEEAA;
+    background-color: #FFC107 !important;
+    border: none !important;
 }
 
 .quiz-item-wrapper.completed-partial {
-    background-color: #F0D080;
-    border: 2px solid #E0B060;
+    background-color: #FF9800 !important;
+    border: none !important;
 }
 
 .quiz-item-wrapper.completed-perfect {
-    background-color: #E0FFE0;
-    border: 2px solid #C0EEC0;
+    background-color: #4CAF50 !important;
+    border: none !important;
 }
 
 .quiz-item {
@@ -255,18 +255,18 @@ body {
 }
 
 .quiz-item.in-progress {
-    background-color: #FFFFCC;
-    border: 2px solid #EEEEAA;
+    background-color: #FFC107 !important;
+    border: none !important;
 }
 
 .quiz-item.completed-partial {
-    background-color: #F0D080;
-    border: 2px solid #E0B060;
+    background-color: #FF9800 !important;
+    border: none !important;
 }
 
 .quiz-item.completed-perfect {
-    background-color: #E0FFE0;
-    border: 2px solid #C0EEC0;
+    background-color: #4CAF50 !important;
+    border: none !important;
 }
 
 /* Guide Button Styles */
@@ -1810,18 +1810,23 @@ select:disabled {
 
 /* Add specific hover styles for each state */
 .quiz-item.completed-perfect:hover {
-    background-color: #B2DFB5 !important; /* Slightly darker pastel green */
-    border: 1px solid #93C995 !important;
+    background-color: #43A047 !important; /* Slightly darker green */
+    border: none !important;
 }
 
 .quiz-item.completed-partial:hover {
-    background-color: #FFD699 !important; /* Slightly darker pastel orange */
-    border: 1px solid #FFC266 !important;
+    background-color: #F57C00 !important; /* Slightly darker orange */
+    border: none !important;
 }
 
 .quiz-item.in-progress:hover {
-    background-color: #FFF176 !important; /* Slightly darker pastel yellow */
-    border: 1px solid #FFEE58 !important;
+    background-color: #FFA000 !important; /* Slightly darker yellow */
+    border: none !important;
+}
+
+.quiz-item.not-started:hover {
+    background-color: #F5F5F5 !important; /* Slightly darker white */
+    border: none !important;
 }
 
 .quiz-hidden {
