@@ -1,4 +1,5 @@
 import { APIService } from './api-service.js';
+import { QuizProgressService } from './services/QuizProgressService.js';
 
 export const QUIZ_CATEGORIES = {
     'Core QA Skills': [
@@ -41,6 +42,7 @@ export const QUIZ_CATEGORIES = {
 export class QuizList {
     constructor() {
         this.apiService = new APIService();
+        this.quizProgressService = new QuizProgressService();
         this.quizTypes = Object.values(QUIZ_CATEGORIES).flat();
         this.init();
     }
@@ -57,7 +59,11 @@ export class QuizList {
                 throw new Error('Failed to get user data');
             }
 
-            const { userType, allowedQuizzes = [], hiddenQuizzes = [], quizProgress = {} } = userData.data;
+            const { userType, allowedQuizzes = [], hiddenQuizzes = [] } = userData.data;
+            
+            // Get quiz progress using the same service as index.js
+            const progressResult = await this.quizProgressService.getAllQuizProgress();
+            const quizProgress = progressResult.success ? progressResult.data : {};
             const isInterviewAccount = userType === 'interview_candidate';
 
             // Debug logging
@@ -89,21 +95,25 @@ export class QuizList {
                 // Create quiz items HTML for this category
                 const quizItemsHTML = visibleQuizzes.map(quizName => {
                     const quizLower = quizName.toLowerCase();
-                    const progress = quizProgress[quizLower] || {};
-                    const questionsAnswered = progress.questionsAnswered || 0;
-                    const score = progress.score || 0;
+                    const normalizedQuizId = this.quizProgressService.normalizeQuizName(quizLower);
+                    const quizScore = quizProgress[normalizedQuizId] || {};
                     
-                    // Determine quiz status and styling
+                    const questionsAnswered = quizScore.questionsAnswered || 0;
+                    const score = quizScore.score || 0;
+                    const scorePercentage = quizScore.scorePercentage || 0;
+                    
+                    // Determine quiz status and styling - SAME LOGIC AS INDEX.JS
                     let statusClass = 'not-started';
                     let progressText = '';
                     
                     if (questionsAnswered === 15) {
-                        if (score >= 80) {
+                        progressText = '15/15';
+                        // Use same effective score logic as index.js
+                        const effectiveScore = score > 0 ? score : scorePercentage;
+                        if (effectiveScore >= 80) {
                             statusClass = 'completed-perfect';
-                            progressText = '15/15';
                         } else {
                             statusClass = 'completed-partial';
-                            progressText = '15/15';
                         }
                     } else if (questionsAnswered > 0) {
                         statusClass = 'in-progress';
