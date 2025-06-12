@@ -441,42 +441,31 @@ class IndexPage {
             
             // Update progress display
             const questionsAnswered = quizScore?.questionsAnswered || 0;
-            const experience = quizScore?.experience || 0;
+            const score = quizScore?.score || 0;
+            const scorePercentage = quizScore?.scorePercentage || 0;
             
             // Determine quiz status and styling
             let statusClass = 'not-started';
             let progressText = '';
-            let backgroundColor = '#FFFFFF'; // White - Not started
-            
-            console.log(`[Index] Quiz ${normalizedQuizId}: questions=${questionsAnswered}, experience=${experience}`);
             
             if (!quizScore) {
-                // No score data - white background
-                console.log(`[Index] No score found for quiz: ${normalizedQuizId}`);
                 statusClass = 'not-started';
-                backgroundColor = '#FFFFFF';
                 progressText = '';
             } else if (questionsAnswered === 15) {
                 progressText = '15/15';
-                if (experience > 230) {
+                // Use score (which was 88 in your example) or scorePercentage as fallback
+                const effectiveScore = score > 0 ? score : scorePercentage;
+                if (effectiveScore >= 80) {
                     statusClass = 'completed-perfect';
-                    backgroundColor = '#4CAF50'; // Green - Completed with high experience (>230)
-                    console.log(`[Index] Quiz ${normalizedQuizId}: GREEN (experience: ${experience})`);
                 } else {
                     statusClass = 'completed-partial';
-                    backgroundColor = '#FF9800'; // Orange - Completed with lower experience (≤230)
-                    console.log(`[Index] Quiz ${normalizedQuizId}: ORANGE (experience: ${experience})`);
                 }
             } else if (questionsAnswered > 0) {
                 statusClass = 'in-progress';
-                backgroundColor = '#FFC107'; // Yellow - In Progress
                 progressText = `${questionsAnswered}/15`;
-                console.log(`[Index] Quiz ${normalizedQuizId}: YELLOW (in progress: ${questionsAnswered}/15)`);
             } else {
                 statusClass = 'not-started';
-                backgroundColor = '#FFFFFF'; // White - Not started
                 progressText = '';
-                console.log(`[Index] Quiz ${normalizedQuizId}: WHITE (not started)`);
             }
             
             // Update the quiz item's status class
