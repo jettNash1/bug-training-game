@@ -99,48 +99,18 @@ export class QuizList {
                     const quizScore = quizProgress[normalizedQuizId] || {};
                     
                     const questionsAnswered = quizScore.questionsAnswered || 0;
-                    const score = quizScore.score || 0;
-                    const scorePercentage = quizScore.scorePercentage || 0;
                     
-                    // Debug for communication quiz
-                    if (normalizedQuizId === 'communication') {
-                        console.log('[QuizList] Communication quiz data:', {
-                            normalizedQuizId,
-                            quizScore,
-                            questionsAnswered,
-                            score,
-                            scorePercentage,
-                            rawQuizLower: quizLower
-                        });
-                    }
-                    
-                    // Determine quiz status and styling - SAME LOGIC AS INDEX.JS
-                    let statusClass = 'not-started';
+                    // Only determine progress text, let index.js handle all status classes
                     let progressText = '';
                     
                     if (questionsAnswered === 15) {
                         progressText = '15/15';
-                        // Use same effective score logic as index.js
-                        const effectiveScore = score > 0 ? score : scorePercentage;
-                        
-                        if (normalizedQuizId === 'communication') {
-                            console.log('[QuizList] Communication effective score calculation:', {
-                                score,
-                                scorePercentage,
-                                effectiveScore,
-                                willBePerfect: effectiveScore >= 80
-                            });
-                        }
-                        
-                        if (effectiveScore >= 80) {
-                            statusClass = 'completed-perfect';
-                        } else {
-                            statusClass = 'completed-partial';
-                        }
                     } else if (questionsAnswered > 0) {
-                        statusClass = 'in-progress';
                         progressText = `${questionsAnswered}/15`;
                     }
+                    
+                    // Default to not-started, index.js will apply the correct status class
+                    let statusClass = 'not-started';
 
                     return `
                         <div class="quiz-item-wrapper ${statusClass}">
