@@ -939,14 +939,7 @@ window.handleLogout = () => {
 // Expose the function to the global scope for emergency use
 window.clearAllQuizProgress = clearAllQuizProgress; 
 
-// Expose debug functions for testing guide button functionality
-window.testGuideButtons = () => {
-    if (indexPage) {
-        return indexPage.testGuideButtonFunctionality();
-    } else {
-        console.error('IndexPage not initialized');
-    }
-};
+
 
 window.logQuizNormalization = () => {
     if (indexPage) {
@@ -965,3 +958,22 @@ window.reloadGuideSettings = () => {
         console.error('IndexPage not initialized');
     }
 }; 
+
+// After IndexPage is initialized and window.indexPage is set
+function restoreGuideButtonHrefs() {
+    document.querySelectorAll('.quiz-guide-button').forEach(btn => {
+        const url = btn.getAttribute('data-guide-url');
+        if (url && btn.href !== url) {
+            btn.href = url;
+            btn.target = '_blank';
+            btn.rel = 'noopener noreferrer';
+        }
+    });
+}
+
+window.addEventListener('focus', restoreGuideButtonHrefs);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        restoreGuideButtonHrefs();
+    }
+}); 
