@@ -371,9 +371,14 @@ export class Admin2Dashboard {
                     section.style.display = 'block';
                     setTimeout(() => {
                         section.classList.add('active');
-                        // Reset scroll position of the main admin layout container
-                        const adminLayout = document.querySelector('.admin-layout');
-                        if (adminLayout) adminLayout.scrollTop = 0;
+                        // Try to reset scroll position of .content-area or .content-container
+                        const contentArea = document.querySelector('.content-area');
+                        if (contentArea) {
+                            contentArea.scrollTop = 0;
+                        } else {
+                            const contentContainer = document.querySelector('.content-container');
+                            if (contentContainer) contentContainer.scrollTop = 0;
+                        }
                     }, 0);
                     
                     // Special handling for different sections
