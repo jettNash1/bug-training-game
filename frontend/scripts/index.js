@@ -327,13 +327,17 @@ class IndexPage {
                     // Normalize the quizId consistently using the service
                     const lookupId = this.quizProgressService.normalizeQuizName(quizId);
                     
+                    console.log(`[Index] Processing quiz data for: ${quizId} → ${lookupId}`);
+                    
                     // First check for quiz progress
                     const progress = quizProgress[lookupId];
+                    console.log(`[Index] - Progress data for ${lookupId}:`, progress);
                     
                     // Then check for quiz results
                     const result = quizResults.find(r => 
                         this.quizProgressService.normalizeQuizName(r.quizName) === lookupId
                     );
+                    console.log(`[Index] - Result data for ${lookupId}:`, result);
                     
                     // Combine data from both sources, with progress taking precedence
                     const combinedData = {
@@ -349,6 +353,11 @@ class IndexPage {
                         combinedData.score = result.score || 0;
                         combinedData.scorePercentage = result.scorePercentage || result.score || 0;
                         combinedData.experience = result.experience || 0;
+                        console.log(`[Index] - Applied result data for ${lookupId}:`, {
+                            score: combinedData.score,
+                            scorePercentage: combinedData.scorePercentage,
+                            experience: combinedData.experience
+                        });
                     }
                     
                     // Apply progress data if available (overrides result data)
@@ -364,9 +373,15 @@ class IndexPage {
                         if (progress.experience !== undefined) {
                             combinedData.experience = progress.experience;
                         }
+                        console.log(`[Index] - Applied progress data for ${lookupId}:`, {
+                            questionsAnswered: combinedData.questionsAnswered,
+                            status: combinedData.status,
+                            scorePercentage: combinedData.scorePercentage,
+                            experience: combinedData.experience
+                        });
                     }
                     
-                    console.log(`[Index] Processed data for quiz ${lookupId}:`, combinedData);
+                    console.log(`[Index] - Final processed data for quiz ${lookupId}:`, combinedData);
                     return combinedData;
                 })
                 .filter(Boolean);
@@ -387,6 +402,7 @@ class IndexPage {
         }
         
         console.log(`[Index] Updating UI for ${this.quizItems.length} quiz items with ${this.quizScores.length} quiz scores`);
+        console.log('[Index] All quiz scores data:', this.quizScores);
                 
         this.quizItems.forEach(item => {
             const quizId = item.dataset.quiz;
@@ -400,9 +416,17 @@ class IndexPage {
                 this.quizProgressService.normalizeQuizName(score.quizName) === this.quizProgressService.normalizeQuizName(quizId)
             );
 
+            console.log(`[Index] Processing quiz: ${quizId}`);
+            console.log(`[Index] - Normalized quiz ID: ${this.quizProgressService.normalizeQuizName(quizId)}`);
+            console.log(`[Index] - Found quiz score data:`, quizScore);
+
             const questionsAnswered = quizScore?.questionsAnswered || 0;
             const score = quizScore?.score || 0;
             const scorePercentage = quizScore?.scorePercentage || 0;
+
+            console.log(`[Index] - Questions answered: ${questionsAnswered}`);
+            console.log(`[Index] - Score: ${score}`);
+            console.log(`[Index] - Score percentage: ${scorePercentage}`);
 
             let statusClass = 'not-started';
             let progressText = '';
@@ -410,6 +434,7 @@ class IndexPage {
             if (questionsAnswered === 15) {
                 progressText = '15/15';
                 const effectiveScore = (score !== undefined && score !== null) ? score : (scorePercentage !== undefined && scorePercentage !== null ? scorePercentage : 0);
+                console.log(`[Index] - Quiz completed with effective score: ${effectiveScore}`);
                 if (effectiveScore >= 80) {
                     statusClass = 'completed-perfect';
                 } else {
@@ -423,6 +448,9 @@ class IndexPage {
                 progressText = '';
             }
 
+            console.log(`[Index] - Final status class: ${statusClass}`);
+            console.log(`[Index] - Final progress text: ${progressText}`);
+
             // Remove all status classes from .quiz-item
             item.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
             item.classList.add(statusClass);
@@ -430,13 +458,19 @@ class IndexPage {
             // Also apply the status class to the wrapper for robustness
             const wrapper = item.closest('.quiz-item-wrapper');
             if (wrapper) {
+                console.log(`[Index] - Applying status class to wrapper: ${statusClass}`);
                 wrapper.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
                 wrapper.classList.add(statusClass);
+            } else {
+                console.warn(`[Index] - No wrapper found for quiz: ${quizId}`);
             }
 
             // Update progress text
             progressElement.textContent = progressText;
             progressElement.style.display = progressText ? '' : 'none';
+
+            console.log(`[Index] - Quiz ${quizId} processing complete`);
+            console.log('---');
         });
         // Ensure guide buttons are updated after progress update
         await this.loadGuideSettingsAndAddButtons();
@@ -915,7 +949,44 @@ window.handleLogout = () => {
 // Expose the function to the global scope for emergency use
 window.clearAllQuizProgress = clearAllQuizProgress; 
 
+// Add a global debugging function to check quiz status
+window.debugQuizStatus = () => {
+    console.group('Quiz Status Debug');
+    
+    const quizItems = document.querySelectorAll('.quiz-item');
+    console.log(`Found ${quizItems.length} quiz items`);
+    
+    quizItems.forEach(item => {
+        const quizId = item.dataset.quiz;
+        const wrapper = item.closest('.quiz-item-wrapper');
+        const progressElement = document.getElementById(`${quizId}-progress`);
+        
+        console.log(`Quiz: ${quizId}`);
+        console.log(`  - Item classes: ${item.className}`);
+        console.log(`  - Wrapper classes: ${wrapper ? wrapper.className : 'NO WRAPPER'}`);
+        console.log(`  - Progress text: ${progressElement ? progressElement.textContent : 'NO PROGRESS ELEMENT'}`);
+        console.log(`  - Computed background color: ${wrapper ? getComputedStyle(wrapper).backgroundColor : 'N/A'}`);
+        console.log('---');
+    });
+    
+    if (window.indexPage && window.indexPage.quizScores) {
+        console.log('Quiz scores in memory:', window.indexPage.quizScores);
+    } else {
+        console.log('No quiz scores in memory');
+    }
+    
+    console.groupEnd();
+};
 
+// Add a function to manually trigger status update
+window.updateQuizStatus = () => {
+    if (window.indexPage) {
+        console.log('Manually triggering quiz status update...');
+        window.indexPage.updateQuizProgress();
+    } else {
+        console.error('IndexPage not available');
+    }
+};
 
 window.logQuizNormalization = () => {
     if (indexPage) {

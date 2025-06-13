@@ -109,11 +109,9 @@ export class QuizList {
                         progressText = `${questionsAnswered}/15`;
                     }
                     
-                    // Default to not-started, index.js will apply the correct status class
-                    let statusClass = 'not-started';
-
+                    // Don't set any status class - let index.js handle all status logic
                     return `
-                        <div class="quiz-item-wrapper ${statusClass}">
+                        <div class="quiz-item-wrapper">
                             <a href="pages/${quizLower}-quiz.html" class="quiz-item" data-quiz="${quizLower}" aria-label="Start ${this.formatQuizName(quizName)} quiz">
                                 <div class="quiz-completion" role="status" id="${quizLower}-progress">${progressText}</div>
                                 <div class="quiz-info">
