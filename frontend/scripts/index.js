@@ -976,4 +976,7 @@ document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
         restoreGuideButtonHrefs();
     }
+});
+window.addEventListener('pageshow', () => {
+    restoreGuideButtonHrefs();
 }); 
