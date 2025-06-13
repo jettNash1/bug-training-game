@@ -456,6 +456,8 @@ class IndexPage {
                 progressElement.style.display = progressText ? '' : 'none';
             }
         });
+        // Ensure guide buttons are updated after progress update
+        await this.loadGuideSettingsAndAddButtons();
     }
 
     updateCategoryProgress() {
@@ -532,8 +534,9 @@ class IndexPage {
                 `;
             }
         });
-        
         console.log('[Index] Category progress display updated');
+        // Ensure guide buttons are updated after category progress update
+        this.loadGuideSettingsAndAddButtons();
     }
 
     addBadgesNavLink() {
