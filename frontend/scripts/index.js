@@ -705,9 +705,32 @@ class IndexPage {
 
     async loadGuideSettingsAndAddButtons() {
         console.log('[Index] Loading guide settings for quiz items');
+        // 1. Immediately apply guide URLs from localStorage (if available)
+        try {
+            const cached = localStorage.getItem('guideSettings');
+            if (cached) {
+                const guideSettings = JSON.parse(cached);
+                const guideButtons = document.querySelectorAll('.quiz-guide-button');
+                guideButtons.forEach(btn => {
+                    const quiz = btn.getAttribute('data-quiz');
+                    const setting = guideSettings[quiz];
+                    if (setting && setting.enabled && setting.url) {
+                        btn.href = setting.url;
+                        btn.target = '_blank';
+                        btn.rel = 'noopener noreferrer';
+                        btn.style.display = 'block';
+                        btn.setAttribute('data-guide-url', setting.url);
+                        btn.setAttribute('data-guide-enabled', 'true');
+                    }
+                });
+                console.log('[Index] Guide buttons updated from localStorage');
+            }
+        } catch (e) {
+            console.warn('[Index] Could not load guide settings from localStorage:', e);
+        }
+        // 2. Fetch guide settings from API and update if available
         let guideSettings = null;
         let apiFailed = false;
-        // 1. Try API first
         try {
             const response = await this.apiService.fetchGuideSettings();
             if (response && response.success && response.data) {
@@ -726,38 +749,25 @@ class IndexPage {
             apiFailed = true;
             console.error('[Index] Error loading guide settings from API:', error);
         }
-        // 2. If API failed, try localStorage
-        if (apiFailed) {
-            try {
-                const cached = localStorage.getItem('guideSettings');
-                if (cached) {
-                    guideSettings = JSON.parse(cached);
-                    console.log('[Index] Loaded guide settings from localStorage.');
+        // 3. If API succeeded, update buttons with new settings
+        if (guideSettings) {
+            const guideButtons = document.querySelectorAll('.quiz-guide-button');
+            guideButtons.forEach(btn => {
+                const quiz = btn.getAttribute('data-quiz');
+                const setting = guideSettings[quiz];
+                if (setting && setting.enabled && setting.url) {
+                    btn.href = setting.url;
+                    btn.target = '_blank';
+                    btn.rel = 'noopener noreferrer';
+                    btn.style.display = 'block';
+                    btn.setAttribute('data-guide-url', setting.url);
+                    btn.setAttribute('data-guide-enabled', 'true');
                 }
-            } catch (e) {
-                console.warn('[Index] Could not load guide settings from localStorage:', e);
-            }
+            });
+            console.log('[Index] Guide buttons updated from API');
         }
-        // 3. If no guide settings, do not touch the buttons
-        if (!guideSettings) {
-            console.warn('[Index] No guide settings available. Guide buttons will not be modified.');
-            return;
-        }
-        // 4. Update only buttons with valid guide URLs
-        const guideButtons = document.querySelectorAll('.quiz-guide-button');
-        guideButtons.forEach(btn => {
-            const quiz = btn.getAttribute('data-quiz');
-            const setting = guideSettings[quiz];
-            if (setting && setting.enabled && setting.url) {
-                btn.href = setting.url;
-                btn.target = '_blank';
-                btn.rel = 'noopener noreferrer';
-                btn.style.display = 'block';
-                btn.setAttribute('data-guide-url', setting.url);
-                btn.setAttribute('data-guide-enabled', 'true');
-            } // else: do not modify the button (leave as is)
-        });
-        console.log('[Index] Guide buttons update complete');
+        // 4. Never clear or reset href to # if a valid URL exists
+        // (No action needed, as we only update if a valid URL is present)
     }
 
     // Debug helper method to check quiz name normalization
