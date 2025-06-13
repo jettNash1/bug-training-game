@@ -857,23 +857,44 @@ class IndexPage {
             this.updateQuizProgress();
             this.updateCategoryProgress();
             
-            // Clear any existing guide button states
+            // Store current guide button states before clearing
+            const guideButtonStates = new Map();
             this.quizItems.forEach(item => {
-                // Look for guide button in the parent wrapper since it's a sibling
                 const parentWrapper = item.closest('.quiz-item-wrapper');
                 if (parentWrapper) {
                     const guideButton = parentWrapper.querySelector('.quiz-guide-button');
                     if (guideButton) {
-                        // Only reset display state, preserve href and other attributes
-                        guideButton.style.display = 'none';
-                        guideButton.removeAttribute('data-guide-url');
-                        guideButton.removeAttribute('data-guide-enabled');
+                        // Store current state
+                        guideButtonStates.set(guideButton, {
+                            href: guideButton.href,
+                            dataGuideUrl: guideButton.getAttribute('data-guide-url'),
+                            dataGuideEnabled: guideButton.getAttribute('data-guide-enabled'),
+                            display: guideButton.style.display
+                        });
                     }
                 }
             });
             
             // Load fresh guide settings from API and add buttons
             await this.loadGuideSettingsAndAddButtons();
+            
+            // Restore guide button states if they haven't been updated
+            this.quizItems.forEach(item => {
+                const parentWrapper = item.closest('.quiz-item-wrapper');
+                if (parentWrapper) {
+                    const guideButton = parentWrapper.querySelector('.quiz-guide-button');
+                    if (guideButton) {
+                        const savedState = guideButtonStates.get(guideButton);
+                        if (savedState && !guideButton.href) {
+                            // Only restore if the button hasn't been updated with new settings
+                            guideButton.href = savedState.href;
+                            if (savedState.dataGuideUrl) guideButton.setAttribute('data-guide-url', savedState.dataGuideUrl);
+                            if (savedState.dataGuideEnabled) guideButton.setAttribute('data-guide-enabled', savedState.dataGuideEnabled);
+                            guideButton.style.display = savedState.display;
+                        }
+                    }
+                }
+            });
             
             console.log('[Index] Quiz progress and guide buttons refresh complete');
         } catch (error) {
