@@ -371,8 +371,9 @@ export class Admin2Dashboard {
                     section.style.display = 'block';
                     setTimeout(() => {
                         section.classList.add('active');
-                        // Reset internal scroll position of the panel
-                        section.scrollTop = 0;
+                        // Reset scroll position of the main admin layout container
+                        const adminLayout = document.querySelector('.admin-layout');
+                        if (adminLayout) adminLayout.scrollTop = 0;
                     }, 0);
                     
                     // Special handling for different sections
