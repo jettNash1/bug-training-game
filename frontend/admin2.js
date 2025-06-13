@@ -371,8 +371,8 @@ export class Admin2Dashboard {
                     section.style.display = 'block';
                     setTimeout(() => {
                         section.classList.add('active');
-                        // Reset scroll position to top
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        // Reset internal scroll position of the panel
+                        section.scrollTop = 0;
                     }, 0);
                     
                     // Special handling for different sections
