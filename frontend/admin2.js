@@ -1198,33 +1198,46 @@ export class Admin2Dashboard {
     
     // Helper method to show info messages (neutral)
     showInfo(message, type = 'info') {
-        const infoContainer = document.createElement('div');
-        infoContainer.className = `message ${type}-message`;
-        infoContainer.innerHTML = `
-            <span>${message}</span>
-            <button class="close-message">&times;</button>
-        `;
-        
-        // Find the main content area to insert at the top
-        const contentArea = document.querySelector('main.content-area');
-        
-        if (contentArea) {
-            // Insert at the top of the content area
-            contentArea.insertBefore(infoContainer, contentArea.firstChild);
-        } else {
-            // Fallback to body if content area not found
-            document.body.appendChild(infoContainer);
+        // Create toast container if it doesn't exist
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container';
+            document.body.appendChild(toastContainer);
         }
+
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
         
-        // Add event listener to close the message
-        infoContainer.querySelector('.close-message').addEventListener('click', () => {
-            infoContainer.remove();
+        // Set icon based on type
+        let icon = 'info-circle';
+        if (type === 'success') icon = 'check-circle';
+        if (type === 'error') icon = 'exclamation-circle';
+
+        toast.innerHTML = `
+            <div class="toast-content">
+                <i class="fas fa-${icon} toast-icon"></i>
+                <span class="toast-message">${message}</span>
+            </div>
+            <button class="toast-close" aria-label="Close notification">&times;</button>
+        `;
+
+        // Add to container
+        toastContainer.appendChild(toast);
+
+        // Add event listener to close button
+        const closeBtn = toast.querySelector('.toast-close');
+        closeBtn.addEventListener('click', () => {
+            toast.classList.add('hiding');
+            setTimeout(() => toast.remove(), 300);
         });
-        
-        // Automatically remove after 5 seconds
+
+        // Auto remove after 5 seconds
         setTimeout(() => {
-            if (infoContainer.parentNode) {
-                infoContainer.remove();
+            if (toast.parentNode) {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 300);
             }
         }, 5000);
     }
