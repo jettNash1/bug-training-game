@@ -2701,54 +2701,24 @@ export class Admin2Dashboard {
                 'sanity-smoke', 'functional-interview'
             ];
         }
-        
-        const categories = {
-            'Technical Skills': [],
-            'QA Processes': [],
-            'Content Testing': [],
-            'Tools & Documentation': [],
-            'Soft Skills': [],
-            'Interview Quizzes': [],
-            'Other': []
-        };
-        
-        quizTypes.forEach(quiz => {
-            if (!quiz) return; // Skip undefined quiz types
-            
-            const lowerQuiz = quiz.toLowerCase();
-            
-            // Map quiz types to categories based on the valid quiz types
-            if (['non-functional', 'script-metrics-troubleshooting', 'standard-script-testing'].includes(lowerQuiz)) {
-                categories['Technical Skills'].push(quiz);
-            } 
-            else if (['test-support', 'issue-verification', 'build-verification', 'fully-scripted', 'exploratory', 'sanity-smoke'].includes(lowerQuiz)) {
-                categories['QA Processes'].push(quiz);
-            }
-            else if (['cms-testing', 'email-testing', 'content-copy', 'locale-testing'].includes(lowerQuiz)) {
-                categories['Content Testing'].push(quiz);
-            }
-            else if (['issue-tracking-tools', 'raising-tickets', 'reports'].includes(lowerQuiz)) {
-                categories['Tools & Documentation'].push(quiz);
-            }
-            else if (['communication', 'initiative', 'time-management', 'tester-mindset', 'risk-analysis', 'risk-management'].includes(lowerQuiz)) {
-                categories['Soft Skills'].push(quiz);
-            }
-            else if (['automation-interview', 'functional-interview'].includes(lowerQuiz)) {
-                categories['Interview Quizzes'].push(quiz);
-            }
-            else {
-                categories['Other'].push(quiz);
+
+        // Build a set for quick lookup
+        const quizTypeSet = new Set(quizTypes.map(q => q.toLowerCase()));
+        const categorized = {};
+        // 1. Add categories and quizzes in QUIZ_CATEGORIES order
+        Object.entries(QUIZ_CATEGORIES).forEach(([category, quizzes]) => {
+            const filtered = quizzes.filter(q => quizTypeSet.has(q.toLowerCase()));
+            if (filtered.length > 0) {
+                categorized[category] = filtered;
             }
         });
-        
-        // Remove empty categories
-        Object.keys(categories).forEach(key => {
-            if (categories[key].length === 0) {
-                delete categories[key];
-            }
-        });
-        
-        return categories;
+        // 2. Find any quizzes not in QUIZ_CATEGORIES
+        const allCategoryQuizzes = new Set(Object.values(QUIZ_CATEGORIES).flat().map(q => q.toLowerCase()));
+        const otherQuizzes = quizTypes.filter(q => !allCategoryQuizzes.has(q.toLowerCase()));
+        if (otherQuizzes.length > 0) {
+            categorized['Other'] = otherQuizzes;
+        }
+        return categorized;
     }
 
     // Implement resetAllProgress to match the method name used in the showUserDetails method
