@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { nonFunctionalTestingScenarios } from '../data/nonFunctional-scenarios.js';
+import { nonFunctionalScenarios } from '../data/nonFunctional-scenarios.js';
 
 export class NonFunctionalTestingQuiz extends BaseQuiz {
     constructor() {
@@ -42,9 +42,9 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
         };
 
         // Load scenarios from our data file
-        this.basicScenarios = nonFunctionalTestingScenarios.basic;
-        this.intermediateScenarios = nonFunctionalTestingScenarios.intermediate;
-        this.advancedScenarios = nonFunctionalTestingScenarios.advanced;
+        this.basicScenarios = nonFunctionalScenarios.basic;
+        this.intermediateScenarios = nonFunctionalScenarios.intermediate;
+        this.advancedScenarios = nonFunctionalScenarios.advanced;
 
         // Initialize elements
         this.gameScreen = document.getElementById('game-screen');
