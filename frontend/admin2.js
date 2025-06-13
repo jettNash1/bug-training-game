@@ -937,20 +937,13 @@ export class Admin2Dashboard {
                 this.showInfo('Please enter a valid number between 0 and 300', 'error');
                 return;
             }
-            
             try {
-                // Always use defaultSeconds for consistency
                 const response = await this.apiService.updateQuizTimerSettings(seconds);
-                
                 if (response.success) {
+                    // Always re-fetch the latest timer settings and re-render UI
                     this.timerSettings = response.data;
+                    await this.loadTimerSettings();
                     this.showInfo(`Default timer set to ${seconds} seconds`);
-                    
-                    // Update the quiz timers list
-                    const timersList = container.querySelector('#quiz-timers-list');
-                    if (timersList) {
-                        timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
-                    }
                 } else {
                     throw new Error(response.message || 'Failed to save default timer');
                 }
@@ -980,25 +973,18 @@ export class Admin2Dashboard {
                 this.showInfo('Please select a quiz', 'error');
                 return;
             }
-            
             const seconds = parseInt(quizTimerInput.value, 10);
             if (isNaN(seconds) || seconds < 0 || seconds > 300) {
                 this.showInfo('Please enter a valid number between 0 and 300', 'error');
                 return;
             }
-            
             try {
-                const response = await this.apiService.updateSingleQuizTimer(selectedQuiz, seconds);
-                
+                const response = await this.apiService.updateQuizTimerSettings(undefined, selectedQuiz, seconds);
                 if (response.success) {
+                    // Always re-fetch the latest timer settings and re-render UI
                     this.timerSettings = response.data;
-                    this.showInfo(`Timer for ${selectedQuiz} set to ${seconds} seconds`);
-                    
-                    // Update the quiz timers list
-                    const timersList = container.querySelector('#quiz-timers-list');
-                    if (timersList) {
-                        timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
-                    }
+                    await this.loadTimerSettings();
+                    this.showInfo(`Timer for ${this.formatQuizName(selectedQuiz)} set to ${seconds} seconds`);
                 } else {
                     throw new Error(response.message || 'Failed to set quiz timer');
                 }
