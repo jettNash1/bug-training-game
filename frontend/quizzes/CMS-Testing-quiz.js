@@ -21,7 +21,7 @@ export class CMSTestingQuiz extends BaseQuiz {
             quizName: 'cms-testing'
         };
         
-        // Call the parent constructor with our config
+        // Call the parent constructor with our config 
         super(config);
 
         // Set the quiz name
