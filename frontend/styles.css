@@ -1878,3 +1878,61 @@ select:disabled {
     outline: none;
     color: var(--primary-color);
 }
+
+/* --- Compact Create Account Quiz Selection Styles --- */
+.quiz-selection {
+    margin: 0;
+    padding: 0;
+}
+.quiz-category {
+    margin-bottom: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    padding-bottom: 0.5rem;
+}
+.quiz-category .category-header {
+    background: #2c3e50;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    font-size: 1.1rem;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.category-quizzes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.25rem 1.5rem;
+    padding: 0.5rem 1rem;
+}
+.quiz-option label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    padding: 0.25rem 0;
+    margin: 0;
+    font-weight: 400;
+}
+.quiz-option input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+}
+.select-category-btn {
+    font-size: 0.95rem;
+    padding: 0.2rem 0.7rem;
+    border-radius: 3px;
+    background: #3498db;
+    color: #fff;
+    border: none;
+    margin-left: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.select-category-btn:hover {
+    background: #217dbb;
+}
+/* --- End Compact Quiz Selection Styles --- */
