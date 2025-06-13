@@ -443,7 +443,7 @@ intermediate: [
 ],
 
 // Advanced Scenarios (Complex situations)
-advancedScenarios: [
+advanced: [
     {
         id: 11,
         level: 'Advanced',
