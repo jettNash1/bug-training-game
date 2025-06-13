@@ -425,7 +425,9 @@ class IndexPage {
 
             // Remove all status classes from .quiz-item
             item.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
-            // Apply the status class to the wrapper only
+            item.classList.add(statusClass);
+
+            // Also apply the status class to the wrapper for robustness
             const wrapper = item.closest('.quiz-item-wrapper');
             if (wrapper) {
                 wrapper.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
