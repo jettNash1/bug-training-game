@@ -246,26 +246,6 @@ body {
     border: 2px solid #81C784;
 }
 
-.quiz-item.completed-perfect {
-    background-color: #43A047 !important; /* Slightly darker green */
-    border: none !important;
-}
-
-.quiz-item.completed-partial {
-    background-color: #F57C00 !important; /* Slightly darker orange */
-    border: none !important;
-}
-
-.quiz-item.in-progress {
-    background-color: #FFA000 !important; /* Slightly darker yellow */
-    border: none !important;
-}
-
-.quiz-item.not-started {
-    background-color: #F5F5F5 !important; /* Slightly darker white */
-    border: none !important;
-}
-
 /* Guide Button Styles */
 .guide-button-container {
     margin-top: 12px;
