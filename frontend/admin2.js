@@ -1,10 +1,12 @@
 import { APIService } from './api-service.js';
 import { QUIZ_CATEGORIES } from './quiz-list.js';
+import { QuizProgressService } from './services/QuizProgressService.js';
 
 export class Admin2Dashboard {
     constructor() {
         // Initialize APIService directly rather than through super()
         this.apiService = new APIService();
+        this.quizProgressService = new QuizProgressService(); // <-- Add this line
         
         // Copy initialization properties from AdminDashboard
         this.userScores = new Map();
@@ -4244,7 +4246,9 @@ export class Admin2Dashboard {
     async saveGuideSettings(quiz, url, enabled) {
         try {
             // Normalize quiz name
-            const normalizedQuiz = this.quizProgressService.normalizeQuizName(quiz);
+            const normalizedQuiz = this.quizProgressService && typeof this.quizProgressService.normalizeQuizName === 'function'
+                ? this.quizProgressService.normalizeQuizName(quiz)
+                : quiz;
             console.log(`Saving guide setting for ${normalizedQuiz} (normalized from ${quiz}): url=${url}, enabled=${enabled}`);
 
             // Make the API call first
@@ -5868,67 +5872,16 @@ export class Admin2Dashboard {
 
     async saveGuideSettingsWithoutInitialMessage(quiz, url, enabled) {
         try {
-            // Skip showing the initial loading message to avoid duplicate notifications
-            console.log(`Saving guide setting for ${quiz}: url=${url}, enabled=${enabled}`);
-
-            // First update in-memory state for immediate UI feedback
-            if (!this.guideSettings) {
-                this.guideSettings = {};
-            }
-                
-            this.guideSettings[quiz] = { url, enabled };
-                
-            // Update localStorage immediately for redundancy
-            try {
-                localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
-                console.log(`Updated guide settings in localStorage (${Object.keys(this.guideSettings).length} guides)`);
-            } catch (e) {
-                console.warn(`Failed to save guide settings to localStorage: ${e.message}`);
-            }
-            
-            // Make the API call - don't refresh list yet to avoid double event handlers
-            const response = await this.apiService.saveGuideSetting(quiz, url, enabled);
-
-            if (response.success) {
-                console.log('Guide setting saved successfully:', response);
-                
-                // Reload all guide settings to ensure consistency, but don't trigger displayGuideSettings
-                // which would set up event listeners again
-                try {
-                    const refreshResponse = await this.apiService.getGuideSettings();
-                    if (refreshResponse.success) {
-                        this.guideSettings = refreshResponse.data || {};
-                        console.log('Guide settings reloaded with', Object.keys(this.guideSettings).length, 'guides');
-                    }
-                } catch (refreshError) {
-                    console.warn('Error refreshing guide settings:', refreshError);
-                }
-                
-                // Now refresh the list display without setting up new event handlers
-                this.refreshGuideSettingsList(false); // Pass false to indicate not to set up new event handlers
-                
-                // Show success message
-                if (response.source === 'localStorage') {
-                    this.showInfo(`Guide settings saved locally only (server unavailable).`, 'warning');
-                } else {
-                    this.showInfo(`Guide settings for ${this.formatQuizName(quiz)} saved successfully!`);
-                }
-                
-                return true;
-            } else {
-                throw new Error(response.message || 'Failed to save guide settings');
-            }
+            const normalizedQuiz = this.quizProgressService && typeof this.quizProgressService.normalizeQuizName === 'function'
+                ? this.quizProgressService.normalizeQuizName(quiz)
+                : quiz;
+            // ... existing code ...
+            this.guideSettings[normalizedQuiz] = { url, enabled };
+            // ... existing code ...
+            const response = await this.apiService.saveGuideSetting(normalizedQuiz, url, enabled);
+            // ... existing code ...
         } catch (error) {
-            console.error('Error saving guide settings:', error);
-            
-            // Special handling for validation errors
-            if (error.message && error.message.includes('URL format')) {
-                this.showInfo(`Error: ${error.message}`, 'error');
-            } else {
-                this.showInfo('Failed to save guide settings', 'error');
-            }
-            
-            throw error;
+            // ... existing code ...
         }
     }
 
