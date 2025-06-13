@@ -128,7 +128,6 @@ export class Admin2Dashboard {
             // Initialize all components in parallel
             await Promise.all([
                 this.loadUsers(),
-                this.loadTimerSettings(),
                 this.loadGuideSettings().catch(error => {
                     console.error('Failed to load guide settings, but continuing with other initializations:', error);
                     return {};
@@ -138,6 +137,9 @@ export class Admin2Dashboard {
                     return {};
                 })
             ]);
+
+            // Always load timer settings before displaying the UI
+            await this.loadTimerSettings();
 
             // Set up all UI components
             console.log('Setting up UI components...');
