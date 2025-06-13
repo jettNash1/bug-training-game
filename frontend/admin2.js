@@ -2229,7 +2229,9 @@ export class Admin2Dashboard {
                                         quizProgress?.questionsAnswered || 
                                         quizProgress?.questionHistory?.length || 0;
                     const experience = quizResult?.experience || quizProgress?.experience || 0;
-                    const score = quizResult?.score || 0;
+                    const rawScore = quizResult?.score || 0;
+                    // Ensure score is displayed as percentage (convert if it's in decimal format)
+                    const score = rawScore < 1 && rawScore > 0 ? Math.round(rawScore * 100) : Math.round(rawScore);
                     const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
                     
                     const status = questionsAnswered === 15 ? 'Completed' : 
@@ -2861,7 +2863,9 @@ export class Admin2Dashboard {
                     });
                     
                     const questionsAnswered = response.data.totalQuestions || 0;
-                    const quizScore = response.data.score || 0;
+                    const rawQuizScore = response.data.score || 0;
+                    // Ensure score is displayed as percentage (convert if it's in decimal format)
+                    const quizScore = rawQuizScore < 1 && rawQuizScore > 0 ? Math.round(rawQuizScore * 100) : Math.round(rawQuizScore);
                     const quizStatus = questionsAnswered >= 15 ? 'Completed' : (questionsAnswered > 0 ? 'In Progress' : 'Not Started');
                     
                     console.log('Mapped question history:', questionHistory);

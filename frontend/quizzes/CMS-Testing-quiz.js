@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { CMSTestingScenarios } from '../data/CMSTesting-scenarios.js';
+import { CMSTestingScenarios } from '../data/cms-testing-scenarios.js';
 
 export class CMSTestingQuiz extends BaseQuiz {
     constructor() {
