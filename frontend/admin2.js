@@ -6191,6 +6191,46 @@ export class Admin2Dashboard {
         }
     }
     // ... existing code ...
+
+    // Helper function to format quiz names from kebab-case to Title Case with more descriptive names
+    formatQuizName(quizName) {
+        if (!quizName) return '';
+
+        // Map of quiz names to their display names
+        const displayNames = {
+            'exploratory': 'Exploratory Testing',
+            'standard-script-testing': 'Standard Script Testing',
+            'fully-scripted': 'Fully Scripted Testing',
+            'script-metrics-troubleshooting': 'Script Metrics & Troubleshooting',
+            'locale-testing': 'Locale & Internationalization Testing',
+            'build-verification': 'Build Verification Testing',
+            'test-types-tricks': 'Test Types & Techniques',
+            'test-support': 'Test Support & Maintenance',
+            'sanity-smoke': 'Sanity & Smoke Testing',
+            'time-management': 'Time Management & Planning',
+            'risk-analysis': 'Risk Analysis & Assessment',
+            'risk-management': 'Risk Management & Mitigation',
+            'non-functional': 'Non-Functional Testing',
+            'issue-verification': 'Issue Verification & Validation',
+            'issue-tracking-tools': 'Issue Tracking & Management Tools',
+            'raising-tickets': 'Raising & Managing Tickets',
+            'reports': 'Test Reports & Documentation',
+            'cms-testing': 'CMS & Content Management Testing',
+            'email-testing': 'Email & Communication Testing',
+            'content-copy': 'Content & Copy Testing',
+            'tester-mindset': 'Tester Mindset & Approach',
+            'communication': 'Communication & Collaboration',
+            'initiative': 'Initiative & Proactivity',
+            'automation-interview': 'Automation Interview Preparation',
+            'functional-interview': 'Functional Testing Interview'
+        };
+
+        // Return the display name if it exists, otherwise format the original name
+        return displayNames[quizName] || quizName
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
 }
 
 // Initialize the Admin2Dashboard when the document is ready
