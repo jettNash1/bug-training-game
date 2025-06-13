@@ -252,6 +252,13 @@ class IndexPage {
             this.hideLoadingOverlay();
             
             console.log('[Index] Initialization complete');
+
+            // Add visibilitychange listener to update guide buttons when returning to tab
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && window.indexPage) {
+                    window.indexPage.loadGuideSettingsAndAddButtons();
+                }
+            });
         } catch (error) {
             console.error('[Index] Error during initialization:', error);
             this.hideLoadingOverlay();
@@ -906,6 +913,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.indexPage = indexPage;
     
     console.log('[Index] Initialization complete');
+
+    // Add visibilitychange listener to update guide buttons when returning to tab
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && window.indexPage) {
+            window.indexPage.loadGuideSettingsAndAddButtons();
+        }
+    });
 });
 
 // Expose handleLogout to the window object
