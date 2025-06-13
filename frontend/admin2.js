@@ -369,6 +369,8 @@ export class Admin2Dashboard {
                     section.style.display = 'block';
                     setTimeout(() => {
                         section.classList.add('active');
+                        // Reset scroll position to top
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                     }, 0);
                     
                     // Special handling for different sections

@@ -705,49 +705,59 @@ class IndexPage {
 
     async loadGuideSettingsAndAddButtons() {
         console.log('[Index] Loading guide settings for quiz items');
-        
+        let guideSettings = null;
+        let apiFailed = false;
+        // 1. Try API first
         try {
-            // Get guide settings from API
             const response = await this.apiService.fetchGuideSettings();
-            console.log('[Index] Guide settings full response:', response);
-            console.log('[Index] Guide settings data:', response.data);
-            
-            if (!response || !response.success) {
-                console.warn('[Index] Failed to load guide settings:', response);
-                return;
-            }
-            
-            // Debug log all available guide settings
-            Object.entries(response.data || {}).forEach(([quiz, settings]) => {
-                console.log(`[Index] Available guide for ${quiz}:`, settings);
-            });
-            
-            // Get all guide buttons once
-            const guideButtons = document.querySelectorAll('.quiz-guide-button');
-            
-            // Update buttons with new settings
-            Object.entries(response.data || {}).forEach(([quizName, guideSetting]) => {
-                if (guideSetting && guideSetting.enabled && guideSetting.url) {
-                    // Find the guide button with matching data-quiz attribute
-                    const guideButton = document.querySelector(`.quiz-guide-button[data-quiz="${quizName}"]`);
-                    if (guideButton) {
-                        console.log(`[Index] Setting href for ${quizName} button to: ${guideSetting.url}`);
-                        guideButton.href = guideSetting.url;
-                        guideButton.target = '_blank';
-                        guideButton.rel = 'noopener noreferrer';
-                        guideButton.style.display = 'block';
-                        guideButton.setAttribute('data-guide-url', guideSetting.url);
-                        guideButton.setAttribute('data-guide-enabled', 'true');
-                    } else {
-                        console.warn(`[Index] Could not find guide button for quiz: ${quizName}`);
-                    }
+            if (response && response.success && response.data) {
+                guideSettings = response.data;
+                // Save to localStorage for fallback
+                try {
+                    localStorage.setItem('guideSettings', JSON.stringify(guideSettings));
+                } catch (e) {
+                    console.warn('[Index] Could not save guide settings to localStorage:', e);
                 }
-            });
-            
-            console.log('[Index] Guide buttons update complete');
+            } else {
+                apiFailed = true;
+                console.warn('[Index] Failed to load guide settings from API:', response);
+            }
         } catch (error) {
-            console.error('[Index] Error loading guide settings:', error);
+            apiFailed = true;
+            console.error('[Index] Error loading guide settings from API:', error);
         }
+        // 2. If API failed, try localStorage
+        if (apiFailed) {
+            try {
+                const cached = localStorage.getItem('guideSettings');
+                if (cached) {
+                    guideSettings = JSON.parse(cached);
+                    console.log('[Index] Loaded guide settings from localStorage.');
+                }
+            } catch (e) {
+                console.warn('[Index] Could not load guide settings from localStorage:', e);
+            }
+        }
+        // 3. If no guide settings, do not touch the buttons
+        if (!guideSettings) {
+            console.warn('[Index] No guide settings available. Guide buttons will not be modified.');
+            return;
+        }
+        // 4. Update only buttons with valid guide URLs
+        const guideButtons = document.querySelectorAll('.quiz-guide-button');
+        guideButtons.forEach(btn => {
+            const quiz = btn.getAttribute('data-quiz');
+            const setting = guideSettings[quiz];
+            if (setting && setting.enabled && setting.url) {
+                btn.href = setting.url;
+                btn.target = '_blank';
+                btn.rel = 'noopener noreferrer';
+                btn.style.display = 'block';
+                btn.setAttribute('data-guide-url', setting.url);
+                btn.setAttribute('data-guide-enabled', 'true');
+            } // else: do not modify the button (leave as is)
+        });
+        console.log('[Index] Guide buttons update complete');
     }
 
     // Debug helper method to check quiz name normalization
