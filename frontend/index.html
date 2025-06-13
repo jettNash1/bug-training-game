@@ -43,25 +43,25 @@
 
                 // Set up auto-refresh when page becomes visible
                 let wasInactive = false;
-                document.addEventListener('visibilitychange', () => {
-                    if (document.visibilityState === 'hidden') {
-                        wasInactive = true;
-                    } else if (document.visibilityState === 'visible' && wasInactive) {
-                        wasInactive = false;
-                        quizList.displayQuizzes();
-                    }
-                });
+                // document.addEventListener('visibilitychange', () => {
+                //     if (document.visibilityState === 'hidden') {
+                //         wasInactive = true;
+                //     } else if (document.visibilityState === 'visible' && wasInactive) {
+                //         wasInactive = false;
+                //         quizList.displayQuizzes();
+                //     }
+                // });
 
-                window.addEventListener('focus', () => {
-                    if (wasInactive) {
-                        wasInactive = false;
-                        quizList.displayQuizzes();
-                    }
-                });
+                // window.addEventListener('focus', () => {
+                //     if (wasInactive) {
+                //         wasInactive = false;
+                //         quizList.displayQuizzes();
+                //     }
+                // });
 
-                window.addEventListener('blur', () => {
-                    wasInactive = true;
-                });
+                // window.addEventListener('blur', () => {
+                //     wasInactive = true;
+                // });
             } catch (error) {
                 console.error('Failed to initialize user data:', error);
             }
