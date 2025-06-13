@@ -425,13 +425,11 @@ class IndexPage {
 
             // Remove all status classes from .quiz-item
             item.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
-            // Add the new status class to .quiz-item
-            item.classList.add(statusClass);
-
-            // (Optional) Remove status classes from wrapper if you were adding them before
+            // Apply the status class to the wrapper only
             const wrapper = item.closest('.quiz-item-wrapper');
             if (wrapper) {
                 wrapper.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
+                wrapper.classList.add(statusClass);
             }
 
             // Update progress text

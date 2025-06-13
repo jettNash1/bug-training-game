@@ -228,20 +228,20 @@ body {
     z-index: 2;
 }
 
-/* Quiz Status Classes for .quiz-item only */
-.quiz-item.not-started {
+/* Quiz Status Classes for .quiz-item-wrapper only */
+.quiz-item-wrapper.not-started {
     background-color: #fff !important;
-    border: 2px solid #EEE8D7;
+    border: 2px solid #fff !important;
 }
-.quiz-item.in-progress {
+.quiz-item-wrapper.in-progress {
     background-color: #FFF8E7 !important;
     border: 2px solid #EEE8D7;
 }
-.quiz-item.completed-partial {
+.quiz-item-wrapper.completed-partial {
     background-color: #FFE0B2 !important;
     border: 2px solid #FFB74D;
 }
-.quiz-item.completed-perfect {
+.quiz-item-wrapper.completed-perfect {
     background-color: #C8E6C9 !important;
     border: 2px solid #81C784;
 }
