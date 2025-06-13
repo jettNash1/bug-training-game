@@ -1245,7 +1245,7 @@ export class Admin2Dashboard {
     setupCreateAccountForm() {
         const createAccountContainer = document.getElementById('create-account-container');
         if (!createAccountContainer) return;
-        
+
         // Show loading state
         createAccountContainer.innerHTML = `
             <div class="loading-container" style="text-align: center; padding: 2rem;">
@@ -1253,30 +1253,16 @@ export class Admin2Dashboard {
                 <p>Loading quiz types...</p>
             </div>
         `;
-        
-        // Set a timeout to ensure the UI updates even if the quiz types fetch hangs
-        let timeoutId = setTimeout(() => {
-            console.warn('Quiz types fetch timeout after 10 seconds - using fallback');
-            renderForm(this.getHardcodedQuizTypes());
-        }, 10000); // Increased timeout to 10 seconds
-        
-        // Fetch the latest quiz types before setting up the form
-        this.fetchQuizTypes()
-            .then(quizTypes => {
-                clearTimeout(timeoutId); // Clear the timeout since we got a response
-                renderForm(quizTypes);
-            })
-            .catch(error => {
-                clearTimeout(timeoutId); // Clear the timeout if there's an error
-                console.error('Error loading quiz types:', error);
-                renderForm(this.getHardcodedQuizTypes());
-            });
-            
+
+        // Use all quizzes from QUIZ_CATEGORIES for the form
+        const allQuizzes = Object.values(QUIZ_CATEGORIES).flat();
+        renderForm(allQuizzes);
+
         // Function to render the form with quiz types
-        const renderForm = (quizTypes) => {
+        function renderForm(quizTypes) {
             // Sort quiz types by category for better organization
-            const categorizedQuizzes = this.categorizeQuizzesForForm(quizTypes);
-            
+            const categorizedQuizzes = window.adminDashboard.categorizeQuizzesForForm(quizTypes);
+
             createAccountContainer.innerHTML = `
                 <div class="create-account-form">
                     <form id="createInterviewForm" autocomplete="off">
@@ -1314,7 +1300,6 @@ export class Admin2Dashboard {
                                         <span>Select All Quizzes</span>
                                     </label>
                                 </div>
-                                
                                 <div class="quiz-options">
                                     ${Object.entries(categorizedQuizzes).map(([category, quizzes]) => `
                                         <div class="quiz-category">
@@ -1332,7 +1317,7 @@ export class Admin2Dashboard {
                                                                    name="quizzes" 
                                                                    value="${quiz}" 
                                                                    data-category="${category}">
-                                                            <span>${this.formatQuizName(quiz)}</span>
+                                                            <span>${window.adminDashboard.formatQuizName(quiz)}</span>
                                                         </label>
                                                     </div>
                                                 `).join('')}
@@ -1346,7 +1331,7 @@ export class Admin2Dashboard {
                     </form>
                 </div>
             `;
-            
+
             // Add event listeners
             // For the category buttons
             const selectCategoryButtons = document.querySelectorAll('.select-category-btn');
@@ -1355,15 +1340,15 @@ export class Admin2Dashboard {
                     const category = button.dataset.category;
                     const categoryCheckboxes = document.querySelectorAll(`input[data-category="${category}"]`);
                     const allChecked = Array.from(categoryCheckboxes).every(checkbox => checkbox.checked);
-                    
+
                     categoryCheckboxes.forEach(checkbox => {
                         checkbox.checked = !allChecked;
                     });
-                    
-                    this.updateSelectAllCheckbox();
+
+                    window.adminDashboard.updateSelectAllCheckbox();
                 });
             });
-            
+
             // For the select all checkbox
             const selectAllCheckbox = document.getElementById('selectAllQuizzes');
             if (selectAllCheckbox) {
@@ -1374,21 +1359,21 @@ export class Admin2Dashboard {
                     });
                 });
             }
-            
+
             // For individual checkboxes to update select all state
             const quizCheckboxes = document.querySelectorAll('input[name="quizzes"]');
             quizCheckboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', () => {
-                    this.updateSelectAllCheckbox();
+                    window.adminDashboard.updateSelectAllCheckbox();
                 });
             });
-            
+
             // For the form submission
             const createAccountForm = document.getElementById('createInterviewForm');
             if (createAccountForm) {
-                createAccountForm.addEventListener('submit', this.handleCreateAccount.bind(this));
+                createAccountForm.addEventListener('submit', window.adminDashboard.handleCreateAccount.bind(window.adminDashboard));
             }
-            
+
             // For password toggling
             const passwordToggle = document.querySelector('.password-toggle');
             const passwordInput = document.getElementById('password');
@@ -1399,7 +1384,7 @@ export class Admin2Dashboard {
                     passwordToggle.querySelector('i').className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
                 });
             }
-        };
+        }
     }
     
     // Set up the scenarios list in the scenarios section
