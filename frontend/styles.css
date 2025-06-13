@@ -108,26 +108,6 @@ body {
     min-height: 200px;
 }
 
-.quiz-item-wrapper.not-started {
-    background-color: #FFF8E7;
-    border: 2px solid #EEE8D7;
-}
-
-.quiz-item-wrapper.in-progress {
-    background-color: #FFFFCC;
-    border: 2px solid #EEEEAA;
-}
-
-.quiz-item-wrapper.completed-partial {
-    background-color: #F0D080;
-    border: 2px solid #E0B060;
-}
-
-.quiz-item-wrapper.completed-perfect {
-    background-color: #4CAF50;
-    border: 2px solid #45A049;
-}
-
 .quiz-item {
     flex: 1;
     display: flex;
@@ -248,25 +228,22 @@ body {
     z-index: 2;
 }
 
-/* Quiz Status Classes */
+/* Quiz Status Classes for .quiz-item only */
 .quiz-item.not-started {
-    background-color: #FFF8E7;
+    background-color: #fff !important;
     border: 2px solid #EEE8D7;
 }
-
 .quiz-item.in-progress {
-    background-color: #FFFFCC;
-    border: 2px solid #EEEEAA;
+    background-color: #FFF8E7 !important;
+    border: 2px solid #EEE8D7;
 }
-
 .quiz-item.completed-partial {
-    background-color: #F0D080;
-    border: 2px solid #E0B060;
+    background-color: #FFE0B2 !important;
+    border: 2px solid #FFB74D;
 }
-
 .quiz-item.completed-perfect {
-    background-color: #4CAF50;
-    border: 2px solid #45A049;
+    background-color: #C8E6C9 !important;
+    border: 2px solid #81C784;
 }
 
 /* Guide Button Styles */
