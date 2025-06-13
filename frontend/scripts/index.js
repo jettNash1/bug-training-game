@@ -418,28 +418,24 @@ class IndexPage {
             // Determine quiz status and styling
             let statusClass = 'not-started';
             let progressText = '';
-            
-            if (questionsAnswered === 0) {
-                // No progress at all (based purely on questions answered)
-                statusClass = 'not-started';  // White
-                progressText = '';
-            } else if (questionsAnswered === 15) {
-                // Quiz is completed (all 15 questions answered)
+
+            if (questionsAnswered === 15) {
                 progressText = '15/15';
-                const effectiveScore = score > 0 ? score : scorePercentage;
+                const effectiveScore = (score !== undefined && score !== null) ? score : (scorePercentage !== undefined && scorePercentage !== null ? scorePercentage : 0);
                 if (effectiveScore >= 80) {
-                    statusClass = 'completed-perfect';  // Green
+                    statusClass = 'completed-perfect';
                 } else {
-                    statusClass = 'completed-partial';  // Orange
+                    statusClass = 'completed-partial';
                 }
+                console.log(`[Index] ${normalizedQuizId}: questionsAnswered=15, effectiveScore=${effectiveScore}, statusClass=${statusClass}`);
             } else if (questionsAnswered > 0) {
-                // Quiz is in progress (some questions answered but not finished)
-                statusClass = 'in-progress';  // Yellow
+                statusClass = 'in-progress';
                 progressText = `${questionsAnswered}/15`;
+                console.log(`[Index] ${normalizedQuizId}: questionsAnswered=${questionsAnswered}, statusClass=in-progress`);
             } else {
-                // Fallback for any edge cases
-                statusClass = 'not-started';  // White
+                statusClass = 'not-started';
                 progressText = '';
+                console.log(`[Index] ${normalizedQuizId}: questionsAnswered=0, statusClass=not-started`);
             }
             
             // Update the quiz item's status class
