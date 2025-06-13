@@ -229,27 +229,8 @@ class IndexPage {
             // Initialize API service
             this.apiService = new APIService();
             
-            // Initialize quiz list
-            this.quizList = new QuizList();
-            await this.quizList.init();
-            
-            // Get quiz items after they are created
-            this.quizItems = document.querySelectorAll('.quiz-item');
-            console.log(`[Index] Found ${this.quizItems.length} quiz items`);
-            
-            // Load user progress and update UI
-            await this.loadUserProgress();
-            this.updateQuizProgress();
-            this.updateCategoryProgress();
-            
-            // Add badges UI element (only call one method)
-            this.addBadgesNavLink();
-            
-            // Load guide settings and add buttons after quiz items are created
-            await this.loadGuideSettingsAndAddButtons();
-            
-            // Hide loading overlay
-            this.hideLoadingOverlay();
+            // Initialize quiz list with retry logic
+            await this.initializeWithRetry();
             
             console.log('[Index] Initialization complete');
 
@@ -263,6 +244,62 @@ class IndexPage {
         } catch (error) {
             console.error('[Index] Error during initialization:', error);
             this.hideLoadingOverlay();
+        }
+    }
+
+    async initializeWithRetry(maxRetries = 3) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`[Index] Initialization attempt ${attempt}/${maxRetries}`);
+                
+                // Initialize quiz list
+                this.quizList = new QuizList();
+                await this.quizList.init();
+                
+                // Wait a bit for DOM to be ready
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                // Get quiz items after they are created
+                this.quizItems = document.querySelectorAll('.quiz-item');
+                console.log(`[Index] Found ${this.quizItems.length} quiz items`);
+                
+                if (this.quizItems.length === 0) {
+                    throw new Error('No quiz items found in DOM');
+                }
+                
+                // Load user progress and update UI
+                const progressLoaded = await this.loadUserProgress();
+                if (!progressLoaded) {
+                    throw new Error('Failed to load user progress');
+                }
+                
+                await this.updateQuizProgress();
+                this.updateCategoryProgress();
+                
+                // Add badges UI element (only call one method)
+                this.addBadgesNavLink();
+                
+                // Load guide settings and add buttons after quiz items are created
+                await this.loadGuideSettingsAndAddButtons();
+                
+                // Hide loading overlay
+                this.hideLoadingOverlay();
+                
+                console.log(`[Index] Initialization successful on attempt ${attempt}`);
+                return; // Success, exit retry loop
+                
+            } catch (error) {
+                console.error(`[Index] Initialization attempt ${attempt} failed:`, error);
+                
+                if (attempt === maxRetries) {
+                    console.error('[Index] All initialization attempts failed');
+                    this.hideLoadingOverlay();
+                    throw error;
+                } else {
+                    console.log(`[Index] Retrying in ${attempt * 500}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, attempt * 500));
+                }
+            }
         }
     }
 
@@ -403,13 +440,26 @@ class IndexPage {
         
         console.log(`[Index] Updating UI for ${this.quizItems.length} quiz items with ${this.quizScores.length} quiz scores`);
         console.log('[Index] All quiz scores data:', this.quizScores);
+
+        // Add a small delay to ensure DOM is fully ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Re-query quiz items to ensure we have the latest DOM state
+        this.quizItems = document.querySelectorAll('.quiz-item');
+        console.log(`[Index] Re-queried and found ${this.quizItems.length} quiz items`);
                 
-        this.quizItems.forEach(item => {
+        this.quizItems.forEach((item, index) => {
             const quizId = item.dataset.quiz;
-            if (!quizId) return;
+            if (!quizId) {
+                console.warn(`[Index] Quiz item ${index} has no data-quiz attribute`);
+                return;
+            }
 
             const progressElement = document.getElementById(`${quizId}-progress`);
-            if (!progressElement) return;
+            if (!progressElement) {
+                console.warn(`[Index] No progress element found for quiz: ${quizId}`);
+                return;
+            }
 
             // Find the score object for this quiz
             const quizScore = this.quizScores.find(score =>
@@ -459,8 +509,21 @@ class IndexPage {
             const wrapper = item.closest('.quiz-item-wrapper');
             if (wrapper) {
                 console.log(`[Index] - Applying status class to wrapper: ${statusClass}`);
+                console.log(`[Index] - Wrapper before update:`, wrapper.className);
                 wrapper.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
                 wrapper.classList.add(statusClass);
+                console.log(`[Index] - Wrapper after update:`, wrapper.className);
+                
+                // Force a style recalculation to ensure the changes take effect
+                wrapper.offsetHeight; // This forces a reflow
+                
+                // Double-check the class was applied
+                setTimeout(() => {
+                    if (!wrapper.classList.contains(statusClass)) {
+                        console.warn(`[Index] - Status class ${statusClass} not found on wrapper after timeout, re-applying...`);
+                        wrapper.classList.add(statusClass);
+                    }
+                }, 50);
             } else {
                 console.warn(`[Index] - No wrapper found for quiz: ${quizId}`);
             }
@@ -472,6 +535,19 @@ class IndexPage {
             console.log(`[Index] - Quiz ${quizId} processing complete`);
             console.log('---');
         });
+
+        // Add a final verification step
+        setTimeout(() => {
+            console.log('[Index] Final verification of status classes:');
+            this.quizItems.forEach(item => {
+                const quizId = item.dataset.quiz;
+                const wrapper = item.closest('.quiz-item-wrapper');
+                if (wrapper) {
+                    console.log(`[Index] ${quizId}: ${wrapper.className}`);
+                }
+            });
+        }, 200);
+
         // Ensure guide buttons are updated after progress update
         await this.loadGuideSettingsAndAddButtons();
     }
@@ -985,6 +1061,46 @@ window.updateQuizStatus = () => {
         window.indexPage.updateQuizProgress();
     } else {
         console.error('IndexPage not available');
+    }
+};
+
+// Add a comprehensive manual refresh function
+window.forceRefreshQuizStatus = async () => {
+    console.log('=== FORCE REFRESH QUIZ STATUS ===');
+    
+    if (!window.indexPage) {
+        console.error('IndexPage not available');
+        return;
+    }
+    
+    try {
+        // Re-load all data
+        console.log('1. Re-loading user progress...');
+        await window.indexPage.loadUserProgress();
+        
+        // Re-query DOM elements
+        console.log('2. Re-querying DOM elements...');
+        window.indexPage.quizItems = document.querySelectorAll('.quiz-item');
+        console.log(`Found ${window.indexPage.quizItems.length} quiz items`);
+        
+        // Update progress with delay
+        console.log('3. Updating quiz progress...');
+        await window.indexPage.updateQuizProgress();
+        
+        // Update category progress
+        console.log('4. Updating category progress...');
+        window.indexPage.updateCategoryProgress();
+        
+        console.log('5. Force refresh complete!');
+        
+        // Show final status
+        setTimeout(() => {
+            console.log('=== FINAL STATUS CHECK ===');
+            window.debugQuizStatus();
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error during force refresh:', error);
     }
 };
 
