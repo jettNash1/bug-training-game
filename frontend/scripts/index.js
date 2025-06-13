@@ -800,69 +800,103 @@ class IndexPage {
 
     async loadGuideSettingsAndAddButtons() {
         console.log('[Index] Loading guide settings for quiz items');
-        // 1. If guide URLs exist in localStorage, use them and do not call the API
-        const cached = localStorage.getItem('guideSettings');
-        if (cached) {
-            const guideSettings = JSON.parse(cached);
-            const guideButtons = document.querySelectorAll('.quiz-guide-button');
-            guideButtons.forEach(btn => {
-                const quiz = btn.getAttribute('data-quiz');
-                const setting = guideSettings[quiz];
-                if (setting && setting.enabled && setting.url) {
-                    btn.href = setting.url;
-                    btn.target = '_blank';
-                    btn.rel = 'noopener noreferrer';
-                    btn.style.display = 'block';
-                    btn.setAttribute('data-guide-url', setting.url);
-                    btn.setAttribute('data-guide-enabled', 'true');
-                } else {
-                    // Hide the button if no valid URL
-                    btn.style.display = 'none';
-                    btn.removeAttribute('href');
-                    btn.removeAttribute('data-guide-url');
-                    btn.removeAttribute('data-guide-enabled');
-                }
-            });
-            console.log('[Index] Guide buttons loaded from localStorage (no API call)');
-            return;
-        }
-        // 2. If not in localStorage, fetch from API, save, and apply
+        
+        // Always try to load from API first, then fall back to localStorage if API fails
         let guideSettings = null;
+        let settingsSource = 'none';
+        
         try {
+            // 1. Try to fetch from API first
+            console.log('[Index] Attempting to fetch guide settings from API...');
             const response = await this.apiService.fetchGuideSettings();
+            console.log('[Index] API response:', response);
+            
             if (response && response.success && response.data) {
                 guideSettings = response.data;
+                settingsSource = 'api';
+                console.log('[Index] Successfully loaded guide settings from API:', guideSettings);
+                
+                // Save to localStorage for future use (if not in incognito mode)
                 try {
                     localStorage.setItem('guideSettings', JSON.stringify(guideSettings));
+                    console.log('[Index] Saved guide settings to localStorage');
                 } catch (e) {
-                    console.warn('[Index] Could not save guide settings to localStorage:', e);
+                    console.warn('[Index] Could not save guide settings to localStorage (possibly incognito mode):', e);
                 }
-                const guideButtons = document.querySelectorAll('.quiz-guide-button');
-                guideButtons.forEach(btn => {
-                    const quiz = btn.getAttribute('data-quiz');
-                    const setting = guideSettings[quiz];
-                    if (setting && setting.enabled && setting.url) {
-                        btn.href = setting.url;
-                        btn.target = '_blank';
-                        btn.rel = 'noopener noreferrer';
-                        btn.style.display = 'block';
-                        btn.setAttribute('data-guide-url', setting.url);
-                        btn.setAttribute('data-guide-enabled', 'true');
-                    } else {
-                        // Hide the button if no valid URL
-                        btn.style.display = 'none';
-                        btn.removeAttribute('href');
-                        btn.removeAttribute('data-guide-url');
-                        btn.removeAttribute('data-guide-enabled');
-                    }
-                });
-                console.log('[Index] Guide buttons loaded from API and saved to localStorage');
             } else {
-                console.warn('[Index] Failed to load guide settings from API:', response);
+                throw new Error('API response was not successful or had no data');
             }
-        } catch (error) {
-            console.error('[Index] Error loading guide settings from API:', error);
+        } catch (apiError) {
+            console.warn('[Index] Failed to load guide settings from API:', apiError);
+            
+            // 2. Fall back to localStorage if API fails
+            try {
+                const cached = localStorage.getItem('guideSettings');
+                if (cached) {
+                    guideSettings = JSON.parse(cached);
+                    settingsSource = 'localStorage';
+                    console.log('[Index] Using cached guide settings from localStorage:', guideSettings);
+                } else {
+                    console.log('[Index] No cached guide settings found in localStorage');
+                }
+            } catch (localStorageError) {
+                console.error('[Index] Error reading from localStorage:', localStorageError);
+            }
         }
+        
+        // 3. Apply guide settings to buttons
+        const guideButtons = document.querySelectorAll('.quiz-guide-button');
+        console.log(`[Index] Found ${guideButtons.length} guide buttons to configure`);
+        console.log(`[Index] Using guide settings from: ${settingsSource}`);
+        console.log(`[Index] Guide settings data:`, guideSettings);
+        
+        if (!guideSettings || Object.keys(guideSettings).length === 0) {
+            console.warn('[Index] No guide settings available - hiding all guide buttons');
+            guideButtons.forEach(btn => {
+                btn.style.display = 'none';
+                btn.removeAttribute('href');
+                btn.removeAttribute('data-guide-url');
+                btn.removeAttribute('data-guide-enabled');
+            });
+            return;
+        }
+        
+        // Apply settings to each button
+        guideButtons.forEach((btn, index) => {
+            const quiz = btn.getAttribute('data-quiz');
+            if (!quiz) {
+                console.warn(`[Index] Guide button ${index} has no data-quiz attribute`);
+                return;
+            }
+            
+            const normalizedQuiz = this.quizProgressService ? 
+                this.quizProgressService.normalizeQuizName(quiz) : 
+                quiz.toLowerCase();
+            
+            const setting = guideSettings[normalizedQuiz] || guideSettings[quiz];
+            
+            console.log(`[Index] Processing guide button for quiz: ${quiz} (normalized: ${normalizedQuiz})`);
+            console.log(`[Index] - Found setting:`, setting);
+            
+            if (setting && setting.enabled && setting.url) {
+                btn.href = setting.url;
+                btn.target = '_blank';
+                btn.rel = 'noopener noreferrer';
+                btn.style.display = 'block';
+                btn.setAttribute('data-guide-url', setting.url);
+                btn.setAttribute('data-guide-enabled', 'true');
+                console.log(`[Index] - Enabled guide button: ${setting.url}`);
+            } else {
+                // Hide the button if no valid URL or not enabled
+                btn.style.display = 'none';
+                btn.removeAttribute('href');
+                btn.removeAttribute('data-guide-url');
+                btn.removeAttribute('data-guide-enabled');
+                console.log(`[Index] - Disabled guide button (no valid setting)`);
+            }
+        });
+        
+        console.log(`[Index] Guide button configuration complete (source: ${settingsSource})`);
     }
 
     // Debug helper method to check quiz name normalization
@@ -1101,6 +1135,73 @@ window.forceRefreshQuizStatus = async () => {
         
     } catch (error) {
         console.error('Error during force refresh:', error);
+    }
+};
+
+// Add a comprehensive guide button debugging function
+window.debugGuideButtons = async () => {
+    console.log('=== GUIDE BUTTON DEBUG ===');
+    
+    try {
+        // Check localStorage
+        console.log('1. Checking localStorage...');
+        const cachedSettings = localStorage.getItem('guideSettings');
+        if (cachedSettings) {
+            const parsed = JSON.parse(cachedSettings);
+            console.log('   - Found cached settings:', parsed);
+            console.log(`   - Number of cached guides: ${Object.keys(parsed).length}`);
+        } else {
+            console.log('   - No cached settings found (normal in incognito mode)');
+        }
+        
+        // Check API
+        console.log('2. Checking API...');
+        if (window.indexPage && window.indexPage.apiService) {
+            try {
+                const apiResponse = await window.indexPage.apiService.fetchGuideSettings();
+                console.log('   - API response:', apiResponse);
+                if (apiResponse && apiResponse.success && apiResponse.data) {
+                    console.log(`   - Number of API guides: ${Object.keys(apiResponse.data).length}`);
+                    Object.entries(apiResponse.data).forEach(([quiz, setting]) => {
+                        console.log(`   - ${quiz}: enabled=${setting.enabled}, url=${setting.url}`);
+                    });
+                } else {
+                    console.log('   - API response was not successful or had no data');
+                }
+            } catch (apiError) {
+                console.error('   - API error:', apiError);
+            }
+        } else {
+            console.error('   - IndexPage or APIService not available');
+        }
+        
+        // Check DOM elements
+        console.log('3. Checking DOM elements...');
+        const guideButtons = document.querySelectorAll('.quiz-guide-button');
+        console.log(`   - Found ${guideButtons.length} guide buttons`);
+        
+        guideButtons.forEach((btn, index) => {
+            const quiz = btn.getAttribute('data-quiz');
+            const url = btn.getAttribute('data-guide-url');
+            const enabled = btn.getAttribute('data-guide-enabled');
+            const href = btn.href;
+            const display = btn.style.display;
+            const visible = display !== 'none';
+            
+            console.log(`   - Button ${index + 1}: quiz=${quiz}, visible=${visible}, href=${href}, url=${url}, enabled=${enabled}`);
+        });
+        
+        // Force reload guide settings
+        console.log('4. Force reloading guide settings...');
+        if (window.indexPage) {
+            await window.indexPage.loadGuideSettingsAndAddButtons();
+            console.log('   - Guide settings reloaded');
+        }
+        
+        console.log('=== GUIDE BUTTON DEBUG COMPLETE ===');
+        
+    } catch (error) {
+        console.error('Error during guide button debug:', error);
     }
 };
 

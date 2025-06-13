@@ -2046,8 +2046,8 @@ export class APIService {
             const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
             
             try {
-                // Make the API request with the shorter timeout
-                const response = await this.fetchWithAuth(`${this.baseUrl}/guide-settings`, {
+                // Use the public endpoint that doesn't require authentication
+                const response = await fetch(`${this.baseUrl}/public/guide-settings`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
@@ -2058,21 +2058,26 @@ export class APIService {
                 // Clear timeout since request completed
                 clearTimeout(timeoutId);
                 
-                console.log('[API] Raw guide settings response:', response);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
                 
-                if (response && response.success) {
+                const data = await response.json();
+                console.log('[API] Raw guide settings response:', data);
+                
+                if (data && data.success) {
                     // Log detailed guide settings information
                     console.log('[API] Guide settings response details:', {
-                        success: response.success,
-                        hasData: !!response.data,
-                        dataType: typeof response.data,
-                        numSettings: Object.keys(response.data || {}).length,
-                        settings: response.data
+                        success: data.success,
+                        hasData: !!data.data,
+                        dataType: typeof data.data,
+                        numSettings: Object.keys(data.data || {}).length,
+                        settings: data.data
                     });
                     
                     // Validate each guide setting
-                    if (response.data && typeof response.data === 'object') {
-                        Object.entries(response.data).forEach(([quiz, setting]) => {
+                    if (data.data && typeof data.data === 'object') {
+                        Object.entries(data.data).forEach(([quiz, setting]) => {
                             console.log(`[API] Guide setting for ${quiz}:`, {
                                 hasUrl: !!setting?.url,
                                 url: setting?.url,
@@ -2082,21 +2087,21 @@ export class APIService {
                         });
                     }
                     
-                    // Save to localStorage for backup
+                    // Save to localStorage for backup (if possible)
                     try {
-                        localStorage.setItem('guideSettings', JSON.stringify(response.data || {}));
+                        localStorage.setItem('guideSettings', JSON.stringify(data.data || {}));
                         console.log('[API] Saved guide settings to localStorage');
                     } catch (e) {
-                        console.warn('[API] Error saving guide settings to localStorage:', e);
+                        console.warn('[API] Error saving guide settings to localStorage (possibly incognito mode):', e);
                     }
                     
                     return {
                         success: true,
-                        data: response.data || {}
+                        data: data.data || {}
                     };
                 }
                 
-                throw new Error(response?.message || 'Failed to fetch guide settings');
+                throw new Error(data?.message || 'Failed to fetch guide settings');
             } catch (apiError) {
                 // Clear timeout in case of error
                 clearTimeout(timeoutId);
@@ -2120,6 +2125,7 @@ export class APIService {
                 }
                 
                 // Return empty settings if all fallbacks fail
+                console.log('[API] All fallbacks failed, returning empty guide settings');
                 return {
                     success: true,
                     data: {},

@@ -160,4 +160,63 @@ router.get('/guide-settings', auth, async (req, res) => {
             message: 'Failed to fetch guide settings'
         });
     }
+});
+
+// Public endpoint for guide settings (no authentication required)
+router.get('/public/guide-settings', async (req, res) => {
+    try {
+        console.log(`[API] Fetching all guide settings (public endpoint)`);
+        
+        // Get guide settings from database
+        const settings = await Setting.findOne({ key: 'guideSettings' });
+        console.log('[API] Raw settings from database (public):', settings);
+        
+        if (!settings || !settings.value) {
+            console.log('[API] No guide settings found in database (public)');
+            return res.json({
+                success: true,
+                data: {}
+            });
+        }
+        
+        // Filter out any invalid or disabled guide settings
+        const validSettings = {};
+        Object.entries(settings.value).forEach(([quiz, setting]) => {
+            // Log each setting for debugging
+            console.log(`[API] Processing guide setting for ${quiz} (public):`, {
+                setting,
+                hasUrl: !!(setting && setting.url),
+                urlValid: !!(setting && setting.url && setting.url.match(/^https?:\/\/.+/)),
+                enabled: !!(setting && setting.enabled)
+            });
+            
+            // Only include settings that have a valid URL and are enabled
+            if (setting && 
+                setting.url && 
+                setting.url.trim() && 
+                setting.url.match(/^https?:\/\/.+/) && 
+                setting.enabled === true) {
+                validSettings[quiz] = {
+                    url: setting.url.trim(),
+                    enabled: true
+                };
+            } else {
+                console.log(`[API] Excluding invalid guide setting for ${quiz} (public)`);
+            }
+        });
+        
+        console.log(`[API] Found ${Object.keys(validSettings).length} valid guide settings (public):`, validSettings);
+        
+        // Return all valid guide settings
+        res.json({
+            success: true,
+            data: validSettings
+        });
+    } catch (error) {
+        console.error('Error fetching guide settings (public):', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch guide settings'
+        });
+    }
 }); 
