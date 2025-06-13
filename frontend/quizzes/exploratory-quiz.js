@@ -42,9 +42,9 @@ export class ExploratoryQuiz extends BaseQuiz {
         };
 
         // Load scenarios from our data file
-        this.basicScenarios = exploratoryScenarios.basic;
-        this.intermediateScenarios = exploratoryScenarios.intermediate;
-        this.advancedScenarios = exploratoryScenarios.advanced;
+        this.basicScenarios = exploratoryTestingScenarios.basic;
+        this.intermediateScenarios = exploratoryTestingScenarios.intermediate;
+        this.advancedScenarios = exploratoryTestingScenarios.advanced;
 
         // Initialize elements
         this.gameScreen = document.getElementById('game-screen');
