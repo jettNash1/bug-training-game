@@ -722,7 +722,18 @@ class IndexPage {
                 console.log(`[Index] Available guide for ${quiz}:`, settings);
             });
             
-            // Simple approach: For each guide setting, find the matching button and set its href
+            // First, store all existing guide button states
+            const guideButtonStates = new Map();
+            document.querySelectorAll('.quiz-guide-button').forEach(button => {
+                guideButtonStates.set(button, {
+                    href: button.href,
+                    dataGuideUrl: button.getAttribute('data-guide-url'),
+                    dataGuideEnabled: button.getAttribute('data-guide-enabled'),
+                    display: button.style.display
+                });
+            });
+            
+            // Then update buttons with new settings
             Object.entries(response.data || {}).forEach(([quizName, guideSetting]) => {
                 if (guideSetting && guideSetting.enabled && guideSetting.url) {
                     // Find the guide button with matching data-quiz attribute
@@ -733,9 +744,23 @@ class IndexPage {
                         guideButton.target = '_blank';
                         guideButton.rel = 'noopener noreferrer';
                         guideButton.style.display = 'block';
+                        guideButton.setAttribute('data-guide-url', guideSetting.url);
+                        guideButton.setAttribute('data-guide-enabled', 'true');
                     } else {
                         console.warn(`[Index] Could not find guide button for quiz: ${quizName}`);
                     }
+                }
+            });
+            
+            // Restore states for buttons that weren't updated
+            document.querySelectorAll('.quiz-guide-button').forEach(button => {
+                const savedState = guideButtonStates.get(button);
+                if (savedState && !button.href) {
+                    // Only restore if the button hasn't been updated with new settings
+                    button.href = savedState.href;
+                    if (savedState.dataGuideUrl) button.setAttribute('data-guide-url', savedState.dataGuideUrl);
+                    if (savedState.dataGuideEnabled) button.setAttribute('data-guide-enabled', savedState.dataGuideEnabled);
+                    button.style.display = savedState.display;
                 }
             });
             
