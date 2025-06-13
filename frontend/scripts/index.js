@@ -254,11 +254,12 @@ class IndexPage {
             console.log('[Index] Initialization complete');
 
             // Add visibilitychange listener to update guide buttons when returning to tab
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible' && window.indexPage) {
-                    window.indexPage.loadGuideSettingsAndAddButtons();
-                }
-            });
+            // Commented out to prevent auto-refresh or restoration on tab return
+            // document.addEventListener('visibilitychange', () => {
+            //     if (document.visibilityState === 'visible' && window.indexPage) {
+            //         window.indexPage.loadGuideSettingsAndAddButtons();
+            //     }
+            // });
         } catch (error) {
             console.error('[Index] Error during initialization:', error);
             this.hideLoadingOverlay();
@@ -915,11 +916,12 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('[Index] Initialization complete');
 
     // Add visibilitychange listener to update guide buttons when returning to tab
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && window.indexPage) {
-            window.indexPage.loadGuideSettingsAndAddButtons();
-        }
-    });
+    // Commented out to prevent auto-refresh or restoration on tab return
+    // document.addEventListener('visibilitychange', () => {
+    //     if (document.visibilityState === 'visible' && window.indexPage) {
+    //         window.indexPage.loadGuideSettingsAndAddButtons();
+    //     }
+    // });
 });
 
 // Expose handleLogout to the window object
@@ -971,12 +973,13 @@ function restoreGuideButtonHrefs() {
     });
 }
 
-window.addEventListener('focus', restoreGuideButtonHrefs);
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        restoreGuideButtonHrefs();
-    }
-});
-window.addEventListener('pageshow', () => {
-    restoreGuideButtonHrefs();
-}); 
+// Commented out to prevent auto-refresh or restoration on tab return
+// window.addEventListener('focus', restoreGuideButtonHrefs);
+// document.addEventListener('visibilitychange', () => {
+//     if (document.visibilityState === 'visible') {
+//         restoreGuideButtonHrefs();
+//     }
+// });
+// window.addEventListener('pageshow', () => {
+//     restoreGuideButtonHrefs();
+// }); 
