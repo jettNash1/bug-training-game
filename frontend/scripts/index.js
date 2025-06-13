@@ -722,18 +722,10 @@ class IndexPage {
                 console.log(`[Index] Available guide for ${quiz}:`, settings);
             });
             
-            // First, store all existing guide button states
-            const guideButtonStates = new Map();
-            document.querySelectorAll('.quiz-guide-button').forEach(button => {
-                guideButtonStates.set(button, {
-                    href: button.href,
-                    dataGuideUrl: button.getAttribute('data-guide-url'),
-                    dataGuideEnabled: button.getAttribute('data-guide-enabled'),
-                    display: button.style.display
-                });
-            });
+            // Get all guide buttons once
+            const guideButtons = document.querySelectorAll('.quiz-guide-button');
             
-            // Then update buttons with new settings
+            // Update buttons with new settings
             Object.entries(response.data || {}).forEach(([quizName, guideSetting]) => {
                 if (guideSetting && guideSetting.enabled && guideSetting.url) {
                     // Find the guide button with matching data-quiz attribute
@@ -749,18 +741,6 @@ class IndexPage {
                     } else {
                         console.warn(`[Index] Could not find guide button for quiz: ${quizName}`);
                     }
-                }
-            });
-            
-            // Restore states for buttons that weren't updated
-            document.querySelectorAll('.quiz-guide-button').forEach(button => {
-                const savedState = guideButtonStates.get(button);
-                if (savedState && !button.href) {
-                    // Only restore if the button hasn't been updated with new settings
-                    button.href = savedState.href;
-                    if (savedState.dataGuideUrl) button.setAttribute('data-guide-url', savedState.dataGuideUrl);
-                    if (savedState.dataGuideEnabled) button.setAttribute('data-guide-enabled', savedState.dataGuideEnabled);
-                    button.style.display = savedState.display;
                 }
             });
             
