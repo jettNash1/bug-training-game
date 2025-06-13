@@ -390,32 +390,20 @@ class IndexPage {
                 
         this.quizItems.forEach(item => {
             const quizId = item.dataset.quiz;
-            if (!quizId) {
-                console.warn('[Index] Quiz item missing data-quiz attribute');
-                return;
-            }
-            
+            if (!quizId) return;
+
             const progressElement = document.getElementById(`${quizId}-progress`);
-            if (!progressElement) {
-                console.warn(`[Index] Progress element not found for quiz: ${quizId}`);
-                return;
-            }
-            
-            // Use normalized quiz name from the service for consistent comparison
-            const normalizedQuizId = this.quizProgressService.normalizeQuizName(quizId);
-            console.log(`[Index] Looking for quiz score for ${normalizedQuizId}`);
-            
-            // Find score with accurate matching using the service
-            const quizScore = this.quizScores.find(score => 
-                this.quizProgressService.normalizeQuizName(score.quizName) === normalizedQuizId
+            if (!progressElement) return;
+
+            // Find the score object for this quiz
+            const quizScore = this.quizScores.find(score =>
+                this.quizProgressService.normalizeQuizName(score.quizName) === this.quizProgressService.normalizeQuizName(quizId)
             );
-            
-            // Update progress display
+
             const questionsAnswered = quizScore?.questionsAnswered || 0;
             const score = quizScore?.score || 0;
             const scorePercentage = quizScore?.scorePercentage || 0;
-            
-            // Determine quiz status and styling
+
             let statusClass = 'not-started';
             let progressText = '';
 
@@ -427,38 +415,28 @@ class IndexPage {
                 } else {
                     statusClass = 'completed-partial';
                 }
-                console.log(`[Index] ${normalizedQuizId}: questionsAnswered=15, effectiveScore=${effectiveScore}, statusClass=${statusClass}`);
             } else if (questionsAnswered > 0) {
                 statusClass = 'in-progress';
                 progressText = `${questionsAnswered}/15`;
-                console.log(`[Index] ${normalizedQuizId}: questionsAnswered=${questionsAnswered}, statusClass=in-progress`);
             } else {
                 statusClass = 'not-started';
                 progressText = '';
-                console.log(`[Index] ${normalizedQuizId}: questionsAnswered=0, statusClass=not-started`);
             }
-            
-            // Update the quiz item's status class
+
+            // Remove all status classes from .quiz-item
             item.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
+            // Add the new status class to .quiz-item
             item.classList.add(statusClass);
-            
-            // Also update the wrapper's status class (this controls the visible background)
+
+            // (Optional) Remove status classes from wrapper if you were adding them before
             const wrapper = item.closest('.quiz-item-wrapper');
             if (wrapper) {
                 wrapper.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
-                wrapper.classList.add(statusClass);
-                console.log(`[Index] Quiz ${normalizedQuizId}: Applied status class '${statusClass}' to wrapper`);
-            } else {
-                console.warn(`[Index] Quiz ${normalizedQuizId}: Could not find wrapper element`);
             }
-            
+
             // Update progress text
             progressElement.textContent = progressText;
-            if (!quizScore) {
-                progressElement.setAttribute('style', 'display: none !important;');
-            } else {
-                progressElement.style.display = progressText ? '' : 'none';
-            }
+            progressElement.style.display = progressText ? '' : 'none';
         });
         // Ensure guide buttons are updated after progress update
         await this.loadGuideSettingsAndAddButtons();
