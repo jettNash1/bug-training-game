@@ -864,11 +864,10 @@ class IndexPage {
                 if (parentWrapper) {
                     const guideButton = parentWrapper.querySelector('.quiz-guide-button');
                     if (guideButton) {
-                        // Reset guide button to default state (no longer reset href since we use click handlers)
+                        // Only reset display state, preserve href and other attributes
                         guideButton.style.display = 'none';
                         guideButton.removeAttribute('data-guide-url');
                         guideButton.removeAttribute('data-guide-enabled');
-                        guideButton.removeAttribute('href'); // Remove href to prevent URL/# showing
                     }
                 }
             });
