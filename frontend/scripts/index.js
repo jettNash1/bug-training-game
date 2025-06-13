@@ -67,43 +67,6 @@ function normalizeQuizName(quizName) {
     return normalized;
 }
 
-function autoRefreshIndexOnFocus() {
-    let wasInactive = false;
-    
-    // Listen for page visibility changes
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-            wasInactive = true;
-        } else if (document.visibilityState === 'visible' && wasInactive) {
-            // Page is now visible after being inactive
-            console.log('[Index] Page became visible after being inactive, refreshing quiz progress');
-            wasInactive = false;
-            
-            // Refresh the page data when coming back to the index
-            if (window.indexPage) {
-                window.indexPage.refreshAllQuizProgress();
-            }
-        }
-    });
-    
-    // Also check for window focus events as a backup
-    window.addEventListener('focus', () => {
-        if (wasInactive) {
-            console.log('[Index] Window regained focus after being inactive, refreshing quiz progress');
-            wasInactive = false;
-            
-            // Refresh the page data when coming back to the index
-            if (window.indexPage) {
-                window.indexPage.refreshAllQuizProgress();
-            }
-        }
-    });
-    
-    window.addEventListener('blur', () => {
-        wasInactive = true;
-    });
-}
-
 function clearAllQuizProgress() {
     const username = localStorage.getItem('username');
     if (!username) return false;
@@ -911,13 +874,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     indexPage = new IndexPage();
     
-    // Store in window for global access and auto-refresh functionality
+    // Store in window for global access
     window.indexPage = indexPage;
     
-    // Initialize auto-refresh functionality
-    autoRefreshIndexOnFocus();
-    
-    console.log('[Index] Initialization complete, auto-refresh for quiz progress is active');
+    console.log('[Index] Initialization complete');
 });
 
 // Expose handleLogout to the window object
