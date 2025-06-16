@@ -223,7 +223,9 @@ class BadgesPage {
 
     createBadgeElement(badge) {
         const badgeElement = document.createElement('div');
-        badgeElement.className = `badge-card ${badge.earned ? '' : 'locked'}`;
+        // Add special 'perfect' class for 100% scores
+        const isPerfectScore = badge.earned && badge.scorePercentage === 100;
+        badgeElement.className = `badge-card ${badge.earned ? '' : 'locked'} ${isPerfectScore ? 'perfect' : ''}`;
         badgeElement.id = `badge-${badge.id}`;
         
         // Format completion date if available
@@ -243,7 +245,13 @@ class BadgesPage {
         // Format score information
         let scoreInfoHtml = '';
         if (badge.earned && badge.scorePercentage !== undefined) {
-            scoreInfoHtml = `<div class="badge-score">Score: ${badge.scorePercentage}%</div>`;
+            if (badge.scorePercentage === 100) {
+                scoreInfoHtml = `<div class="badge-score perfect-score">
+                    <i class="fa-solid fa-crown"></i> PERFECT 100% <i class="fa-solid fa-crown"></i>
+                </div>`;
+            } else {
+                scoreInfoHtml = `<div class="badge-score">Score: ${badge.scorePercentage}%</div>`;
+            }
         } else if (!badge.earned && badge.scorePercentage !== undefined && badge.scorePercentage > 0) {
             scoreInfoHtml = `<div class="badge-score-progress">Current: ${badge.scorePercentage}% (Need: 80%)</div>`;
         } else if (!badge.earned) {
