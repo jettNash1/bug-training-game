@@ -99,7 +99,7 @@ class BadgesPage {
 
             // Load badges data with timeout
             const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('Loading badges timed out')), 10000);
+                setTimeout(() => reject(new Error('Loading badges timed out')), 30000); // Increased to 30 seconds
             });
 
             const loadBadgesPromise = this.loadBadges();
@@ -152,15 +152,29 @@ class BadgesPage {
     async loadBadges() {
         try {
             console.log('Starting to load badges...');
-            // Get the user's badges
-            const badgesData = await this.badgeService.getUserBadges();
-            console.log('Badges data received:', badgesData);
+            
+            // Try to get the user's badges with error handling
+            let badgesData;
+            try {
+                badgesData = await this.badgeService.getUserBadges();
+                console.log('Badges data received:', badgesData);
+            } catch (badgeError) {
+                console.error('Failed to load badges data:', badgeError);
+                // Provide fallback data structure
+                badgesData = {
+                    badges: [],
+                    totalBadges: 0,
+                    earnedCount: 0
+                };
+                // Show a warning but don't fail completely
+                this.showError('Some badge data could not be loaded. Please refresh the page to try again.');
+            }
             
             if (!badgesData || !badgesData.badges) {
                 throw new Error('Invalid badges data received');
             }
             
-            // Preload all badge images
+            // Preload all badge images (non-blocking)
             badgesData.badges.forEach(badge => {
                 if (badge.imagePath) {
                     this.preloadImage(badge.imagePath);
@@ -196,8 +210,13 @@ class BadgesPage {
             
             // Add each badge to the grid
             badgesData.badges.forEach(badge => {
-                const badgeElement = this.createBadgeElement(badge);
-                badgesGrid.appendChild(badgeElement);
+                try {
+                    const badgeElement = this.createBadgeElement(badge);
+                    badgesGrid.appendChild(badgeElement);
+                } catch (badgeElementError) {
+                    console.error('Failed to create badge element:', badgeElementError, badge);
+                    // Continue with other badges
+                }
             });
             
             // If no badges, show a message

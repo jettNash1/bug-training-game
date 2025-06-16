@@ -88,9 +88,14 @@ export class BadgeService {
 
     async getUserBadges() {
         try {
-            // 1. Grab user data
+            // 1. Grab user data with timeout
             console.log('Fetching user data...');
-            const userData = await this.apiService.getUserData();
+            const userDataPromise = this.apiService.getUserData();
+            const userDataTimeout = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('User data request timed out')), 15000)
+            );
+            
+            const userData = await Promise.race([userDataPromise, userDataTimeout]);
             if (!userData.success || !userData.data) {
                 throw new Error('Failed to load user data');
             }
@@ -122,7 +127,12 @@ export class BadgeService {
             if (allQuizzes.length < 10) { // Assuming there should be at least 10 quizzes
                 console.log('Using fallback quiz list API...');
                 try {
-                    const quizListResponse = await this.apiService.fetchWithAuth('quizzes/list');
+                    const quizListPromise = this.apiService.fetchWithAuth('quizzes/list');
+                    const quizListTimeout = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Quiz list request timed out')), 10000)
+                    );
+                    
+                    const quizListResponse = await Promise.race([quizListPromise, quizListTimeout]);
                     if (quizListResponse.success && quizListResponse.data) {
                         allQuizzes = quizListResponse.data
                             .filter(quiz => !quiz.hidden) // Filter out hidden quizzes
