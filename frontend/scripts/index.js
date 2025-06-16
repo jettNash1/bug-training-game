@@ -373,6 +373,13 @@ class IndexPage {
                     
                     // Check if this quiz is hidden
                     const isHidden = hiddenQuizzes.includes(lookupId) || hiddenQuizzes.includes(quizId);
+                    console.log(`[Index] Checking visibility for ${quizId} → ${lookupId}:`, {
+                        hiddenQuizzes,
+                        lookupId,
+                        quizId,
+                        isHidden
+                    });
+                    
                     if (isHidden) {
                         console.log(`[Index] Skipping hidden quiz: ${quizId} → ${lookupId}`);
                         // Hide the quiz item in the DOM
@@ -626,17 +633,21 @@ class IndexPage {
         
         document.querySelectorAll('.category-card').forEach(category => {
             const quizItems = category.querySelectorAll('.quiz-item:not(.locked-quiz)');
-            const visibleQuizItems = Array.from(quizItems).filter(item => 
-                !item.classList.contains('quiz-hidden') && 
-                !item.closest('.quiz-item-wrapper')?.classList.contains('quiz-hidden') &&
-                item.style.display !== 'none' &&
-                !item.closest('.quiz-item-wrapper')?.style.display === 'none'
-            );
+            const visibleQuizItems = Array.from(quizItems).filter(item => {
+                const wrapper = item.closest('.quiz-item-wrapper');
+                const isHidden = item.classList.contains('quiz-hidden') || 
+                               wrapper?.classList.contains('quiz-hidden') ||
+                               item.style.display === 'none' ||
+                               wrapper?.style.display === 'none';
+                return !isHidden;
+            });
             const progressBar = category.querySelector('.progress-fill');
             const progressText = category.querySelector('.progress-text');
             
             // Get category name for logging
             const categoryName = category.querySelector('.category-header')?.textContent?.trim() || 'Unknown Category';
+            
+            console.log(`[Index] Category ${categoryName}: ${quizItems.length} total quizzes, ${visibleQuizItems.length} visible quizzes`);
             
             // Hide the category if there are no visible quizzes
             if (visibleQuizItems.length === 0) {
