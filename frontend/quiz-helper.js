@@ -1764,20 +1764,60 @@ export class BaseQuiz {
      * @param {string} optionText - The option text for accessibility
      */
     enhanceOptionInteractivity(optionDiv, radioInput, optionText) {
+        // Add a processing flag to prevent multiple simultaneous selections
+        let isProcessing = false;
+        
+        // Helper function to select this option
+        const selectOption = () => {
+            if (isProcessing || radioInput.checked) return;
+            
+            isProcessing = true;
+            
+            // Remove selected class and uncheck all other options
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+                const input = opt.querySelector('input[type="radio"]');
+                if (input && input !== radioInput) {
+                    input.checked = false;
+                }
+            });
+            
+            // Select this option
+            radioInput.checked = true;
+            optionDiv.classList.add('selected');
+            
+            // Trigger change event for consistency
+            radioInput.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            // Reset processing flag after a short delay
+            setTimeout(() => {
+                isProcessing = false;
+            }, 50);
+        };
+        
         // Add click handler to the entire option div for better responsiveness
         optionDiv.addEventListener('click', (e) => {
-            // Prevent double-clicking and ensure only one selection
-            if (!radioInput.checked) {
+            e.preventDefault();
+            e.stopPropagation();
+            selectOption();
+        });
+        
+        // Also add click handler to the radio input itself
+        radioInput.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectOption();
+        });
+        
+        // Add change handler to the radio input for native behavior
+        radioInput.addEventListener('change', (e) => {
+            if (radioInput.checked && !isProcessing) {
                 // Remove selected class from all other options
-                document.querySelectorAll('.option.selected').forEach(opt => {
-                    opt.classList.remove('selected');
+                document.querySelectorAll('.option').forEach(opt => {
+                    if (opt !== optionDiv) {
+                        opt.classList.remove('selected');
+                    }
                 });
-                
-                radioInput.checked = true;
                 optionDiv.classList.add('selected');
-                
-                // Trigger change event for consistency
-                radioInput.dispatchEvent(new Event('change', { bubbles: true }));
             }
         });
         
@@ -1785,16 +1825,7 @@ export class BaseQuiz {
         optionDiv.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                if (!radioInput.checked) {
-                    // Remove selected class from all other options
-                    document.querySelectorAll('.option.selected').forEach(opt => {
-                        opt.classList.remove('selected');
-                    });
-                    
-                    radioInput.checked = true;
-                    optionDiv.classList.add('selected');
-                    radioInput.dispatchEvent(new Event('change', { bubbles: true }));
-                }
+                selectOption();
             }
         });
         

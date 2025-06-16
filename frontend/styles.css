@@ -770,8 +770,6 @@ body {
     background: var(--background-color);
     /* Ensure the entire option area is clickable */
     min-height: 60px;
-    display: flex;
-    align-items: center;
 }
 
 .option:hover {
@@ -806,10 +804,6 @@ body {
     /* Ensure proper click area */
     position: relative;
     z-index: 2;
-    /* Ensure the label covers the full clickable area */
-    min-height: 100%;
-    display: flex;
-    align-items: center;
 }
 
 .option label::before {
