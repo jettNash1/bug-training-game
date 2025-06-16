@@ -792,7 +792,8 @@ body {
 }
 
 .option label {
-    display: block;
+    display: flex;
+    align-items: center;
     padding-left: 2.5rem;
     cursor: pointer;
     font-size: 1.1rem;
@@ -800,6 +801,7 @@ body {
     user-select: none;
     /* Make label fill available space and be clickable */
     width: 100%;
+    min-height: 30px;
     line-height: 1.4;
     /* Ensure proper click area */
     position: relative;
