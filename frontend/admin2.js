@@ -2294,6 +2294,10 @@ export class Admin2Dashboard {
                         quizName: quizType,
                         quizLower,
                         hiddenQuizzes,
+                        hiddenQuizzesType: typeof hiddenQuizzes,
+                        hiddenQuizzesLength: hiddenQuizzes?.length,
+                        includesOriginal: hiddenQuizzes.includes(quizType),
+                        includesLowercase: hiddenQuizzes.includes(quizLower),
                         isVisible
                     });
                 
@@ -2538,7 +2542,14 @@ export class Admin2Dashboard {
                             messageOverlay.remove();
                             // Refresh the user data to see the updated visibility
                             console.log('Refreshing user data after visibility change...');
+                            // Add a small delay to ensure backend has processed the change
+                            await new Promise(resolve => setTimeout(resolve, 500));
                             await this.loadUsers();
+                            // Re-open the user details to see the updated visibility
+                            console.log('Re-opening user details to show updated visibility...');
+                            setTimeout(() => {
+                                this.showUserDetails(username);
+                            }, 100);
                         }, 2000);
                     } catch (error) {
                         console.error('Failed to update quiz visibility:', error);

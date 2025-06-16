@@ -341,16 +341,23 @@ class IndexPage {
             const quizProgress = progressResult.data;
             console.log('[Index] Loaded progress for', Object.keys(quizProgress).length, 'quizzes');
             
-            // Get quiz results separately from API
+            // Get quiz results and hidden quizzes from API
             let quizResults = [];
+            let hiddenQuizzes = [];
             try {
                 const userData = await this.apiService.getUserData();
-                if (userData.success && userData.data && userData.data.quizResults) {
-                    quizResults = userData.data.quizResults;
-                    console.log('[Index] Loaded', quizResults.length, 'quiz results');
+                if (userData.success && userData.data) {
+                    if (userData.data.quizResults) {
+                        quizResults = userData.data.quizResults;
+                        console.log('[Index] Loaded', quizResults.length, 'quiz results');
+                    }
+                    if (userData.data.hiddenQuizzes) {
+                        hiddenQuizzes = userData.data.hiddenQuizzes;
+                        console.log('[Index] Loaded', hiddenQuizzes.length, 'hidden quizzes:', hiddenQuizzes);
+                    }
                 }
             } catch (error) {
-                console.warn('[Index] Error loading quiz results:', error);
+                console.warn('[Index] Error loading user data:', error);
             }
             
             console.log('[Index] Final quiz progress after all checks:', quizProgress);
@@ -364,7 +371,23 @@ class IndexPage {
                     // Normalize the quizId consistently using the service
                     const lookupId = this.quizProgressService.normalizeQuizName(quizId);
                     
-                    console.log(`[Index] Processing quiz data for: ${quizId} → ${lookupId}`);
+                    // Check if this quiz is hidden
+                    const isHidden = hiddenQuizzes.includes(lookupId) || hiddenQuizzes.includes(quizId);
+                    if (isHidden) {
+                        console.log(`[Index] Skipping hidden quiz: ${quizId} → ${lookupId}`);
+                        // Hide the quiz item in the DOM
+                        const wrapper = item.closest('.quiz-item-wrapper');
+                        if (wrapper) {
+                            wrapper.style.display = 'none';
+                            wrapper.classList.add('quiz-hidden');
+                        } else {
+                            item.style.display = 'none';
+                            item.classList.add('quiz-hidden');
+                        }
+                        return null;
+                    }
+                    
+                    console.log(`[Index] Processing visible quiz data for: ${quizId} → ${lookupId}`);
                     
                     // First check for quiz progress
                     const progress = quizProgress[lookupId];
@@ -603,7 +626,12 @@ class IndexPage {
         
         document.querySelectorAll('.category-card').forEach(category => {
             const quizItems = category.querySelectorAll('.quiz-item:not(.locked-quiz)');
-            const visibleQuizItems = Array.from(quizItems).filter(item => item.classList.contains('quiz-hidden') === false);
+            const visibleQuizItems = Array.from(quizItems).filter(item => 
+                !item.classList.contains('quiz-hidden') && 
+                !item.closest('.quiz-item-wrapper')?.classList.contains('quiz-hidden') &&
+                item.style.display !== 'none' &&
+                !item.closest('.quiz-item-wrapper')?.style.display === 'none'
+            );
             const progressBar = category.querySelector('.progress-fill');
             const progressText = category.querySelector('.progress-text');
             
@@ -1006,11 +1034,30 @@ class IndexPage {
         console.groupEnd();
     }
 
+    resetQuizVisibility() {
+        console.log('[Index] Resetting quiz visibility - showing all quizzes');
+        
+        // Show all quiz items and remove hidden classes
+        this.quizItems.forEach(item => {
+            const wrapper = item.closest('.quiz-item-wrapper');
+            if (wrapper) {
+                wrapper.style.display = '';
+                wrapper.classList.remove('quiz-hidden');
+            } else {
+                item.style.display = '';
+                item.classList.remove('quiz-hidden');
+            }
+        });
+    }
+
     async refreshAllQuizProgress() {
         console.log('[Index] Refreshing all quiz progress');
         
         try {
-            // Update quiz progress
+            // First, reset all quiz visibility (show all quizzes)
+            this.resetQuizVisibility();
+            
+            // Update quiz progress (this will also handle hiding quizzes)
             await this.loadUserProgress();
             this.updateQuizProgress();
             this.updateCategoryProgress();
@@ -1176,6 +1223,45 @@ window.forceRefreshQuizStatus = async () => {
         
     } catch (error) {
         console.error('Error during force refresh:', error);
+    }
+};
+
+// Add a function to debug quiz visibility
+window.debugQuizVisibility = async () => {
+    console.log('=== QUIZ VISIBILITY DEBUG ===');
+    
+    try {
+        // Check user data for hidden quizzes
+        if (window.indexPage && window.indexPage.apiService) {
+            const userData = await window.indexPage.apiService.getUserData();
+            if (userData.success && userData.data && userData.data.hiddenQuizzes) {
+                console.log('Hidden quizzes from API:', userData.data.hiddenQuizzes);
+            } else {
+                console.log('No hidden quizzes found in user data');
+            }
+        }
+        
+        // Check DOM for hidden quiz items
+        const allQuizItems = document.querySelectorAll('.quiz-item');
+        const hiddenQuizItems = document.querySelectorAll('.quiz-item.quiz-hidden, .quiz-item-wrapper.quiz-hidden');
+        
+        console.log(`Total quiz items: ${allQuizItems.length}`);
+        console.log(`Hidden quiz items: ${hiddenQuizItems.length}`);
+        
+        allQuizItems.forEach(item => {
+            const quizId = item.dataset.quiz;
+            const wrapper = item.closest('.quiz-item-wrapper');
+            const isHidden = item.classList.contains('quiz-hidden') || 
+                           wrapper?.classList.contains('quiz-hidden') ||
+                           item.style.display === 'none' ||
+                           wrapper?.style.display === 'none';
+            
+            console.log(`Quiz ${quizId}: ${isHidden ? 'HIDDEN' : 'VISIBLE'}`);
+        });
+        
+        console.log('=== QUIZ VISIBILITY DEBUG COMPLETE ===');
+    } catch (error) {
+        console.error('Error during quiz visibility debug:', error);
     }
 };
 
