@@ -234,13 +234,19 @@ export class BadgeService {
             
             console.log('Deduplicated badges:', finalBadges.map(b => ({ id: b.quizId, name: b.name, earned: b.earned })));
 
-            // Sort badges: completed first, then alphabetically by name
+            // Sort badges: highest progress first, then alphabetically within same progress
             finalBadges.sort((a, b) => {
-                // First sort by completion status
-                if (a.earned && !b.earned) return -1;
-                if (!a.earned && b.earned) return 1;
+                // First sort by score percentage (highest first)
+                if (a.scorePercentage !== b.scorePercentage) {
+                    return b.scorePercentage - a.scorePercentage; // Descending order
+                }
                 
-                // Then sort alphabetically by name
+                // If scores are the same, sort by completion status (earned first)
+                if (a.earned !== b.earned) {
+                    return a.earned ? -1 : 1;
+                }
+                
+                // Finally, sort alphabetically by name
                 return a.name.localeCompare(b.name);
             });
 
