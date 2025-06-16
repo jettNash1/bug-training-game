@@ -187,6 +187,8 @@ export class BadgeService {
             const uniqueBadges = [];
             const normalizedSeenQuizzes = new Map(); // Map normalized ID to original badge
             
+            console.log('Raw badges before deduplication:', badges.map(b => ({ id: b.quizId, name: b.name })));
+            
             badges.forEach(badge => {
                 // Normalize quiz ID for comparison (handle case differences and extra words)
                 let normalizedId = badge.quizId.toLowerCase();
@@ -198,7 +200,11 @@ export class BadgeService {
                     normalizedId = 'cms-testing'; // Normalize all CMS variations
                 } else if (normalizedId.includes('exploratory')) {
                     normalizedId = 'exploratory'; // Normalize all exploratory variations
+                } else if (normalizedId.includes('communication')) {
+                    normalizedId = 'communication'; // Normalize all communication variations
                 }
+                
+                console.log(`Badge ${badge.quizId} normalized to: ${normalizedId}`);
                 
                 // Use the first badge we find for each normalized ID, or replace with earned one
                 if (!normalizedSeenQuizzes.has(normalizedId) || 
@@ -209,6 +215,8 @@ export class BadgeService {
             
             // Convert the Map values to our unique badges array
             const finalBadges = Array.from(normalizedSeenQuizzes.values());
+            
+            console.log('Deduplicated badges:', finalBadges.map(b => ({ id: b.quizId, name: b.name, earned: b.earned })));
 
             // Sort badges: completed first, then alphabetically by name
             finalBadges.sort((a, b) => {
@@ -226,7 +234,7 @@ export class BadgeService {
             console.log('Final badges data:', {
                 total: finalBadges.length,
                 completed: completedCount,
-                badges: finalBadges
+                badges: finalBadges.map(b => ({ id: b.quizId, name: b.name, earned: b.earned }))
             });
 
             return {
