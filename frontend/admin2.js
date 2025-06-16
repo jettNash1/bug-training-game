@@ -2229,9 +2229,18 @@ export class Admin2Dashboard {
                                         quizProgress?.questionsAnswered || 
                                         quizProgress?.questionHistory?.length || 0;
                     const experience = quizResult?.experience || quizProgress?.experience || 0;
-                    const rawScore = quizResult?.score || 0;
-                    // Ensure score is displayed as percentage (convert if it's in decimal format)
-                    const score = rawScore < 1 && rawScore > 0 ? Math.round(rawScore * 100) : Math.round(rawScore);
+                    
+                    // Calculate score from question history if available
+                    let score = 0;
+                    const questionHistory = quizResult?.questionHistory || quizProgress?.questionHistory;
+                    if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
+                        const correctAnswers = questionHistory.filter(q => q.isCorrect).length;
+                        score = Math.round((correctAnswers / questionHistory.length) * 100);
+                    } else {
+                        // Fallback to stored score if no question history available
+                        const rawScore = quizResult?.score || 0;
+                        score = rawScore < 1 && rawScore > 0 ? Math.round(rawScore * 100) : Math.round(rawScore);
+                    }
                     const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
                     
                     const status = questionsAnswered === 15 ? 'Completed' : 
