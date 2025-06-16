@@ -10,7 +10,6 @@ export const testerMindsetScenarios = {
                 text: 'Review all the requirements for the project provided by the client',
                 outcome: 'Excellent! Understanding context is crucial for effective testing.',
                 experience: 15,
-                tool: 'Context Analysis Framework'
             },
             {
                 text: 'Begin extensive exploratory testing sessions to identify potential issues and document findings for immediate stakeholder review',
@@ -39,7 +38,6 @@ export const testerMindsetScenarios = {
                 text: 'Research user needs to gather information on target audiences',
                 outcome: 'Perfect! User-centric thinking is essential for effective testing.',
                 experience: 15,
-                tool: 'User Persona Template'
             },
             {
                 text: 'Apply personal usage patterns and preferences to determine the most likely user behaviours and testing scenarios',
@@ -68,7 +66,6 @@ export const testerMindsetScenarios = {
                 text: 'Document the environment differences to be taken into consideration for test results',
                 outcome: 'Excellent! Understanding environment differences is crucial for testing and can be factored into any results.',
                 experience: 15,
-                tool: 'Environment Comparison Tool'
             },
             {
                 text: 'Proceed with testing while monitoring for any potential environmental impact on test results.',
@@ -97,7 +94,6 @@ export const testerMindsetScenarios = {
                 text: 'Document the issues with steps and results for ease of replication',
                 outcome: 'Perfect! Clear documentation helps developers fix issues efficiently.',
                 experience: 15,
-                tool: 'Issue Documentation Template'
             },
             {
                 text: 'Initiate multiple communication channels including chat messages, emails, and verbal discussions for each discovered issue.',
@@ -126,7 +122,6 @@ export const testerMindsetScenarios = {
                 text: 'Review requirements, create test strategy, and identify risks',
                 outcome: 'Excellent! Thorough preparation leads to effective testing.',
                 experience: 15,
-                tool: 'Test Planning Framework'
             },
             {
                 text: 'Start testing straight away to meet project timeline and deliverables',
@@ -156,7 +151,6 @@ export const testerMindsetScenarios = {
                 text: 'Being competitive is not a characteristic of an Issue Verifcation tester mindset',
                 outcome: 'Correct! being detailed, timely, observant, investigative, impartial, and quality-driven are all characteristics of a tester mindset during Issue Verification not being competitive.',
                 experience: 15,
-                tool: 'Issue Verification Mindset'
             },
             {
                 text: 'Being detailed is not a characteristic of an Issue Verifcation tester mindset',
@@ -195,7 +189,6 @@ export const testerMindsetScenarios = {
                 text: 'It yields mediocre results and less value to clients',
                 outcome: 'Correct! Applying the same mindset to every project and approaching testing in the same manner, no matter the test approach, will likely yield mediocre results and provide less value to clients.',
                 experience: 15,
-                tool: 'Mindset Risk'
             },
             {
                 text: 'It standardizes the testing approach',
@@ -224,7 +217,6 @@ export const testerMindsetScenarios = {
                 text: 'Adopting process driven approach is a characteristic of tester mindset towards exploratory testing',
                 outcome: 'Correct! The exploratory approach is characterised by being less process-driven and more free-form than scripted approaches.',
                 experience: 15,
-                tool: 'Exploratory Testing Mindset'
             },
             {
                 text: 'Being risk aware is a characteristic of a tester mindset towards exploratory testing',
@@ -243,7 +235,6 @@ export const testerMindsetScenarios = {
                 text: 'The client\'s competitors is not a factor to be considered for a new project',
                 outcome: 'Correct! focus should be on understanding the specific project rather than market positioning or competitive analysis.',
                 experience: 15,
-                tool: 'Project Context'
             },
             {
                 text: 'Project scope is not a factor to be considered for a new project',
@@ -272,7 +263,6 @@ export const testerMindsetScenarios = {
                 text: 'The project stand up should be utilised to ask questions and discuss the project with the project manager',
                 outcome: 'Correct! If you are unsure what mindset might be required for a particular project, utilise the project stand up to ask questions and discuss the mindset with the project manager and test team.',
                 experience: 15,
-                tool: 'Project Mindset'
             },
             {
                 text: 'The last projects mindset approach should be followed',
@@ -305,7 +295,6 @@ intermediate: [
                 text: 'Be curious, investigative, and think outside the box',
                 outcome: 'Perfect! Exploratory testing requires creative thinking.',
                 experience: 20,
-                tool: 'Exploratory Testing Guide'
             },
             {
                 text: 'Follow a strictly set out test script to gain the best coverage',
@@ -334,7 +323,6 @@ intermediate: [
                 text: 'Document the issue for client consideration and continue with test cases',
                 outcome: 'Excellent! Balance following scripts while noting other issues.',
                 experience: 20,
-                tool: 'Test Case Management'
             },
             {
                 text: 'Continue with testing as the particular focus is not documented to be covered within the test cases',
@@ -363,7 +351,6 @@ intermediate: [
                 text: 'Stay adaptable and maintain clear communication with the team',
                 outcome: 'Perfect! Flexibility and communication are key for support.',
                 experience: 20,
-                tool: 'Support Communication Template'
             },
             {
                 text: 'Stick to the initial test plan throughout test activities only',
@@ -389,10 +376,9 @@ intermediate: [
         description: 'You identify a potential risk in the project. How do you handle it?',
         options: [
             {
-                text: 'Document the risk and communicate it to stakeholders promptly',
+                text: 'Document the risk and highlight it through the Zoonou chain of command',
                 outcome: 'Excellent! Early risk communication allows better mitigation.',
                 experience: 20,
-                tool: 'Risk Assessment Matrix'
             },
             {
                 text: 'Wait to see the risk identified becomes an issue that could affect the system under test',
@@ -426,7 +412,6 @@ intermediate: [
                 text: 'Use risk-based testing to prioritise areas that are of the most importance to the user and client',
                 outcome: 'Perfect! Prioritising tests based on risk is one of the most efficient approaches.',
                 experience: 20,
-                tool: 'Risk Assessment Matrix'
             },
             {
                 text: 'Execute extensive regression testing protocols while maintaining detailed coverage metrics and trend analysis',
@@ -454,7 +439,6 @@ advanced: [
                 text: 'Alert the incident team with evidence and begin systematic investigation',
                 outcome: 'Excellent! Quick escalation and a systematic approach is crucial.',
                 experience: 25,
-                tool: 'Incident Response Protocol'
             },
             {
                 text: 'Start researching a fix for the bug immediately',
@@ -483,7 +467,6 @@ advanced: [
                 text: 'Review changes, update strategy, and communicate any impact on the project',
                 outcome: 'Perfect! Systematic adaptation ensures continued effectiveness.',
                 experience: 25,
-                tool: 'Strategy Adaptation Framework'
             },
             {
                 text: 'Continue the testing activities outlined in the original strategy to stay in line with initial client expectation',
@@ -512,7 +495,6 @@ advanced: [
                 text: 'Prioritise critical functionality and communicate constraints',
                 outcome: 'Excellent! Risk-based prioritisation maximizes testing value.',
                 experience: 25,
-                tool: 'Test Prioritization Matrix'
             },
             {
                 text: 'Test everything as quick as possible to meet project timeframe deliverables',
@@ -541,7 +523,6 @@ advanced: [
                 text: 'Facilitate discussion to align on best practices and document any agreements',
                 outcome: 'Perfect! Collaborative alignment improves team effectiveness.',
                 experience: 25,
-                tool: 'Test Approach Alignment Guide'
             },
             {
                 text: 'Let each person use their preferred approach to aid in meeting deliverables',
@@ -570,7 +551,6 @@ advanced: [
                 text: 'Present data-driven analysis of risks and quality impacts',
                 outcome: 'Excellent! Data-driven advocacy helps maintain quality.',
                 experience: 25,
-                tool: 'Quality Impact Analysis'
             },
             {
                 text: 'Accept the reduced timeline and continue with testing activities',

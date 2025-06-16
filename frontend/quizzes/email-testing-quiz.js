@@ -449,7 +449,12 @@ export class EmailTestingQuiz extends BaseQuiz {
             );
 
             // Mark selected answer as correct or incorrect
-            selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
+            // If timed out, always mark as incorrect regardless of the randomly selected answer
+            if (timedOut) {
+                selectedAnswer.isCorrect = false;
+            } else {
+                selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
+            }
             
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
@@ -483,7 +488,7 @@ export class EmailTestingQuiz extends BaseQuiz {
                 // Add timed out message if applicable
                 if (timedOut) {
                     outcomeHeader = 'Time\'s Up!';
-                    outcomeMessage = 'You ran out of time. A random answer was selected.';
+                    outcomeMessage = 'You ran out of time. This question is marked as incorrect.';
                 }
                 
                 outcomeContent.innerHTML = `
