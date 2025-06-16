@@ -2123,6 +2123,50 @@ export class Admin2Dashboard {
     }
 
     // Override the parent showUserDetails method for a tabbed interface like standard admin
+    async fetchAndUpdateQuizScore(username, quizType, quizCard) {
+        try {
+            console.log(`[Admin] Fetching detailed question history for ${username}/${quizType}`);
+            
+            // Fetch the detailed question history from the API
+            const response = await this.apiService.getQuizQuestions(username, quizType);
+            
+            if (response.success && response.data && response.data.questionHistory) {
+                const questionHistory = response.data.questionHistory;
+                const correctAnswers = questionHistory.filter(q => q && q.isCorrect === true).length;
+                const calculatedScore = Math.round((correctAnswers / questionHistory.length) * 100);
+                
+                console.log(`[Admin] Successfully calculated score from fetched question history:`, {
+                    username,
+                    quizType,
+                    totalQuestions: questionHistory.length,
+                    correctAnswers,
+                    calculatedScore
+                });
+                
+                // Update the quiz card with the correct score
+                const scoreElement = quizCard.querySelector('p:nth-child(2)'); // The "Score: X%" element
+                if (scoreElement) {
+                    scoreElement.innerHTML = `<strong>Score:</strong> ${calculatedScore}%`;
+                }
+                
+                // Update the card styling based on the new score
+                if (calculatedScore >= 80) {
+                    quizCard.className = 'quiz-card completed-perfect';
+                    quizCard.style.backgroundColor = '#e8f5e9'; // Light green
+                } else {
+                    quizCard.className = 'quiz-card completed-partial';
+                    quizCard.style.backgroundColor = '#fff3e0'; // Light orange
+                }
+                
+                console.log(`[Admin] Updated quiz card for ${username}/${quizType} with score ${calculatedScore}%`);
+            } else {
+                console.warn(`[Admin] Failed to get question history from API for ${username}/${quizType}:`, response);
+            }
+        } catch (error) {
+            console.error(`[Admin] Error fetching question history for ${username}/${quizType}:`, error);
+        }
+    }
+
     async showUserDetails(username) {
         try {
             // Get user data
@@ -2250,6 +2294,18 @@ export class Admin2Dashboard {
                             correctAnswers,
                             calculatedScore: score
                         });
+                    } else if (questionsAnswered === 15 && !questionHistory) {
+                        // For completed quizzes without question history, try to fetch it from API
+                        console.log(`[Admin] Quiz completed but no question history found. Attempting to fetch from API...`);
+                        
+                        // Make async call to fetch question history (don't await to avoid blocking UI)
+                        this.fetchAndUpdateQuizScore(username, quizType, quizCard).catch(error => {
+                            console.warn(`[Admin] Failed to fetch question history for ${username}/${quizType}:`, error);
+                        });
+                        
+                        // For now, show as completed but with unknown score
+                        score = 0; // This will be updated when the API call completes
+                        console.log(`[Admin] Using temporary score of 0 while fetching question history`);
                     } else {
                         // Fallback to stored score if no question history available
                         const rawScore = quizResult?.score || quizResult?.scorePercentage || 0;
@@ -2336,6 +2392,12 @@ export class Admin2Dashboard {
                     `;
                     
                     quizProgressList.appendChild(quizCard);
+                    
+                    // If we need to fetch score data asynchronously, do it after adding to DOM
+                    if (questionsAnswered === 15 && !questionHistory && score === 0) {
+                        // The fetchAndUpdateQuizScore call was already made above in the score calculation
+                        // The quizCard is now available in the DOM for updating
+                    }
                 });
             
             // User actions
