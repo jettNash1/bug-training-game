@@ -242,101 +242,25 @@
 /* Perfect Score Badge Styling */
 .badge-card.perfect {
     position: relative;
-    background: linear-gradient(135deg, #fff9e6 0%, #ffffff 50%, #fff9e6 100%);
-    border: 3px solid transparent;
-    background-clip: padding-box;
-    overflow: visible;
-}
-
-.badge-card.perfect::before {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    background: linear-gradient(45deg, #ffd700, #ffed4e, #ffd700, #ffb347, #ffd700);
-    background-size: 300% 300%;
-    border-radius: 11px;
-    z-index: -1;
-    animation: goldShimmer 3s ease-in-out infinite;
-}
-
-.badge-card.perfect::after {
-    content: '';
-    position: absolute;
-    top: -6px;
-    left: -6px;
-    right: -6px;
-    bottom: -6px;
-    background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
-    border-radius: 14px;
-    z-index: -2;
-    animation: goldGlow 2s ease-in-out infinite alternate;
-}
-
-@keyframes goldShimmer {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-}
-
-@keyframes goldGlow {
-    0% { 
-        box-shadow: 0 0 20px rgba(255, 215, 0, 0.4),
-                    0 0 40px rgba(255, 215, 0, 0.2),
-                    0 0 60px rgba(255, 215, 0, 0.1);
-    }
-    100% { 
-        box-shadow: 0 0 30px rgba(255, 215, 0, 0.6),
-                    0 0 60px rgba(255, 215, 0, 0.3),
-                    0 0 90px rgba(255, 215, 0, 0.15);
-    }
+    border: 2px solid #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
 }
 
 .badge-card.perfect:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
 }
 
 .badge-card.perfect .badge-icon {
     background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
-    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
-    animation: iconPulse 2s ease-in-out infinite;
-}
-
-@keyframes iconPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
-
-.badge-card.perfect .badge-name {
-    color: #b8860b;
-    font-weight: 600;
-    text-shadow: 0 1px 2px rgba(255, 215, 0, 0.3);
+    box-shadow: 0 3px 10px rgba(255, 215, 0, 0.4);
 }
 
 .perfect-score {
     background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%) !important;
     color: #8b4513 !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
     text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
-    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
-    animation: perfectScoreShine 2s ease-in-out infinite;
-}
-
-@keyframes perfectScoreShine {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.02); box-shadow: 0 3px 12px rgba(255, 215, 0, 0.6); }
-}
-
-.perfect-score i {
-    color: #ffd700;
-    animation: crownBounce 1.5s ease-in-out infinite;
-}
-
-@keyframes crownBounce {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-2px); }
 }
 
 /* Footer styling */
@@ -393,15 +317,7 @@ footer p {
         margin-bottom: 15px;
     }
     
-    /* Reduce perfect badge effects on mobile for performance */
-    .badge-card.perfect::after {
-        animation-duration: 3s; /* Slower glow on mobile */
-    }
-    
-    .badge-card.perfect .badge-icon {
-        animation-duration: 3s; /* Slower pulse on mobile */
-    }
-    
+    /* Adjust perfect badge styling on mobile */
     .perfect-score {
         font-size: 11px !important;
         padding: 3px 6px !important;

@@ -246,9 +246,7 @@ class BadgesPage {
         let scoreInfoHtml = '';
         if (badge.earned && badge.scorePercentage !== undefined) {
             if (badge.scorePercentage === 100) {
-                scoreInfoHtml = `<div class="badge-score perfect-score">
-                    <i class="fa-solid fa-crown"></i> PERFECT 100% <i class="fa-solid fa-crown"></i>
-                </div>`;
+                scoreInfoHtml = `<div class="badge-score perfect-score">Score: ${badge.scorePercentage}%</div>`;
             } else {
                 scoreInfoHtml = `<div class="badge-score">Score: ${badge.scorePercentage}%</div>`;
             }
