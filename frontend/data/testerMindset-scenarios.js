@@ -436,7 +436,7 @@ advanced: [
         description: 'A critical bug is reported in production affecting user data. What\'s your immediate response?',
         options: [
             {
-                text: 'Alert the incident team with evidence and begin systematic investigation',
+                text: 'Highlight the issue with your TDM and inform the client',
                 outcome: 'Excellent! Quick escalation and a systematic approach is crucial.',
                 experience: 25,
             },
