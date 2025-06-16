@@ -185,7 +185,10 @@ export class Admin2Dashboard {
                 
                 // Update dashboard with user data
                 this.updateUsersList();
-                this.updateStatistics();
+                
+                // Update statistics and display
+                const stats = this.updateStatistics();
+                this.updateStatisticsDisplay(stats);
                 
                 // Load user progress for all users
                 this.loadAllUserProgress();
@@ -490,11 +493,7 @@ export class Admin2Dashboard {
     
     async updateDashboard() {
         try {
-            // Update statistics
-            const stats = this.updateStatistics();
-            this.updateStatisticsDisplay(stats);
-            
-            // Update user list with current filters
+            // Update user list with current filters (this will also update statistics)
             await this.updateUsersList();
             
         } catch (error) {
@@ -503,32 +502,47 @@ export class Admin2Dashboard {
         }
     }
     
-    updateStatistics() {
+    updateStatistics(usersToCount = null) {
+        // Use provided users or fall back to all users
+        const usersForStats = usersToCount || this.users;
+        
+        // Handle case when users haven't been loaded yet
+        if (!usersForStats || !Array.isArray(usersForStats)) {
+            console.log('Users not loaded yet, returning zero statistics');
+            return {
+                totalUsers: 0,
+                activeToday: 0,
+                averageCompletion: 0
+            };
+        }
+
         // Calculate Active Today
-            const today = new Date();
-        const totalUsers = this.users.length;
+        const today = new Date();
+        const totalUsers = usersForStats.length;
         let activeToday = 0;
         let totalCompletion = 0;
 
         // Debug: log each user's overall progress
         console.log('--- Calculating Overall Progress for Hero Stat ---');
-        this.users.forEach(user => {
-            // Active Today: lastLogin is today
-            if (user.lastLogin) {
-                const lastLoginDate = new Date(user.lastLogin);
-                if (lastLoginDate.toDateString() === today.toDateString()) {
+        usersForStats.forEach(user => {
+            // Active Today: Use getLastActiveDate which considers both lastLogin and quiz activity
+            const lastActiveTimestamp = this.getLastActiveDate(user);
+            if (lastActiveTimestamp > 0) {
+                const lastActiveDate = new Date(lastActiveTimestamp);
+                if (lastActiveDate.toDateString() === today.toDateString()) {
                     activeToday++;
                 }
             }
+            
             // Use the same per-user overall progress as on the user card
             const percent = this.calculateQuestionsAnsweredPercent(user);
             totalCompletion += percent;
-            console.log(`User: ${user.username}, Overall Progress: ${percent.toFixed(1)}%`);
+            console.log(`User: ${user.username}, Overall Progress: ${percent.toFixed(1)}%, Last Active: ${this.formatDate(this.getLastActiveDate(user))}`);
         });
 
         // Mean average overall progress
         const averageCompletion = totalUsers > 0 ? totalCompletion / totalUsers : 0;
-        console.log(`Computed mean average overall progress: ${averageCompletion.toFixed(1)}% (Total users: ${totalUsers})`);
+        console.log(`Computed statistics - Total users: ${totalUsers}, Active today: ${activeToday}, Average completion: ${averageCompletion.toFixed(1)}%`);
 
         return {
             totalUsers,
@@ -571,6 +585,17 @@ export class Admin2Dashboard {
         const container = document.getElementById('usersList');
         if (!container) return;
 
+        // Handle case when users haven't been loaded yet
+        if (!this.users || !Array.isArray(this.users)) {
+            console.log('Users not loaded yet, showing empty state');
+            container.innerHTML = '<div class="loading-message">Loading users...</div>';
+            
+            // Update statistics with empty data
+            const stats = this.updateStatistics([]);
+            this.updateStatisticsDisplay(stats);
+            return;
+        }
+
         // Get current filter values
         const searchQuery = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
@@ -604,6 +629,10 @@ export class Admin2Dashboard {
         container.innerHTML = '';
 
         console.log(`Creating ${filteredUsers.length} user cards...`);
+        
+        // Update statistics based on filtered users
+        const stats = this.updateStatistics(filteredUsers);
+        this.updateStatisticsDisplay(stats);
 
         // Create and append user cards
         filteredUsers.forEach(user => {
