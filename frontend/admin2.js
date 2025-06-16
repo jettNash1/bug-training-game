@@ -5948,7 +5948,23 @@ export class Admin2Dashboard {
                                             result?.questionHistory?.length ||
                                             progress?.questionsAnswered || 
                                             progress?.questionHistory?.length || 0;
-                    const score = result?.score || 0;
+                    
+                    // Calculate score using the same logic as admin badges
+                    let score = 0;
+                    if (result && result.score !== undefined) {
+                        score = result.score;
+                    } else if (progress && progress.experience !== undefined && questionsAnswered >= 15) {
+                        // Calculate score from experience for completed quizzes
+                        score = Math.round(((progress.experience + 150) / 450) * 100);
+                    } else if (progress && progress.questionHistory && progress.questionHistory.length > 0) {
+                        // Calculate score from question history
+                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                        score = Math.round((correctAnswers / progress.questionHistory.length) * 100);
+                    } else if (result && result.questionHistory && result.questionHistory.length > 0) {
+                        // Calculate score from result question history
+                        const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                        score = Math.round((correctAnswers / result.questionHistory.length) * 100);
+                    }
                     
                     // Determine status
                     let status = "Not Started";
@@ -6018,7 +6034,23 @@ export class Admin2Dashboard {
                                             result?.questionHistory?.length ||
                                             progress?.questionsAnswered || 
                                             progress?.questionHistory?.length || 0;
-                    const score = result?.score || 0;
+                    
+                    // Calculate score using the same logic as admin badges
+                    let score = 0;
+                    if (result && result.score !== undefined) {
+                        score = result.score;
+                    } else if (progress && progress.experience !== undefined && questionsAnswered >= 15) {
+                        // Calculate score from experience for completed quizzes
+                        score = Math.round(((progress.experience + 150) / 450) * 100);
+                    } else if (progress && progress.questionHistory && progress.questionHistory.length > 0) {
+                        // Calculate score from question history
+                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                        score = Math.round((correctAnswers / progress.questionHistory.length) * 100);
+                    } else if (result && result.questionHistory && result.questionHistory.length > 0) {
+                        // Calculate score from result question history
+                        const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                        score = Math.round((correctAnswers / result.questionHistory.length) * 100);
+                    }
                     
                     // Determine status
                     let status = "Not Started";
