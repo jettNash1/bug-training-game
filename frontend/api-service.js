@@ -1102,8 +1102,8 @@ export class APIService {
 
     async getUserBadgesByAdmin(username) {
         try {
-            console.log(`[Badges] Getting badges for user: ${username}`);
-            // Get all users data which we already have
+            console.log(`[Badges] Getting badges for user: ${username} at ${new Date().toISOString()}`);
+            // Get fresh users data to avoid stale data issues - add timestamp to force fresh data
             const usersResponse = await this.getAllUsers();
             if (!usersResponse.success) {
                 throw new Error('Failed to get users data');
@@ -1127,12 +1127,25 @@ export class APIService {
             } else {
                 visibleQuizzes = allQuizzes.filter(q => !hiddenQuizzes.includes(q));
             }
+            console.log(`[Badges] Processing ${visibleQuizzes.length} visible quizzes for user ${username}`);
+            
             // Generate badges for all visible quizzes
             const badges = visibleQuizzes.map(quizId => {
                 const progress = quizProgress[quizId] || {};
                 
                 // Also check quizResults for completed quizzes
                 const quizResult = quizResults.find(result => result.quizName === quizId);
+                
+                console.log(`[Badges] Processing quiz ${quizId}:`, {
+                    hasProgress: !!progress && Object.keys(progress).length > 0,
+                    hasQuizResult: !!quizResult,
+                    progressScore: progress.score,
+                    resultScore: quizResult?.score,
+                    progressQuestionsAnswered: progress.questionsAnswered,
+                    resultQuestionsAnswered: quizResult?.questionsAnswered,
+                    progressKeys: Object.keys(progress),
+                    quizResultQuizName: quizResult?.quizName
+                });
                 
                 // Check if quiz is complete AND has achieved 80% or higher score
                 let hasCompletedAllQuestions = false;
@@ -1170,6 +1183,14 @@ export class APIService {
                 // Badge is earned only if completed all questions AND achieved 80%+ score
                 const isCompleted = hasCompletedAllQuestions && scorePercentage >= 80;
                 
+                console.log(`[Badges] Quiz ${quizId} final result:`, {
+                    isCompleted,
+                    hasCompletedAllQuestions,
+                    scorePercentage: Math.round(scorePercentage),
+                    isFromQuizResults,
+                    completionDate
+                });
+                
                 return {
                     id: `quiz-${quizId}`,
                     name: this.formatQuizName(quizId) + ' Master',
@@ -1183,22 +1204,38 @@ export class APIService {
                     isFromQuizResults: isFromQuizResults
                 };
             });
-            // Sort badges: highest progress first, then alphabetically within same progress
+            // Sort badges: earned first, then highest progress, then alphabetically
             badges.sort((a, b) => {
-                // First sort by score percentage (highest first)
-                if (a.scorePercentage !== b.scorePercentage) {
-                    return b.scorePercentage - a.scorePercentage; // Descending order
-                }
-                
-                // If scores are the same, sort by completion status (earned first)
+                // First sort by earned status (earned badges first)
                 if (a.earned !== b.earned) {
                     return a.earned ? -1 : 1;
+                }
+                
+                // Then sort by score percentage (highest first)
+                if (a.scorePercentage !== b.scorePercentage) {
+                    return b.scorePercentage - a.scorePercentage; // Descending order
                 }
                 
                 // Finally, sort alphabetically by name
                 return a.name.localeCompare(b.name);
             });
             const completedCount = badges.filter(badge => badge.earned).length;
+            
+            console.log(`[Badges] Final summary for ${username}:`, {
+                totalBadges: badges.length,
+                earnedCount: completedCount,
+                earnedBadges: badges.filter(b => b.earned).map(b => ({ 
+                    quiz: b.quizId, 
+                    score: b.scorePercentage,
+                    fromResults: b.isFromQuizResults 
+                })),
+                inProgressBadges: badges.filter(b => !b.earned && b.scorePercentage > 0).map(b => ({ 
+                    quiz: b.quizId, 
+                    score: b.scorePercentage,
+                    completed: b.hasCompletedAllQuestions 
+                }))
+            });
+            
             return {
                 success: true,
                 data: {
