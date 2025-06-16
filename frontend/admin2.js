@@ -2540,6 +2540,8 @@ export class Admin2Dashboard {
                         // Remove the message after 2 seconds and refresh user data
                         setTimeout(async () => {
                             messageOverlay.remove();
+                            // Close the current modal first to prevent multiple overlays
+                            overlay.remove();
                             // Refresh the user data to see the updated visibility
                             console.log('Refreshing user data after visibility change...');
                             // Add a small delay to ensure backend has processed the change
