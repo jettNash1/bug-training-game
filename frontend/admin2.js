@@ -2132,7 +2132,10 @@ export class Admin2Dashboard {
             
             if (response.success && response.data && response.data.questionHistory) {
                 const questionHistory = response.data.questionHistory;
-                const correctAnswers = questionHistory.filter(q => q && q.isCorrect === true).length;
+                
+                // Use the same logic as the "View Questions" section to determine correct answers
+                // An answer is correct if the status is 'passed'
+                const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
                 const calculatedScore = Math.round((correctAnswers / questionHistory.length) * 100);
                 
                 console.log(`[Admin] Successfully calculated score from fetched question history:`, {
@@ -2140,7 +2143,8 @@ export class Admin2Dashboard {
                     quizType,
                     totalQuestions: questionHistory.length,
                     correctAnswers,
-                    calculatedScore
+                    calculatedScore,
+                    questionStatuses: questionHistory.map(item => ({ status: item.status, passed: item.status === 'passed' }))
                 });
                 
                 // Update the quiz card with the correct score
@@ -2286,13 +2290,15 @@ export class Admin2Dashboard {
                     });
                     
                     if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                        const correctAnswers = questionHistory.filter(q => q && q.isCorrect === true).length;
+                        // Use the same logic as the "View Questions" section - check if status is 'passed'
+                        const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
                         score = Math.round((correctAnswers / questionHistory.length) * 100);
                         
                         console.log(`[Admin] Calculated score from question history:`, {
                             totalQuestions: questionHistory.length,
                             correctAnswers,
-                            calculatedScore: score
+                            calculatedScore: score,
+                            questionStatuses: questionHistory.map(item => ({ status: item.status, passed: item.status === 'passed' }))
                         });
                     } else if (questionsAnswered === 15 && !questionHistory) {
                         // For completed quizzes without question history, we'll fetch it after card creation
