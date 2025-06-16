@@ -1130,24 +1130,37 @@ export class APIService {
             const badges = visibleQuizzes.map(quizId => {
                 const progress = quizProgress[quizId] || {};
                 
-                // Check if quiz is complete AND has achieved 80% or higher score
-                const hasCompletedAllQuestions = progress && (
-                    (progress.questionHistory && progress.questionHistory.length === 15) ||
-                    (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
-                );
+                // Also check quizResults for completed quizzes
+                const quizResult = quizResults.find(result => result.quizName === quizId);
                 
-                // Calculate score percentage - need at least 80% to earn badge
+                // Check if quiz is complete AND has achieved 80% or higher score
+                let hasCompletedAllQuestions = false;
                 let scorePercentage = 0;
-                if (progress.score !== undefined && typeof progress.score === 'number') {
-                    // If score is already a percentage (0-100)
-                    scorePercentage = progress.score;
-                } else if (progress.questionHistory && progress.questionHistory.length > 0) {
-                    // Calculate from question history
-                    const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
-                    scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
-                } else if (progress.correctAnswers !== undefined && progress.totalQuestions !== undefined) {
-                    // Calculate from correct/total counts
-                    scorePercentage = (progress.correctAnswers / progress.totalQuestions) * 100;
+                let completionDate = null;
+                
+                // First check quizResults (completed quizzes)
+                if (quizResult) {
+                    hasCompletedAllQuestions = quizResult.questionsAnswered >= 15;
+                    scorePercentage = quizResult.score || 0;
+                    completionDate = quizResult.completedAt;
+                } else {
+                    // Fallback to quizProgress
+                    hasCompletedAllQuestions = progress && (
+                        (progress.questionHistory && progress.questionHistory.length === 15) ||
+                        (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
+                    );
+                    
+                    // Calculate score percentage from progress
+                    if (progress.score !== undefined && typeof progress.score === 'number') {
+                        scorePercentage = progress.score;
+                    } else if (progress.questionHistory && progress.questionHistory.length > 0) {
+                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                        scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
+                    } else if (progress.correctAnswers !== undefined && progress.totalQuestions !== undefined) {
+                        scorePercentage = (progress.correctAnswers / progress.totalQuestions) * 100;
+                    }
+                    
+                    completionDate = progress.lastUpdated || progress.completedAt;
                 }
                 
                 // Badge is earned only if completed all questions AND achieved 80%+ score
@@ -1159,7 +1172,7 @@ export class APIService {
                     description: `Complete the ${this.formatQuizName(quizId)} quiz with 80%+ score`,
                     icon: 'fa-solid fa-check-circle',
                     earned: isCompleted,
-                    completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || new Date().toISOString()) : null,
+                    completionDate: isCompleted ? (completionDate || new Date().toISOString()) : null,
                     quizId: quizId,
                     scorePercentage: Math.round(scorePercentage)
                 };

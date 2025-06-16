@@ -5715,7 +5715,7 @@ export class Admin2Dashboard {
                             </div>
                         </div>
                     </div>
-                    <div class="badges-grid">
+                    <div class="badges-container">
                 `;
                 // Add each badge card
                 badgesData.badges.forEach(badge => {
@@ -5754,7 +5754,7 @@ export class Admin2Dashboard {
                     // Get badge image path
                     const imagePath = this.getBadgeImage(badge.quizId);
                     const badgeIconHtml = imagePath ? 
-                        `<img src="${imagePath}" alt="${badge.name}" class="badge-image" onerror="this.onerror=null; this.src='assets/badges/default.svg';">` : 
+                        `<img src="${imagePath}" alt="${badge.name}" class="badge-image" onerror="this.onerror=null; this.src='../assets/badges/default.svg';">` : 
                         `<i class="${badge.icon}"></i>`;
                     
                     badgesHTML += `
@@ -5770,7 +5770,7 @@ export class Admin2Dashboard {
                         </div>
                     `;
                 });
-                badgesHTML += '</div>'; // Close badges-grid
+                badgesHTML += '</div>'; // Close badges-container
             }
             // Update the container
             badgesContainer.innerHTML = badgesHTML;
@@ -5855,16 +5855,16 @@ export class Admin2Dashboard {
         
         // Force specific image paths for problem quiz types
         if (normalizedId.toLowerCase().includes('sanity') || normalizedId.toLowerCase().includes('smoke')) {
-            return 'assets/badges/sanity-smoke.svg';
+            return '../assets/badges/sanity-smoke.svg';
         } else if (normalizedId.toLowerCase().includes('cms')) {
-            return 'assets/badges/cms-testing.svg';
+            return '../assets/badges/cms-testing.svg';
         } else if (normalizedId.toLowerCase().includes('exploratory')) {
-            return 'assets/badges/exploratory.svg';
+            return '../assets/badges/exploratory.svg';
         }
         
         // Check if we have a specific image for this quiz
         if (badgeImageMapping[normalizedId]) {
-            return `assets/badges/${badgeImageMapping[normalizedId]}`;
+            return `../assets/badges/${badgeImageMapping[normalizedId]}`;
         }
         
         // Try to extract category from the quiz ID
@@ -5872,12 +5872,12 @@ export class Admin2Dashboard {
         if (parts.length > 1) {
             const category = parts[0];
             if (badgeImageMapping[category]) {
-                return `assets/badges/${badgeImageMapping[category]}`;
+                return `../assets/badges/${badgeImageMapping[category]}`;
             }
         }
         
         // Fallback to a default image if no specific match
-        return 'assets/badges/default.svg';
+        return '../assets/badges/default.svg';
     }
 
     // Fix for export functions
