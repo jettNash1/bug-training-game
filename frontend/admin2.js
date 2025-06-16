@@ -473,6 +473,19 @@ export class Admin2Dashboard {
             });
         }
 
+        // Custom export functionality
+        const exportCustomBtn = document.getElementById('exportCustomCSV');
+        if (exportCustomBtn) {
+            exportCustomBtn.addEventListener('click', () => {
+                this.exportCustomData();
+            });
+        }
+
+        // Initialize custom export section when Export menu is accessed
+        document.querySelector('[data-section="export-section"]')?.addEventListener('click', () => {
+            setTimeout(() => this.initializeCustomExport(), 100);
+        });
+
         // Badges section
         document.getElementById('badgesUserDropdown')?.addEventListener('change', (e) => {
             const username = e.target.value;
@@ -6082,6 +6095,231 @@ export class Admin2Dashboard {
         } catch (error) {
             console.error('Error exporting simple CSV:', error);
             this.showError('Failed to export simple CSV file');
+        }
+    }
+
+    // Initialize custom export section
+    initializeCustomExport() {
+        console.log('Initializing custom export section...');
+        this.populateUsersCheckboxList();
+        this.populateQuizzesCheckboxList();
+        this.setupCustomExportEventListeners();
+    }
+
+    // Populate users checkbox list
+    populateUsersCheckboxList() {
+        const container = document.getElementById('usersCheckboxList');
+        if (!container || !this.users || !Array.isArray(this.users)) {
+            console.log('Cannot populate users list - container or users not found');
+            return;
+        }
+
+        const sortedUsers = [...this.users].sort((a, b) => a.username.localeCompare(b.username));
+        
+        container.innerHTML = sortedUsers.map(user => `
+            <div class="checkbox-item">
+                <input type="checkbox" id="user-${user.username}" value="${user.username}" class="user-checkbox">
+                <label for="user-${user.username}">${user.username}</label>
+            </div>
+        `).join('');
+
+        console.log(`Populated ${sortedUsers.length} users in checkbox list`);
+    }
+
+    // Populate quizzes checkbox list
+    populateQuizzesCheckboxList() {
+        const container = document.getElementById('quizzesCheckboxList');
+        if (!container) {
+            console.log('Cannot populate quizzes list - container not found');
+            return;
+        }
+
+        // Use the same QUIZ_CATEGORIES as in the export functions
+        const QUIZ_CATEGORIES = {
+            'Security Awareness': ['phishing-awareness', 'password-security', 'social-engineering', 'data-protection', 'incident-response'],
+            'Bug Bounty': ['web-vulnerabilities', 'mobile-security', 'api-security', 'cloud-security', 'network-security'],
+            'QA Processes': ['test-planning', 'test-execution', 'defect-management', 'automation-testing', 'performance-testing', 'usability-testing'],
+            'Project Management': ['project-initiation', 'project-planning', 'project-execution', 'project-monitoring', 'project-closure'],
+            'System Testing': ['functional-testing', 'integration-testing', 'system-testing', 'acceptance-testing', 'regression-testing']
+        };
+
+        const allQuizzes = Object.values(QUIZ_CATEGORIES).flat();
+        
+        // Group by category for better organization
+        let html = '';
+        Object.entries(QUIZ_CATEGORIES).forEach(([category, quizzes]) => {
+            html += `<div class="quiz-category-group">
+                <div class="category-header">
+                    <strong>${category}</strong>
+                    <button type="button" class="category-select-all" data-category="${category}">Select All</button>
+                </div>`;
+            
+            quizzes.forEach(quiz => {
+                const displayName = this.formatQuizName(quiz);
+                html += `
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="quiz-${quiz}" value="${quiz}" class="quiz-checkbox" data-category="${category}">
+                        <label for="quiz-${quiz}">${displayName}</label>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+        });
+
+        container.innerHTML = html;
+        console.log(`Populated ${allQuizzes.length} quizzes in checkbox list`);
+    }
+
+    // Setup custom export event listeners
+    setupCustomExportEventListeners() {
+        // Select/Deselect All Users
+        document.getElementById('selectAllUsers')?.addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('.user-checkbox');
+            checkboxes.forEach(cb => cb.checked = true);
+            this.updateCustomExportCounts();
+        });
+
+        document.getElementById('deselectAllUsers')?.addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('.user-checkbox');
+            checkboxes.forEach(cb => cb.checked = false);
+            this.updateCustomExportCounts();
+        });
+
+        // Select/Deselect All Quizzes
+        document.getElementById('selectAllQuizzes')?.addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('.quiz-checkbox');
+            checkboxes.forEach(cb => cb.checked = true);
+            this.updateCustomExportCounts();
+        });
+
+        document.getElementById('deselectAllQuizzes')?.addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('.quiz-checkbox');
+            checkboxes.forEach(cb => cb.checked = false);
+            this.updateCustomExportCounts();
+        });
+
+        // Category select all buttons
+        document.querySelectorAll('.category-select-all').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const category = e.target.dataset.category;
+                const checkboxes = document.querySelectorAll(`.quiz-checkbox[data-category="${category}"]`);
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                checkboxes.forEach(cb => cb.checked = !allChecked);
+                this.updateCustomExportCounts();
+            });
+        });
+
+        // Individual checkbox change listeners
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('user-checkbox') || e.target.classList.contains('quiz-checkbox')) {
+                this.updateCustomExportCounts();
+            }
+        });
+
+        // Initial count update
+        this.updateCustomExportCounts();
+    }
+
+    // Update counts and enable/disable export button
+    updateCustomExportCounts() {
+        const selectedUsers = document.querySelectorAll('.user-checkbox:checked').length;
+        const selectedQuizzes = document.querySelectorAll('.quiz-checkbox:checked').length;
+        
+        document.getElementById('selectedUsersCount').textContent = selectedUsers;
+        document.getElementById('selectedQuizzesCount').textContent = selectedQuizzes;
+        
+        const exportBtn = document.getElementById('exportCustomCSV');
+        if (exportBtn) {
+            exportBtn.disabled = selectedUsers === 0 || selectedQuizzes === 0;
+        }
+    }
+
+    // Export custom data
+    async exportCustomData() {
+        try {
+            const selectedUsernames = Array.from(document.querySelectorAll('.user-checkbox:checked'))
+                .map(cb => cb.value);
+            const selectedQuizzes = Array.from(document.querySelectorAll('.quiz-checkbox:checked'))
+                .map(cb => cb.value);
+
+            if (selectedUsernames.length === 0 || selectedQuizzes.length === 0) {
+                this.showError('Please select at least one user and one quiz');
+                return;
+            }
+
+            console.log('Exporting custom data:', { 
+                users: selectedUsernames.length, 
+                quizzes: selectedQuizzes.length 
+            });
+
+            // Filter users to only selected ones
+            const selectedUsers = this.users.filter(user => selectedUsernames.includes(user.username));
+
+            // Create CSV header
+            const headers = ['Username', 'Email', 'Account Type', 'Last Active', ...selectedQuizzes.map(quiz => this.formatQuizName(quiz))];
+            
+            // Create CSV content
+            const csvRows = [headers];
+            
+            selectedUsers.forEach(user => {
+                const row = [
+                    user.username || '',
+                    user.email || '',
+                    user.accountType || 'user',
+                    this.getLastActiveDate(user)
+                ];
+
+                // Add quiz scores for selected quizzes only
+                selectedQuizzes.forEach(quizId => {
+                    let score = 0;
+                    
+                    // Try to get score from quizResults first
+                    const result = user.quizResults?.find(r => r.quizName?.toLowerCase() === quizId.toLowerCase());
+                    if (result?.score !== undefined) {
+                        score = result.score;
+                    } else {
+                        // Calculate from experience if quiz is completed
+                        const progress = user.quizProgress?.[quizId.toLowerCase()];
+                        if (progress?.experience !== undefined) {
+                            score = Math.round(((progress.experience + 150) / 450) * 100);
+                        } else {
+                            // Calculate from question history
+                            const questionHistory = result?.questionHistory || progress?.questionHistory;
+                            if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
+                                const correctAnswers = questionHistory.filter(q => q.isCorrect).length;
+                                score = Math.round((correctAnswers / questionHistory.length) * 100);
+                            }
+                        }
+                    }
+                    
+                    row.push(`${score}%`);
+                });
+
+                csvRows.push(row);
+            });
+
+            // Convert to CSV string
+            const csvContent = csvRows.map(row => 
+                row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')
+            ).join('\n');
+
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `custom_export_${selectedUsernames.length}users_${selectedQuizzes.length}quizzes_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            this.showSuccess(`Custom export completed: ${selectedUsers.length} users, ${selectedQuizzes.length} quizzes`);
+
+        } catch (error) {
+            console.error('Error exporting custom data:', error);
+            this.showError('Failed to export custom data');
         }
     }
 

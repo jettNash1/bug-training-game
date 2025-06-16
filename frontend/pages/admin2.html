@@ -289,17 +289,59 @@
                         <div class="export-options">
                             <div class="export-card">
                                 <h3>Detailed Export</h3>
-                                <p>Export complete user data with all quiz results and progress</p>
+                                <p>Export complete user data including all quizzes (even those with no progress)</p>
                                 <button id="exportDetailedCSV" class="action-button">
-                                    Export Detailed CSV
+                                    Export Detailed CSV (All Quizzes)
                                 </button>
                             </div>
                             <div class="export-card">
                                 <h3>Simple Export</h3>
-                                <p>Export simplified data showing quiz progress per user</p>
+                                <p>Export simplified data showing only quizzes with progress (skips quizzes without progress)</p>
                                 <button id="exportSimpleCSV" class="action-button">
-                                    Export Simple CSV
+                                    Export Simple CSV (Progress Only)
                                 </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Custom Export Section -->
+                        <div class="custom-export-section">
+                            <h3>Custom Export</h3>
+                            <p>Select specific users and quizzes to export</p>
+                            
+                            <div class="custom-export-container">
+                                <div class="selection-panel">
+                                    <div class="users-selection">
+                                        <h4>Select Users</h4>
+                                        <div class="selection-controls">
+                                            <button id="selectAllUsers" class="control-button">Select All</button>
+                                            <button id="deselectAllUsers" class="control-button">Deselect All</button>
+                                        </div>
+                                        <div id="usersCheckboxList" class="checkbox-list">
+                                            <!-- User checkboxes will be populated here -->
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="quizzes-selection">
+                                        <h4>Select Quizzes</h4>
+                                        <div class="selection-controls">
+                                            <button id="selectAllQuizzes" class="control-button">Select All</button>
+                                            <button id="deselectAllQuizzes" class="control-button">Deselect All</button>
+                                        </div>
+                                        <div id="quizzesCheckboxList" class="checkbox-list">
+                                            <!-- Quiz checkboxes will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="export-actions">
+                                    <div class="selected-count">
+                                        <span id="selectedUsersCount">0</span> users selected, 
+                                        <span id="selectedQuizzesCount">0</span> quizzes selected
+                                    </div>
+                                    <button id="exportCustomCSV" class="action-button" disabled>
+                                        Export Custom CSV
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -522,6 +564,163 @@
             border-radius: 8px;
             padding: 1.5rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Custom Export Section */
+        .custom-export-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+
+        .custom-export-section h3 {
+            margin: 0 0 0.5rem 0;
+            color: #2c3e50;
+        }
+
+        .custom-export-section > p {
+            margin: 0 0 1.5rem 0;
+            color: #7f8c8d;
+        }
+
+        .custom-export-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .selection-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .users-selection, .quizzes-selection {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 1rem;
+        }
+
+        .users-selection h4, .quizzes-selection h4 {
+            margin: 0 0 1rem 0;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        .selection-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .control-button {
+            padding: 0.4rem 0.8rem;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background-color 0.2s;
+        }
+
+        .control-button:hover {
+            background: #e9ecef;
+        }
+
+        .checkbox-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 0.5rem;
+            background: #fafafa;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 0.4rem 0.6rem;
+            margin-bottom: 0.2rem;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+
+        .checkbox-item:hover {
+            background: #f0f0f0;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 0.6rem;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+
+        .export-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .selected-count {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .quiz-category-group {
+            margin-bottom: 1rem;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            background: #e9ecef;
+            border-radius: 4px 4px 0 0;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 0.2rem;
+        }
+
+        .category-header strong {
+            color: #495057;
+            font-size: 0.9rem;
+        }
+
+        .category-select-all {
+            padding: 0.2rem 0.5rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: background-color 0.2s;
+        }
+
+        .category-select-all:hover {
+            background: #0056b3;
+        }
+
+        @media (max-width: 768px) {
+            .selection-panel {
+                grid-template-columns: 1fr;
+            }
+            
+            .export-actions {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
         }
 
         /* Select All Quizzes - use relative positioning instead of sticky */
