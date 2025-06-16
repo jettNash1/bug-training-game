@@ -274,9 +274,14 @@ class BadgesPage {
             } else {
                 scoreInfoHtml = `<div class="badge-score">Score: ${badge.scorePercentage}%</div>`;
             }
+        } else if (badge.hasCompletedAllQuestions && badge.scorePercentage !== undefined && badge.scorePercentage < 80) {
+            // Quiz completed but failed (< 80%)
+            scoreInfoHtml = `<div class="badge-score-failed">Score: ${badge.scorePercentage}% (Failed)</div>`;
         } else if (!badge.earned && badge.scorePercentage !== undefined && badge.scorePercentage > 0) {
+            // In-progress quiz
             scoreInfoHtml = `<div class="badge-score-progress">Current: ${badge.scorePercentage}% (Need: 80%)</div>`;
         } else if (!badge.earned) {
+            // Not started
             scoreInfoHtml = `<div class="badge-score-requirement">Requires: 80%+ score</div>`;
         }
         

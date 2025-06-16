@@ -1138,12 +1138,14 @@ export class APIService {
                 let hasCompletedAllQuestions = false;
                 let scorePercentage = 0;
                 let completionDate = null;
+                let isFromQuizResults = false;
                 
                 // First check quizResults (completed quizzes)
                 if (quizResult) {
                     hasCompletedAllQuestions = quizResult.questionsAnswered >= 15;
                     scorePercentage = quizResult.score || 0;
                     completionDate = quizResult.completedAt;
+                    isFromQuizResults = true;
                 } else {
                     // Fallback to quizProgress
                     hasCompletedAllQuestions = progress && (
@@ -1162,6 +1164,7 @@ export class APIService {
                     }
                     
                     completionDate = progress.lastUpdated || progress.completedAt;
+                    isFromQuizResults = false;
                 }
                 
                 // Badge is earned only if completed all questions AND achieved 80%+ score
@@ -1175,7 +1178,9 @@ export class APIService {
                     earned: isCompleted,
                     completionDate: isCompleted ? (completionDate || new Date().toISOString()) : null,
                     quizId: quizId,
-                    scorePercentage: Math.round(scorePercentage)
+                    scorePercentage: Math.round(scorePercentage),
+                    hasCompletedAllQuestions: hasCompletedAllQuestions,
+                    isFromQuizResults: isFromQuizResults
                 };
             });
             // Sort badges: highest progress first, then alphabetically within same progress
