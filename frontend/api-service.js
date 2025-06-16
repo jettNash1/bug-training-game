@@ -1144,7 +1144,8 @@ export class APIService {
                     progressQuestionsAnswered: progress.questionsAnswered,
                     resultQuestionsAnswered: quizResult?.questionsAnswered,
                     progressKeys: Object.keys(progress),
-                    quizResultQuizName: quizResult?.quizName
+                    quizResultQuizName: quizResult?.quizName,
+                    progressExperience: progress.experience
                 });
                 
                 // Check if quiz is complete AND has achieved 80% or higher score
@@ -1174,6 +1175,12 @@ export class APIService {
                         scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
                     } else if (progress.correctAnswers !== undefined && progress.totalQuestions !== undefined) {
                         scorePercentage = (progress.correctAnswers / progress.totalQuestions) * 100;
+                    } else if (progress.experience !== undefined && hasCompletedAllQuestions) {
+                        // Calculate score from experience value (like standard badges do)
+                        // Experience ranges from -150 to +300, convert to 0-100% scale
+                        // Formula: ((experience + 150) / 450) * 100
+                        const normalizedExperience = Math.max(-150, Math.min(300, progress.experience));
+                        scorePercentage = Math.max(0, Math.min(100, ((normalizedExperience + 150) / 450) * 100));
                     }
                     
                     completionDate = progress.lastUpdated || progress.completedAt;
