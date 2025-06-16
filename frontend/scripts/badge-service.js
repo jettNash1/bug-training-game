@@ -100,16 +100,47 @@ export class BadgeService {
             const quizProgress = userData.data.quizProgress || {};
             console.log('Quiz Progress:', quizProgress);
             
-            // Get all quizzes from the progress data
-            const allQuizzes = Object.keys(quizProgress).map(quizId => ({
-                id: quizId,
-                name: this.formatQuizName(quizId)
-            }));
+            // 2. Get all available/visible quizzes from the categories
+            console.log('Fetching category structure...');
+            let allQuizzes = [];
             
-            console.log('Available Quizzes:', allQuizzes);
+            try {
+                const categories = await this.getCategoryStructure();
+                console.log('Categories received:', categories);
+                
+                // Get all visible quizzes from categories
+                allQuizzes = Object.values(categories || {}).flatMap(category => 
+                    category.filter(quiz => !quiz.hidden)
+                );
+                
+                console.log('Quizzes from categories:', allQuizzes);
+            } catch (error) {
+                console.warn('Failed to fetch categories, falling back to quiz list API:', error);
+            }
+            
+            // Fallback: If we don't have enough quizzes from categories, use the quiz list API
+            if (allQuizzes.length < 10) { // Assuming there should be at least 10 quizzes
+                console.log('Using fallback quiz list API...');
+                try {
+                    const quizListResponse = await this.apiService.fetchWithAuth('quizzes/list');
+                    if (quizListResponse.success && quizListResponse.data) {
+                        allQuizzes = quizListResponse.data
+                            .filter(quiz => !quiz.hidden) // Filter out hidden quizzes
+                            .map(quiz => ({
+                                id: quiz.id,
+                                name: quiz.name || this.formatQuizName(quiz.id)
+                            }));
+                        console.log('Quizzes from fallback API:', allQuizzes);
+                    }
+                } catch (fallbackError) {
+                    console.error('Fallback quiz list API also failed:', fallbackError);
+                }
+            }
+            
+            console.log('Final quiz list for badges:', allQuizzes);
 
             if (allQuizzes.length === 0) {
-                console.warn('No quizzes found in user progress');
+                console.warn('No visible quizzes found in categories');
                 return {
                     badges: [],
                     totalBadges: 0,
@@ -210,6 +241,9 @@ export class BadgeService {
                 if (!normalizedSeenQuizzes.has(normalizedId) || 
                     (badge.earned && !normalizedSeenQuizzes.get(normalizedId).earned)) {
                     normalizedSeenQuizzes.set(normalizedId, badge);
+                    console.log(`  -> Added/Updated badge for ${normalizedId}`);
+                } else {
+                    console.log(`  -> Skipped duplicate badge for ${normalizedId}`);
                 }
             });
             
