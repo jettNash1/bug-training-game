@@ -1,3 +1,5 @@
+import { QUIZ_CATEGORIES } from '../quiz-list.js';
+
 export class BadgeService {
     constructor(apiService) {
         this.apiService = apiService;
@@ -96,51 +98,31 @@ export class BadgeService {
             }
             console.log('User data received:', userData.data);
 
-            // Extract quiz progress from user data
+            // Extract quiz progress and hidden quizzes from user data
             const quizProgress = userData.data.quizProgress || {};
+            const hiddenQuizzes = userData.data.hiddenQuizzes || [];
             console.log('Quiz Progress:', quizProgress);
+            console.log('Hidden Quizzes:', hiddenQuizzes);
             
-            // 2. Get all available/visible quizzes from the categories
-            console.log('Fetching category structure...');
-            let allQuizzes = [];
+            // Get all quiz IDs from progress data and any additional quizzes we know about
+            const allQuizIds = new Set(Object.keys(quizProgress));
             
-            try {
-                const categories = await this.getCategoryStructure();
-                console.log('Categories received:', categories);
-                
-                // Get all visible quizzes from categories
-                allQuizzes = Object.values(categories || {}).flatMap(category => 
-                    category.filter(quiz => !quiz.hidden)
-                );
-                
-                console.log('Quizzes from categories:', allQuizzes);
-            } catch (error) {
-                console.warn('Failed to fetch categories, falling back to quiz list API:', error);
-            }
+            // Add real quiz IDs from the quiz categories
+            const realQuizIds = Object.values(QUIZ_CATEGORIES).flat();
+            realQuizIds.forEach(id => allQuizIds.add(id));
             
-            // Fallback: If we don't have enough quizzes from categories, use the quiz list API
-            if (allQuizzes.length < 10) { // Assuming there should be at least 10 quizzes
-                console.log('Using fallback quiz list API...');
-                try {
-                    const quizListResponse = await this.apiService.fetchWithAuth('quizzes/list');
-                    if (quizListResponse.success && quizListResponse.data) {
-                        allQuizzes = quizListResponse.data
-                            .filter(quiz => !quiz.hidden) // Filter out hidden quizzes
-                            .map(quiz => ({
-                                id: quiz.id,
-                                name: quiz.name || this.formatQuizName(quiz.id)
-                            }));
-                        console.log('Quizzes from fallback API:', allQuizzes);
-                    }
-                } catch (fallbackError) {
-                    console.error('Fallback quiz list API also failed:', fallbackError);
-                }
-            }
+            console.log('Real quiz IDs from categories:', realQuizIds);
             
-            console.log('Final quiz list for badges:', allQuizzes);
+            // Convert to array and filter out hidden quizzes
+            const visibleQuizIds = Array.from(allQuizIds).filter(quizId => 
+                !hiddenQuizzes.includes(quizId)
+            );
+            
+            console.log('All quiz IDs:', Array.from(allQuizIds));
+            console.log('Visible quiz IDs after filtering:', visibleQuizIds);
 
-            if (allQuizzes.length === 0) {
-                console.warn('No visible quizzes found in categories');
+            if (visibleQuizIds.length === 0) {
+                console.warn('No visible quizzes found');
                 return {
                     badges: [],
                     totalBadges: 0,
@@ -148,9 +130,9 @@ export class BadgeService {
                 };
             }
 
-            // Process quiz completion status and force specific image paths
-            const badges = allQuizzes.map(quiz => {
-                const progress = quizProgress[quiz.id] || {};
+            // Process quiz completion status for each visible quiz
+            const badges = visibleQuizIds.map(quizId => {
+                const progress = quizProgress[quizId] || {};
                 
                 // Check if quiz is complete AND has achieved 80% or higher score
                 const hasCompletedAllQuestions = progress && (
@@ -179,18 +161,18 @@ export class BadgeService {
                 let imagePath;
                 
                 // Force specific image paths for problem quiz types
-                if (quiz.id.toLowerCase().includes('sanity') || quiz.id.toLowerCase().includes('smoke')) {
+                if (quizId.toLowerCase().includes('sanity') || quizId.toLowerCase().includes('smoke')) {
                     imagePath = 'assets/badges/sanity-smoke.svg';
-                } else if (quiz.id.toLowerCase().includes('cms')) {
+                } else if (quizId.toLowerCase().includes('cms')) {
                     imagePath = 'assets/badges/cms-testing.svg';
-                } else if (quiz.id.toLowerCase().includes('exploratory')) {
+                } else if (quizId.toLowerCase().includes('exploratory')) {
                     imagePath = 'assets/badges/exploratory.svg';
                 } else {
                     // Use the normal badge image path lookup for other quiz types
-                    imagePath = this.getBadgeImage(`quiz-${quiz.id}`);
+                    imagePath = this.getBadgeImage(`quiz-${quizId}`);
                 }
 
-                console.log(`Quiz ${quiz.id} completion status:`, {
+                console.log(`Quiz ${quizId} completion status:`, {
                     isCompleted,
                     hasCompletedAllQuestions,
                     scorePercentage: Math.round(scorePercentage),
@@ -202,13 +184,13 @@ export class BadgeService {
                 });
 
                 return {
-                    id: `quiz-${quiz.id}`,
-                    name: `${quiz.name} Master`,
-                    description: `Complete the ${quiz.name} quiz with 80%+ score`,
+                    id: `quiz-${quizId}`,
+                    name: `${this.formatQuizName(quizId)} Master`,
+                    description: `Complete the ${this.formatQuizName(quizId)} quiz with 80%+ score`,
                     icon: 'fa-solid fa-check-circle',
                     earned: isCompleted,
                     completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || new Date().toISOString()) : null,
-                    quizId: quiz.id,
+                    quizId: quizId,
                     imagePath: imagePath,
                     scorePercentage: Math.round(scorePercentage)
                 };
