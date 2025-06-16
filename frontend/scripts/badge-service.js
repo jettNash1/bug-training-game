@@ -121,13 +121,28 @@ export class BadgeService {
             const badges = allQuizzes.map(quiz => {
                 const progress = quizProgress[quiz.id] || {};
                 
-                // Check if quiz is complete based on status or progress
-                const isCompleted = progress && (
-                    progress.status === 'completed' ||
-                    progress.status === 'passed' ||
+                // Check if quiz is complete AND has achieved 80% or higher score
+                const hasCompletedAllQuestions = progress && (
                     (progress.questionHistory && progress.questionHistory.length === 15) ||
                     (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
                 );
+                
+                // Calculate score percentage - need at least 80% to earn badge
+                let scorePercentage = 0;
+                if (progress.score !== undefined && typeof progress.score === 'number') {
+                    // If score is already a percentage (0-100)
+                    scorePercentage = progress.score;
+                } else if (progress.questionHistory && progress.questionHistory.length > 0) {
+                    // Calculate from question history
+                    const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                    scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
+                } else if (progress.correctAnswers !== undefined && progress.totalQuestions !== undefined) {
+                    // Calculate from correct/total counts
+                    scorePercentage = (progress.correctAnswers / progress.totalQuestions) * 100;
+                }
+                
+                // Badge is earned only if completed all questions AND achieved 80%+ score
+                const isCompleted = hasCompletedAllQuestions && scorePercentage >= 80;
 
                 // Determine the badge image path based on quiz type
                 let imagePath;
@@ -146,6 +161,8 @@ export class BadgeService {
 
                 console.log(`Quiz ${quiz.id} completion status:`, {
                     isCompleted,
+                    hasCompletedAllQuestions,
+                    scorePercentage: Math.round(scorePercentage),
                     progress,
                     status: progress.status,
                     questionsAnswered: progress.questionsAnswered,
@@ -156,12 +173,13 @@ export class BadgeService {
                 return {
                     id: `quiz-${quiz.id}`,
                     name: `${quiz.name} Master`,
-                    description: `Complete the ${quiz.name} quiz`,
+                    description: `Complete the ${quiz.name} quiz with 80%+ score`,
                     icon: 'fa-solid fa-check-circle',
                     earned: isCompleted,
                     completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || new Date().toISOString()) : null,
                     quizId: quiz.id,
-                    imagePath: imagePath
+                    imagePath: imagePath,
+                    scorePercentage: Math.round(scorePercentage)
                 };
             });
 
@@ -339,20 +357,33 @@ export class BadgeService {
             const quizResult = quizResults.find(result => result.quizName === quiz.id);
             const progress = quizProgress[quiz.id];
             
-            // Check completion status
-            const isCompleted = quizResult && quizResult.questionsAnswered === 15;
-            const completionDate = quizResult?.completedAt || progress?.completedAt || null;
+            // Check completion status - must complete all questions AND achieve 80%+ score
+            const hasCompletedAllQuestions = quizResult && quizResult.questionsAnswered === 15;
+            
+            // Calculate score percentage
+            let scorePercentage = 0;
+            if (quizResult && quizResult.score !== undefined) {
+                scorePercentage = quizResult.score;
+            } else if (progress && progress.questionHistory && progress.questionHistory.length > 0) {
+                const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
+            }
+            
+            // Badge is earned only if completed all questions AND achieved 80%+ score
+            const isCompleted = hasCompletedAllQuestions && scorePercentage >= 80;
+            const completionDate = isCompleted ? (quizResult?.completedAt || progress?.completedAt || null) : null;
 
             quizCompletionBadges.push({
                 id: `quiz-${quiz.id}`,
                 name: `${quiz.name} Master`,
-                description: `Complete the ${quiz.name} quiz`,
+                description: `Complete the ${quiz.name} quiz with 80%+ score`,
                 icon: 'fa-solid fa-check-circle',
                 earned: isCompleted,
                 completionDate: completionDate,
                 quizId: quiz.id,
                 // Add image path to the badge data
-                imagePath: this.getBadgeImage(`quiz-${quiz.id}`)
+                imagePath: this.getBadgeImage(`quiz-${quiz.id}`),
+                scorePercentage: Math.round(scorePercentage)
             });
         }
 

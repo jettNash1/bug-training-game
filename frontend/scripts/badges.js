@@ -240,6 +240,16 @@ class BadgesPage {
             completionDateHtml = `<div class="badge-completion-date">Completed: ${formattedDate}</div>`;
         }
         
+        // Format score information
+        let scoreInfoHtml = '';
+        if (badge.earned && badge.scorePercentage !== undefined) {
+            scoreInfoHtml = `<div class="badge-score">Score: ${badge.scorePercentage}%</div>`;
+        } else if (!badge.earned && badge.scorePercentage !== undefined && badge.scorePercentage > 0) {
+            scoreInfoHtml = `<div class="badge-score-progress">Current: ${badge.scorePercentage}% (Need: 80%)</div>`;
+        } else if (!badge.earned) {
+            scoreInfoHtml = `<div class="badge-score-requirement">Requires: 80%+ score</div>`;
+        }
+        
         // Handle special cases for badge image paths
         let imagePath = badge.imagePath;
         
@@ -263,6 +273,7 @@ class BadgesPage {
             </div>
             <h3 class="badge-name">${badge.name}</h3>
             <p class="badge-description">${badge.description}</p>
+            ${scoreInfoHtml}
             ${completionDateHtml}
             ${!badge.earned ? '<div class="lock-icon"><i class="fa-solid fa-lock"></i></div>' : ''}
         `;
