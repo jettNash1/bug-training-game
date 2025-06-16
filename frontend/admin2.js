@@ -5719,16 +5719,53 @@ export class Admin2Dashboard {
                 `;
                 // Add each badge card
                 badgesData.badges.forEach(badge => {
+                    // Add special 'perfect' class for 100% scores
+                    const isPerfectScore = badge.earned && badge.scorePercentage === 100;
+                    const cardClasses = `badge-card ${badge.earned ? '' : 'locked'} ${isPerfectScore ? 'perfect' : ''}`;
+                    
+                    // Format completion date if available
+                    let completionDateHtml = '';
+                    if (badge.completionDate) {
+                        const date = new Date(badge.completionDate);
+                        const formattedDate = date.toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        completionDateHtml = `<div class="badge-completion-date">Completed: ${formattedDate}</div>`;
+                    }
+                    
+                    // Format score information
+                    let scoreInfoHtml = '';
+                    if (badge.earned && badge.scorePercentage !== undefined) {
+                        if (badge.scorePercentage === 100) {
+                            scoreInfoHtml = `<div class="badge-score perfect-score">Score: ${badge.scorePercentage}%</div>`;
+                        } else {
+                            scoreInfoHtml = `<div class="badge-score">Score: ${badge.scorePercentage}%</div>`;
+                        }
+                    } else if (!badge.earned && badge.scorePercentage !== undefined && badge.scorePercentage > 0) {
+                        scoreInfoHtml = `<div class="badge-score-progress">Current: ${badge.scorePercentage}% (Need: 80%)</div>`;
+                    } else if (!badge.earned) {
+                        scoreInfoHtml = `<div class="badge-score-requirement">Requires: 80%+ score</div>`;
+                    }
+                    
+                    // Get badge image path
+                    const imagePath = this.getBadgeImage(badge.quizId);
+                    const badgeIconHtml = imagePath ? 
+                        `<img src="${imagePath}" alt="${badge.name}" class="badge-image" onerror="this.onerror=null; this.src='assets/badges/default.svg';">` : 
+                        `<i class="${badge.icon}"></i>`;
+                    
                     badgesHTML += `
-                        <div class="badge-card ${badge.earned ? '' : 'locked'}" id="badge-${badge.id}">
+                        <div class="${cardClasses}" id="badge-${badge.id}">
                             <div class="badge-icon">
-                                <i class="${badge.icon}"></i>
+                                ${badgeIconHtml}
                             </div>
                             <h3 class="badge-name">${badge.name}</h3>
                             <p class="badge-description">${badge.description}</p>
-                            ${badge.earned && badge.completionDate 
-                                ? `<div class="badge-completion-date">Completed: ${this.formatDate(badge.completionDate)}</div>` 
-                                : ''}
+                            ${scoreInfoHtml}
+                            ${completionDateHtml}
                             ${!badge.earned ? '<div class="lock-icon"><i class="fa-solid fa-lock"></i></div>' : ''}
                         </div>
                     `;
@@ -5771,6 +5808,76 @@ export class Admin2Dashboard {
             console.error('Error formatting date:', error);
             return 'Invalid Date';
         }
+    }
+
+    // Get badge image for a specific quiz (matching BadgeService implementation)
+    getBadgeImage(quizId) {
+        // Badge image mapping - only for quizzes that actually exist in QUIZ_CATEGORIES
+        const badgeImageMapping = {
+            // Core QA Skills
+            'tester-mindset': 'tester-mindset.svg',
+            'communication': 'communication.svg',
+            'initiative': 'initiative.svg',
+            'standard-script-testing': 'script-testing.svg',
+            'fully-scripted': 'script-testing.svg',
+            'exploratory': 'exploratory.svg',
+            
+            // Technical Testing
+            'script-metrics-troubleshooting': 'metrics.svg',
+            'locale-testing': 'locale.svg',
+            'build-verification': 'build.svg',
+            'test-types-tricks': 'test-types.svg',
+            'test-support': 'test-support.svg',
+            'sanity-smoke': 'sanity-smoke.svg',
+            
+            // Project Management
+            'time-management': 'time-management.svg',
+            'risk-analysis': 'risk.svg',
+            'risk-management': 'risk.svg',
+            'non-functional': 'non-functional.svg',
+            'issue-verification': 'issue-verification.svg',
+            'issue-tracking-tools': 'issue-tracking.svg',
+            'raising-tickets': 'tickets.svg',
+            
+            // Content Testing
+            'cms-testing': 'cms-testing.svg',
+            'email-testing': 'email.svg',
+            'content-copy': 'content-copy.svg',
+            'reports': 'reports.svg',
+            
+            // Interview Preparation
+            'automation-interview': 'automation.svg',
+            'functional-interview': 'functional-interview.svg'
+        };
+
+        // Convert quiz-id format to quizId for lookup
+        const normalizedId = quizId.replace('quiz-', '');
+        
+        // Force specific image paths for problem quiz types
+        if (normalizedId.toLowerCase().includes('sanity') || normalizedId.toLowerCase().includes('smoke')) {
+            return 'assets/badges/sanity-smoke.svg';
+        } else if (normalizedId.toLowerCase().includes('cms')) {
+            return 'assets/badges/cms-testing.svg';
+        } else if (normalizedId.toLowerCase().includes('exploratory')) {
+            return 'assets/badges/exploratory.svg';
+        }
+        
+        // Check if we have a specific image for this quiz
+        if (badgeImageMapping[normalizedId]) {
+            return `assets/badges/${badgeImageMapping[normalizedId]}`;
+        }
+        
+        // Try to extract category from the quiz ID
+        const parts = normalizedId.split('-');
+        if (parts.length > 1) {
+            const category = parts[0];
+            if (badgeImageMapping[category]) {
+                return `assets/badges/${badgeImageMapping[category]}`;
+            }
+        }
+        
+        // Fallback to a default image if no specific match
+        return 'assets/badges/default.svg';
     }
 
     // Fix for export functions

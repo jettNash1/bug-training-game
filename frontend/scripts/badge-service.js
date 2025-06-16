@@ -4,56 +4,41 @@ export class BadgeService {
     constructor(apiService) {
         this.apiService = apiService;
         this.cachedCategories = null;
-        // Define badge image mapping
+        // Define badge image mapping - only for quizzes that actually exist in QUIZ_CATEGORIES
         this.badgeImageMapping = {
-            // Default mapping for common quiz types
-            'automation-interview': 'automation.svg',
-            'build-verification': 'build.svg',
-            'cms-testing': 'cms-testing.svg',
-            'integration-testing': 'integration.svg',
-            'api-testing': 'api.svg',
-            'security-testing': 'security.svg',
-            'performance-testing': 'performance.svg',
-            'usability-testing': 'usability.svg',
-            'accessibility-testing': 'accessibility.svg',
-            'mobile-testing': 'mobile.svg',
-            'regression-testing': 'regression.svg',
-            'functional-testing': 'functional.svg',
-            'exploratory': 'exploratory.svg',
-            'test-planning': 'planning.svg',
-            'defect-management': 'defect.svg',
-            'test-automation': 'automation.svg',
-            'continuous-integration': 'ci.svg',
-            'agile-testing': 'agile.svg',
-            'qa-fundamentals': 'fundamentals.svg',
-            'test-strategy': 'strategy.svg',
-            'test-metrics': 'metrics.svg',
-            'test-estimation': 'estimation.svg',
-            'test-reporting': 'reporting.svg',
-            'test-design': 'design.svg',
-            'test-environment': 'environment.svg',
-            'test-data': 'data.svg',
-            'test-case': 'testcase.svg',
+            // Core QA Skills
+            'tester-mindset': 'tester-mindset.svg',
             'communication': 'communication.svg',
             'initiative': 'initiative.svg',
+            'standard-script-testing': 'script-testing.svg',
+            'fully-scripted': 'script-testing.svg',
+            'exploratory': 'exploratory.svg',
+            
+            // Technical Testing
+            'script-metrics-troubleshooting': 'metrics.svg',
+            'locale-testing': 'locale.svg',
+            'build-verification': 'build.svg',
+            'test-types-tricks': 'test-types.svg',
+            'test-support': 'test-support.svg',
+            'sanity-smoke': 'sanity-smoke.svg',
+            
+            // Project Management
             'time-management': 'time-management.svg',
-            'tester-mindset': 'tester-mindset.svg',
             'risk-analysis': 'risk.svg',
             'risk-management': 'risk.svg',
             'non-functional': 'non-functional.svg',
-            'test-support': 'test-support.svg',
             'issue-verification': 'issue-verification.svg',
             'issue-tracking-tools': 'issue-tracking.svg',
             'raising-tickets': 'tickets.svg',
-            'reports': 'reports.svg',
+            
+            // Content Testing
+            'cms-testing': 'cms-testing.svg',
             'email-testing': 'email.svg',
             'content-copy': 'content-copy.svg',
-            'locale-testing': 'locale.svg',
-            'script-metrics-troubleshooting': 'metrics.svg',
-            'standard-script-testing': 'script-testing.svg',
-            'test-types-tricks': 'test-types.svg',
-            'fully-scripted': 'script-testing.svg',
-            'sanity-smoke': 'sanity-smoke.svg',
+            'reports': 'reports.svg',
+            
+            // Interview Preparation
+            'automation-interview': 'automation.svg',
             'functional-interview': 'functional-interview.svg'
         };
     }
