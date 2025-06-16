@@ -2500,6 +2500,12 @@ export class Admin2Dashboard {
                     const isVisible = e.target.checked;
                     
                     console.log(`Visibility toggle changed for ${quizName}: isVisible=${isVisible}`);
+                    console.log(`Quiz name details:`, {
+                        originalQuizName: quizName,
+                        lowercaseQuizName: quizName.toLowerCase(),
+                        currentHiddenQuizzes: hiddenQuizzes,
+                        isCurrentlyInHidden: hiddenQuizzes.includes(quizName.toLowerCase())
+                    });
                     
                     try {
                         await this.apiService.updateQuizVisibility(username, quizName, isVisible);
@@ -2527,9 +2533,12 @@ export class Admin2Dashboard {
                         `;
                         document.body.appendChild(messageOverlay);
                         
-                        // Remove the message after 2 seconds
-                        setTimeout(() => {
+                        // Remove the message after 2 seconds and refresh user data
+                        setTimeout(async () => {
                             messageOverlay.remove();
+                            // Refresh the user data to see the updated visibility
+                            console.log('Refreshing user data after visibility change...');
+                            await this.loadUsers();
                         }, 2000);
                     } catch (error) {
                         console.error('Failed to update quiz visibility:', error);

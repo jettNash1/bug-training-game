@@ -2363,10 +2363,21 @@ export class APIService {
 
     async updateQuizVisibility(username, quizName, isVisible) {
         console.log(`Updating visibility for ${username}'s quiz ${quizName} to ${isVisible}`);
-        return this.fetchWithAdminAuth(`admin/users/${username}/quiz-visibility/${quizName}`, {
+        console.log(`API call details:`, {
+            username,
+            quizName,
+            quizNameLower: quizName.toLowerCase(),
+            isVisible,
+            url: `admin/users/${username}/quiz-visibility/${quizName}`
+        });
+        
+        const result = await this.fetchWithAdminAuth(`admin/users/${username}/quiz-visibility/${quizName}`, {
             method: 'POST',
             body: JSON.stringify({ isVisible })
         });
+        
+        console.log(`API response for visibility update:`, result);
+        return result;
     }
 
     async getUserQuizProgress(username, quizName) {
