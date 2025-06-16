@@ -119,22 +119,14 @@ export class BadgeService {
             const badges = visibleQuizIds.map(quizId => {
                 const progress = quizProgress[quizId] || {};
                 
-                // Also check if there's a completed quiz result
-                // Note: In the standard badges, we don't have direct access to quizResults
-                // So we'll work with what we have in progress data
-                
                 // Check if quiz is complete AND has achieved 80% or higher score
-                let hasCompletedAllQuestions = false;
-                let scorePercentage = 0;
-                let isFromQuizResults = false;
-                
-                // Check completion status
-                hasCompletedAllQuestions = progress && (
+                const hasCompletedAllQuestions = progress && (
                     (progress.questionHistory && progress.questionHistory.length === 15) ||
                     (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
                 );
                 
                 // Calculate score percentage - need at least 80% to earn badge
+                let scorePercentage = 0;
                 if (progress.score !== undefined && typeof progress.score === 'number') {
                     // If score is already a percentage (0-100)
                     scorePercentage = progress.score;
@@ -185,9 +177,7 @@ export class BadgeService {
                     completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || new Date().toISOString()) : null,
                     quizId: quizId,
                     imagePath: imagePath,
-                    scorePercentage: Math.round(scorePercentage),
-                    hasCompletedAllQuestions,
-                    isFromQuizResults: false // Standard badges don't have direct access to quizResults
+                    scorePercentage: Math.round(scorePercentage)
                 };
             });
 
