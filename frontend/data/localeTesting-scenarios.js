@@ -11,7 +11,6 @@ export const localeTestingScenarios = {
                         text: 'To conduct copy checks to ensure that either, no English remnants are present after translation or remnants of other languages do not appear',
                         outcome: 'Correct! This is the fundamental purpose of locale testing, encompassing language, rendering, and market-specific adaptations',
                         experience: 15,
-                        tool: 'Locale Testing Fundamentals'
                     },
                     {
                         text: 'To test the website\'s performance in different countries',
@@ -45,7 +44,6 @@ export const localeTestingScenarios = {
                         text: 'Copy deck or translations matrix can be submitted by the client',
                         outcome: 'Correct! These are the primary reference documents provided by clients for verifying correct translations and content.',
                         experience: 15,
-                        tool: 'Documentation Management'
                     },
                     {
                         text: 'Design specifications can be provided to assist with locale testing',
@@ -74,7 +72,6 @@ export const localeTestingScenarios = {
                         text: 'Locale testing requires a keen eye for detail to spot minuscule variances',
                         outcome: 'Correct! Attention to detail is important, especially for diacritics and subtle differences.',
                         experience: 15,
-                        tool: 'Detail Analysis'
                     },
                     {
                         text: 'Locale testing requires fluency in all supported test languages',
@@ -108,7 +105,6 @@ export const localeTestingScenarios = {
                         text: 'Currency updates based on selected market under test',
                         outcome: 'Correct! Verifying that currencies update appropriately for each market is part of locale testing',
                         experience: 15,
-                        tool: 'Currency Testing'
                     },
                     {
                         text: 'Currency conversion calculations need to be tested for accuracy',
@@ -142,7 +138,6 @@ export const localeTestingScenarios = {
                         text: 'Separate each page or section to be tested by locale',
                         outcome: 'Correct! This is the recommended organisation method and makes for easy tracking and traceability.',
                         experience: 15,
-                        tool: 'Script Organization'
                     }
                 ]
             },
@@ -156,7 +151,6 @@ export const localeTestingScenarios = {
                         text: 'Testing could be affected by inaccuracies in client-provided translation documentation',
                         outcome: 'Correct! Testing can be affected by the accuracy of client-provided documentation, especially translations where the tester is not a native speaker of the language under test.',
                         experience: 15,
-                        tool: 'Locale Testing Risks'
                     },
                     {
                         text: 'Locale testing might expose security vulnerabilities',
@@ -195,7 +189,6 @@ export const localeTestingScenarios = {
                         text: 'The client\'s Statement of Work and Operational Details documentation should be referred to',
                         outcome: 'Correct! This documentation defines locales that are in scope and if there are any sub-areas within locale testing that are out of scope.',
                         experience: 15,
-                        tool: 'Change Impact'
                     },
                     {
                         text: 'The global market trends report should be referred to for locale scope',
@@ -224,7 +217,6 @@ export const localeTestingScenarios = {
                         text: 'Text truncation or overlapping content need to be monitored when switching languages',
                         outcome: 'Correct! Identifying any rendering issues caused by word length when changing locales, such as overlapping content or lack of padding between page elements should be monitored.',
                         experience: 15,
-                        tool: 'Language Switch Testing'
                     },
                     {
                         text: 'Font colour changes should be monitored when switching languages',
@@ -243,7 +235,6 @@ export const localeTestingScenarios = {
                         text: 'Global elements such as header, navigation and footer should be checked',
                         outcome: 'Correct! These elements should remain consistent when navigating the site on a selected locale.',
                         experience: 15,
-                        tool: 'Locale Test Consistency'
                     },
                     {
                         text: 'Loading speed for each locale should be checked for consistency',
@@ -272,7 +263,6 @@ export const localeTestingScenarios = {
                         text: 'It improves the user experience and customer satisfaction',
                         outcome: 'Correct! Locale testing can identify issues with the presented language and therefore build confidence in the product from the user.',
                         experience: 15,
-                        tool: 'Locale Testing Advantages'
                     },
                     {
                         text: 'It ensures a universal experience across all regions',
@@ -304,8 +294,7 @@ export const localeTestingScenarios = {
                     {
                         text: 'Certain incorrect translations may be missed even if in the correct language',
                         outcome: 'Correct! This is a known risk as a tester may not know all languages under test.',
-                        experience: 20,
-                        tool: 'Risk Assessment'
+                        experience: 20,     
                     },
                     {
                         text: 'The tester is unable to complete any testing due to lack of specialist knowledge',
@@ -334,7 +323,6 @@ export const localeTestingScenarios = {
                         text: 'Verify correct text rendering and layout adaptation',
                         outcome: 'Correct! Checking rendering and layout for RTL languages is considered part of locale testing.',
                         experience: 20,
-                        tool: 'RTL Testing'
                     },
                     {
                         text: 'Test that the text direction is correctly presented',
@@ -363,7 +351,6 @@ export const localeTestingScenarios = {
                         text: 'Preface tickets with locale identifier (e.g., [FR], [ES])',
                         outcome: 'Correct! This is the correct approach for ease of identification.',
                         experience: 20,
-                        tool: 'Issue Management'
                     },
                     {
                         text: 'Create separate bug trackers for each locale',
@@ -392,7 +379,6 @@ export const localeTestingScenarios = {
                         text: 'That messages are translated and display correctly in each locale',
                         outcome: 'Correct! This is a critical element for locale testing.',
                         experience: 20,
-                        tool: 'Validation Testing'
                     },
                     {
                         text: 'Check if validation messages appear when moving through the form',
@@ -421,7 +407,6 @@ export const localeTestingScenarios = {
                         text: 'Balance testing across locales while maintaining thoroughness',
                         outcome: 'Correct! The importance of time management across locales can ensure equal or priority coverage is met',
                         experience: 20,
-                        tool: 'Time Management'
                     },
                     {
                         text: 'Test focus should be solely worked through on a primary locale',
@@ -454,7 +439,6 @@ export const localeTestingScenarios = {
                         text: 'Check all user interface elements, including hidden states and validation messages',
                         outcome: 'Correct! Comprehensive checking across all user interface elements is essential.',
                         experience: 25,
-                        tool: 'Language Testing'
                     },
                     {
                         text: 'Check all main navigation features and headers throughout the system under test',
@@ -483,7 +467,6 @@ export const localeTestingScenarios = {
                         text: 'Verify correct rendering and meaning preservation',
                         outcome: 'Correct! Diacritics must be checked for the importance of meaning.',
                         experience: 25,
-                        tool: 'Diacritic Testing'
                     },
                     {
                         text: 'Leave diacritical mark issues out of reports as they are not critical',
@@ -512,7 +495,6 @@ export const localeTestingScenarios = {
                         text: 'Verify date, time, address, and phone number formats for each locale',
                         outcome: 'Correct! These are all specific elements requiring verification',
                         experience: 25,
-                        tool: 'Format Testing'
                     },
                     {
                         text: 'Use standard formats when testing across all locales',
@@ -541,7 +523,6 @@ export const localeTestingScenarios = {
                         text: 'Verify layout integrity and check for truncation across all elements',
                         outcome: 'Correct! Checking for truncation and layout issues is essential to locale testing',
                         experience: 25,
-                        tool: 'Text Expansion Testing'
                     },
                     {
                         text: 'Test with maximum length text to check for truncation',
@@ -570,7 +551,6 @@ export const localeTestingScenarios = {
                         text: 'Verify content updates, loading behaviour, and state preservation',
                         outcome: 'Correct! It is important to check all these aspects of language switching.',
                         experience: 25,
-                        tool: 'Language Switching'
                     },
                     {
                         text: 'Check for immediate visual changes under user input',

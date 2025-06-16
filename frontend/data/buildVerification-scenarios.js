@@ -10,7 +10,6 @@ export const buildVerificationScenarios = {
                         text: 'To ensure core functionality and stability remain intact in each new build before further testing',
                         outcome: 'Perfect! BVT validates build stability and readiness.',
                         experience: 15,
-                        tool: 'Build Verification Framework'
                     },
                     {
                         text: 'To find all possible bugs related to the release',
@@ -39,7 +38,6 @@ export const buildVerificationScenarios = {
                         text: 'Create repeatable tests focusing on critical functionality with well-defined expected results',
                         outcome: 'Excellent! Well-defined test cases ensure consistent verification.',
                         experience: 15,
-                        tool: 'Test Case Template'
                     },
                     {
                         text: 'Test everything possible for each release',
@@ -68,7 +66,6 @@ export const buildVerificationScenarios = {
                         text: 'Key areas like installation, login, and main navigation that are critical to basic operation',
                         outcome: 'Perfect! Core functionality must be verified first.',
                         experience: 15,
-                        tool: 'Core Function Checklist'
                     },
                     {
                         text: 'Multiple minor visual issues should be reported thoroughly',
@@ -97,7 +94,6 @@ export const buildVerificationScenarios = {
                         text: 'Include test suites for each environment type with appropriate environment-specific checks',
                         outcome: 'Excellent! Environment-specific testing ensures comprehensive coverage.',
                         experience: 15,
-                        tool: 'Environment Matrix'
                     },
                     {
                         text: 'Test one primary environment as all other environments should follow the same functionality',
@@ -126,7 +122,6 @@ export const buildVerificationScenarios = {
                         text: 'Report major functional issues immediately and request a new build for critical failures',
                         outcome: 'Perfect! Quick reporting of critical issues is essential.',
                         experience: 15,
-                        tool: 'Issue Tracker'
                     },
                     {
                         text: 'Continue with the tests set out in project planning',
@@ -155,7 +150,6 @@ export const buildVerificationScenarios = {
                         text: 'Test suites are organised by environment type',
                         outcome: 'Correct! Build Verification Test suites are broken down by environment, rather than focus areas. This means the same or a very similar set of tests can be executed for each suite, aside from any key areas that may differ between environments.',
                         experience: 15,
-                        tool: 'Build Verification Test Suites'
                     },
                     {
                         text: 'Test suites are organised by feature complexity',
@@ -194,7 +188,6 @@ export const buildVerificationScenarios = {
                         text: 'Customisation is a characteristic of build verification testing',
                         outcome: 'Correct! this is not a characteristic of build verification testing such as Acceptance, Validation, Regression, and Efficiency.',
                         experience: 15,
-                        tool: 'Build Verification Characteristics'
                     },
                     {
                         text: 'Regression is a characteristic of build verification testing',
@@ -223,7 +216,6 @@ export const buildVerificationScenarios = {
                         text: 'Critical functionality issues should be the main focus',
                         outcome: 'Correct! Build Verification Testing does not focus on the less severe issues that may be present and looks mostly at critical functionality.',
                         experience: 15,
-                        tool: 'Build Verification Issue Types'
                     },
                     {
                         text: 'Performance under heavy load should be the main focus',
@@ -242,7 +234,6 @@ export const buildVerificationScenarios = {
                         text: 'Test cases need to be kept up to date throughout development',
                         outcome: 'Correct! Build Verification Testing test cases must be kept up to date throughout the development process, to include any new features developed. Failing to keep tests updated may lead to under-tested areas or bugs going undetected.',
                         experience: 15,
-                        tool: 'Build Verification Risks'
                     },
                     {
                         text: 'It takes too long to execute compared to other testing methods',
@@ -271,7 +262,6 @@ export const buildVerificationScenarios = {
                         text: 'Eliminating the need for further testing is an advantage of build verification testing',
                         outcome: 'Correct! BVT does not eliminate the need for further testing. On the contrary, it emphasises that BVT ensures the software is ready for further testing and integration.',
                         experience: 15,
-                        tool: 'Build Verification Advantages'
                     },
                     {
                         text: 'Increasing confidence in builds is an advantage of build verification testing',
@@ -304,7 +294,6 @@ export const buildVerificationScenarios = {
                         text: 'Regularly update test cases to include new core features and maintain accuracy',
                         outcome: 'Excellent! Test case maintenance ensures continued effectiveness.',
                         experience: 20,
-                        tool: 'Test Case Manager'
                     },
                     {
                         text: 'Keep and execute original test cases only',
@@ -333,7 +322,6 @@ export const buildVerificationScenarios = {
                         text: 'It verifies critical functionality in each build to catch issues before they affect other modules',
                         outcome: 'Perfect! Early detection prevents regression spread.',
                         experience: 20,
-                        tool: 'Regression Checker'
                     },
                     {
                         text: 'It focuses on testing new code only',
@@ -362,7 +350,6 @@ export const buildVerificationScenarios = {
                         text: 'Allocate appropriate time and testers based on build scope and complexity',
                         outcome: 'Excellent! Proper resource allocation ensures thorough verification.',
                         experience: 20,
-                        tool: 'Resource Planner'
                     },
                     {
                         text: 'Use minimal resources regardless of project size',
@@ -391,7 +378,6 @@ export const buildVerificationScenarios = {
                         text: 'When all critical functionality passes testing and no blocking issues are found',
                         outcome: 'Perfect! Build stability is crucial for further testing.',
                         experience: 20,
-                        tool: 'Acceptance Criteria'
                     },
                     {
                         text: 'All builds should be accepted for further testing activities',
@@ -420,7 +406,6 @@ export const buildVerificationScenarios = {
                         text: 'Maintain clear test cases, expected results, and execution records for each build',
                         outcome: 'Excellent! Documentation ensures consistency and traceability.',
                         experience: 20,
-                        tool: 'Documentation Template'
                     },
                     {
                         text: 'Minimal documentation is required to be able to focus on test execution',
@@ -453,7 +438,6 @@ export const buildVerificationScenarios = {
                         text: 'Analyse effectiveness, gather feedback, and update processes based on project needs',
                         outcome: 'Perfect! Continuous improvement enhances BVT effectiveness.',
                         experience: 25,
-                        tool: 'Process Analyser'
                     },
                     {
                         text: 'Keep the existing processes as this will promote familiarity and speed up the process',
@@ -482,7 +466,6 @@ export const buildVerificationScenarios = {
                         text: 'Verify individual modules and their interactions with comprehensive integration tests',
                         outcome: 'Excellent! Integration testing ensures module compatibility.',
                         experience: 25,
-                        tool: 'Integration Planner'
                     },
                     {
                         text: 'Test one module for integration, as once one is verified other connected modules should follow suit',
@@ -511,7 +494,6 @@ export const buildVerificationScenarios = {
                         text: 'Maintain clear channels with development team and stakeholders for quick issue resolution',
                         outcome: 'Perfect! Effective communication ensures quick resolution.',
                         experience: 25,
-                        tool: 'Communication Plan'
                     },
                     {
                         text: 'Work in isolation until build verification is complete and a test report can be submitted',
@@ -540,7 +522,6 @@ export const buildVerificationScenarios = {
                         text: 'Identify potential risks, prioritise critical areas, and maintain contingency plans',
                         outcome: 'Excellent! Risk management ensures BVT effectiveness.',
                         experience: 25,
-                        tool: 'Risk Assessment'
                     },
                     {
                         text: 'Attention to risk management should only be pursued when all functional tasks have been completed',
@@ -569,7 +550,6 @@ export const buildVerificationScenarios = {
                         text: 'Track pass rates, issue detection, and prevention of critical defects in later testing',
                         outcome: 'Perfect! Metrics help evaluate and improve BVT.',
                         experience: 25,
-                        tool: 'Quality Dashboard'
                     },
                     {
                         text: 'Count total test completion only for test coverage reporting',

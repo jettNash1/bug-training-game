@@ -12,7 +12,6 @@ export const raisingTicketsScenarios = {
                         outcome: 'Perfect! These are the main ticket types used for different purposes.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Ticket Classification'
                     },
                     {
                         text: 'Bug reports should be raised as this is the primary objective of quality assurance',
@@ -44,7 +43,6 @@ export const raisingTicketsScenarios = {
                         text: 'Concise, clear, and specific with environment prefix if applicable',
                         outcome: 'Excellent! Clear titles help identify issues quickly.',
                         experience: 15,
-                        tool: 'Title Formatting'
                     },
                     {
                         text: 'A full sentence to give all details of the issue raised',
@@ -73,7 +71,6 @@ export const raisingTicketsScenarios = {
                         text: 'Observed behaviour, expected behaviour, and reference to specifications if available',
                         outcome: 'Perfect! This provides clear context for the client and developer to debug the issue.',
                         experience: 15,
-                        tool: 'Description Template'
                     },
                     {
                         text: 'Only the error message should be included in the issue description',
@@ -102,7 +99,6 @@ export const raisingTicketsScenarios = {
                         text: 'Clear, numbered steps with specific actions and component names in order',
                         outcome: 'Excellent! This helps others reproduce the issue reliably.',
                         experience: 15,
-                        tool: 'Steps Documentation'
                     },
                     {
                         text: 'A general description on the area in question for developers to investigate and debug',
@@ -131,7 +127,6 @@ export const raisingTicketsScenarios = {
                         text: 'Primary environment details and any additional environments where the issue occurs',
                         outcome: 'Perfect! This helps identify environment-specific issues.',
                         experience: 15,
-                        tool: 'Environment Tracking'
                     },
                     {
                         text: 'Details of the environment the issue was initially found on',
@@ -160,7 +155,6 @@ export const raisingTicketsScenarios = {
                         text: '75% - Mostly reproducible',
                         outcome: 'Correct! The guide specifically states that 75% means in 3 out of 4 attempts we were able to recreate the issue with minimal difficulty.',
                         experience: 15,
-                        tool: 'Issue Reproduction Rates'
                     },
                     {
                         text: '99% - Consistently reproducible',
@@ -199,7 +193,6 @@ export const raisingTicketsScenarios = {
                         text: 'Blocking Issue/Crash',
                         outcome: 'Correct! a blocking Issue/Crash would likely prevent further testing completely or prevent testing of an area of the site or application.',
                         experience: 15,
-                        tool: 'Issue Severity'
                     },
                     {
                         text: 'Feature Enhancement/Suggestion/Query',
@@ -228,7 +221,6 @@ export const raisingTicketsScenarios = {
                         text: 'A video or screenshot showing the issue occurring should be included',
                         outcome: 'Correct! adding evidence can assist with identifying the root cause of the defect. For defects with low replicability rates, it allows the developer to clearly see what the defect is.',
                         experience: 15,
-                        tool: 'Supporting Material'
                     },
                     {
                         text: 'A detailed technical analysis of the code causing the issue should be included',
@@ -247,7 +239,6 @@ export const raisingTicketsScenarios = {
                         text: 'Tickets should be factual, neutral, and helpful information and are key characteristics',
                         outcome: 'Correct! these are all characteristics of a well-written ticket.',
                         experience: 15,
-                        tool: 'Ticket Characteristics'
                     },
                     {
                         text: 'Detailed technical jargon for developers are key characteristics',
@@ -276,7 +267,6 @@ export const raisingTicketsScenarios = {
                         text: 'You should check if there are specific client requests for raising issues',
                         outcome: 'Correct! consider if there are any specific requests from the client on how they would like issues to be raised to the tracker. You can generally find this information out by looking at the Operational Project Details document.',
                         experience: 15,
-                        tool: 'Ticket Raising'
                     },
                     {
                         text: 'You should wait for another tester to confirm the issue',
@@ -308,8 +298,7 @@ export const raisingTicketsScenarios = {
                     {
                         text: 'Test multiple times and calculate percentage based on successful reproductions',
                         outcome: 'Excellent! This provides accurate reproduction statistics.',
-                        experience: 20,
-                        tool: 'Reproduction Calculator'
+                        experience: 20, 
                     },
                     {
                         text: 'Test multiple times on one environment to ensure accurate reproduction rate',
@@ -337,8 +326,7 @@ export const raisingTicketsScenarios = {
                     {
                         text: 'Clear videos and images showing the issue, crash logs, and highlighted problem areas',
                         outcome: 'Perfect! Visual evidence helps stakeholders and developers understand issues.',
-                        experience: 20,
-                        tool: 'Evidence Collection'
+                        experience: 20, 
                     },
                     {
                         text: 'Supporting material can be omitted if the description has enough detail',
@@ -366,8 +354,7 @@ export const raisingTicketsScenarios = {
                     {
                         text: 'Include environment URL, build version and date for accurate tracking',
                         outcome: 'Excellent! Version information is essential for traceability helps track issue timeline.',
-                        experience: 20,
-                        tool: 'Version Tracker'
+                        experience: 20, 
                     },
                     {
                         text: 'Include build version and date the issue was raised on for documentation',
@@ -395,8 +382,7 @@ export const raisingTicketsScenarios = {
                     {
                         text: 'Assess impact on functionality, user experience, and business requirements',
                         outcome: 'Perfect! This ensures appropriate prioritisation.',
-                        experience: 20,
-                        tool: 'Severity Matrix'
+                        experience: 20, 
                     },
                     {
                         text: 'Mark issue severity as high, as all bugs require addressing and fixing',
@@ -424,8 +410,7 @@ export const raisingTicketsScenarios = {
                     {
                         text: 'Follow client instructions from operational project details and maintain clear communication',
                         outcome: 'Excellent! Client preferences are important for their established work flow.',
-                        experience: 20,
-                        tool: 'Client Requirements'
+                        experience: 20, 
                     },
                     {
                         text: 'Make sure client ticket assigning requirements only are followed',
@@ -457,8 +442,7 @@ export const raisingTicketsScenarios = {
                     {
                         text: 'Provide clear, factual information about business impact and user experience effects',
                         outcome: 'Perfect! This helps stakeholders make informed decisions.',
-                        experience: 25,
-                        tool: 'Impact Assessment'
+                        experience: 25, 
                     },
                     {
                         text: 'Use technical terms where possible along with a description of how the issue behaves',
@@ -486,8 +470,7 @@ export const raisingTicketsScenarios = {
                     {
                         text: 'Double-check all information, verify steps, and ensure clear documentation',
                         outcome: 'Excellent! Quality checks prevent confusion.',
-                        experience: 25,
-                        tool: 'Quality Checklist'
+                        experience: 25, 
                     },
                     {
                         text: 'Review the title and description fields of the ticket before submission',
@@ -515,8 +498,7 @@ export const raisingTicketsScenarios = {
                     {
                         text: 'Tickets should be raise immediately when issues are observed to maintain accuracy',
                         outcome: 'Perfect! Immediate reporting ensures accuracy.',
-                        experience: 25,
-                        tool: 'Issue Tracker'
+                        experience: 25, 
                     },
                     {
                         text: 'Raise tickets in parallel with daily reports for familiarity when writing the report',
@@ -544,8 +526,7 @@ export const raisingTicketsScenarios = {
                     {
                         text: 'Capture clear videos and images, repeat issues in recordings, and highlight key areas',
                         outcome: 'Excellent! Quality evidence aids understanding.',
-                        experience: 25,
-                        tool: 'Evidence Tools'
+                        experience: 25, 
                     },
                     {
                         text: 'Use a device to record video evidence of the issue occurring on another device',
@@ -573,8 +554,7 @@ export const raisingTicketsScenarios = {
                     {
                         text: 'Use templates, follow standards, and maintain consistent formatting across all tickets',
                         outcome: 'Perfect! Consistency helps track and resolve issues.',
-                        experience: 25,
-                        tool: 'Template System'
+                        experience: 25, 
                     },
                     {
                         text: 'Use a format based on what type of issue is being raised',

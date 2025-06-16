@@ -11,7 +11,6 @@ export const functionalInterviewScenarios = {
                         text: 'Review all the requirements for the project provided by the client',
                         outcome: 'Excellent! Understanding context is crucial for effective testing.',
                         experience: 15,
-                        tool: 'Context Analysis Framework',
                         isCorrect: true
                     },
                     {
@@ -44,7 +43,6 @@ export const functionalInterviewScenarios = {
                         text: 'Create comprehensive handover notes and context documentation',
                         outcome: 'Perfect! Proactive knowledge transfer shows excellent initiative.',
                         experience: 20,
-                        tool: 'Knowledge Transfer',
                         isCorrect: true
                     },
                     {
@@ -77,7 +75,6 @@ export const functionalInterviewScenarios = {
                         text: 'Set up regular video calls, use screen sharing, and maintain detailed documentation',
                         outcome: 'Perfect! This maintains clear communication channels.',
                         experience: 20,
-                        tool: 'Remote Collaboration',
                         isCorrect: true
                     },
                     {
@@ -110,7 +107,6 @@ export const functionalInterviewScenarios = {
                         text: 'Bugs, Queries, Suggestions/Improvements, and Reference tickets',
                         outcome: 'Perfect! These are the main ticket types used for different purposes.',
                         experience: 15,
-                        tool: 'Ticket Classification',
                         isCorrect: true
                     },
                     {
@@ -143,7 +139,6 @@ export const functionalInterviewScenarios = {
                         text: 'Test multiple times and calculate percentage based on successful reproductions',
                         outcome: 'Excellent! This provides accurate reproduction statistics.',
                         experience: 20,
-                        tool: 'Reproduction Calculator',
                         isCorrect: true
                     },
                     {
@@ -180,7 +175,6 @@ export const functionalInterviewScenarios = {
                         text: 'Multiply severity by likelihood ratings',
                         outcome: 'Excellent! This calculation provides accurate risk levels.',
                         experience: 15,
-                        tool: 'Risk Calculator',
                         isCorrect: true
                     },
                     {
@@ -219,7 +213,6 @@ export const functionalInterviewScenarios = {
                         text: 'Review documentation to determine scope, user and system impact',
                         outcome: 'Perfect! Documentation review is key to identifying risks.',
                         experience: 15,
-                        tool: 'Risk Assessment Template',
                         isCorrect: true
                     },
                     {
@@ -246,7 +239,6 @@ export const functionalInterviewScenarios = {
                         text: 'Sanity testing is performed after smoke testing to verify specific code changes',
                         outcome: 'Perfect! Sanity testing focuses on verifying a specific code change/critical bug fix and its intended functionality. Smoke testing is performed at the beginning of every new release and focus is on all critical functionality.',
                         experience: 25,
-                        tool: 'Sanity and Smoke Test Validator',
                         isCorrect: true
                     },
                     {
@@ -279,7 +271,6 @@ export const functionalInterviewScenarios = {
                         text: 'To discover defects while dynamically exploring the application under test',
                         outcome: 'Correct! Exploratory testing is primarily aimed at discovering defects through dynamic investigation of the software without following predefined test cases.',
                         experience: 15,
-                        tool: 'Exploratory testing Framework',
                         isCorrect: true
                     },
                     {
@@ -312,7 +303,6 @@ export const functionalInterviewScenarios = {
                         text: 'It may lead to incomplete test coverage due to time constraints',
                         outcome: 'Correct! A disadvantage of exploratory testing is potentially incomplete test coverage. As a time-based approach, testing might uncover numerous issues in one area, but time constraints may prevent discovering all bugs comprehensively.',
                         experience: 20,
-                        tool: 'Exploratory Risk Check',
                         isCorrect: true
                     },
                     {
@@ -348,8 +338,7 @@ export const functionalInterviewScenarios = {
                     {
                         text: 'Functional testing is based on customer requirements while non-functional testing is based on customer expectations',
                         outcome: 'Perfect! Functional testing verifies if the system works according to specified requirements, while non-functional testing addresses expectations about how well the system performs.',
-                        experience: 15,
-                        tool: 'Non-Functional and Functional Testing Tool',
+                        experience: 15, 
                         isCorrect: true
                     },
                     {
@@ -382,7 +371,6 @@ export const functionalInterviewScenarios = {
                         text: 'Start with highest priority and severity issues, ensuring critical fixes are verified first',
                         outcome: 'Perfect! This ensures most important issues are verified.',
                         experience: 15,
-                        tool: 'Prioritisation',
                         isCorrect: true
                     },
                     {
@@ -415,7 +403,6 @@ export const functionalInterviewScenarios = {
                         text: 'Focus on areas where fixes were implemented, while also checking surrounding functionality',
                         outcome: 'Perfect! This ensures thorough regression coverage.',
                         experience: 20,
-                        tool: 'Regression Testing',
                         isCorrect: true
                     },
                     {
@@ -448,7 +435,6 @@ export const functionalInterviewScenarios = {
                         text: 'Create, read, update, and delete functionality checks for content management',
                         outcome: 'Excellent! These are the fundamental CRUD operations.',
                         experience: 15,
-                        tool: 'CRUD Testing',
                         isCorrect: true
                     },
                     {
@@ -487,7 +473,6 @@ export const functionalInterviewScenarios = {
                         text: 'Checking grammar, spelling, and typos in content',
                         outcome: 'Correct! This is the core purpose of copy proofing.',
                         experience: 15,
-                        tool: 'Content Quality Verification',
                         isCorrect: true
                     },
                     {

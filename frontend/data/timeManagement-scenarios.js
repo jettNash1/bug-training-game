@@ -11,7 +11,6 @@ export const timeManagementScenarios = {
                     text: 'Review your calendar for meetings and prepare for any necessary preparation and wrap-up activities',
                     outcome: 'Perfect! Starting with a calendar review helps structure your week.',
                     experience: 15,
-                    tool: 'Calendar Management'
                 },
                 {
                     text: 'Start working on the first task presented to you within an assigned project',
@@ -40,7 +39,6 @@ export const timeManagementScenarios = {
                     text: 'Clean workspace, organised email inbox, pinned relevant channels, and charged devices',
                     outcome: 'Excellent! An organised workspace increases efficiency.',
                     experience: 15,
-                    tool: 'Workspace Management'
                 },
                 {
                     text: 'Keep all channels and tabs open to make sure of quick communication and easy access to everything you need',
@@ -69,7 +67,6 @@ export const timeManagementScenarios = {
                     text: 'This should be done before the first session, using unsold time if needed',
                     outcome: 'Perfect! Early preparation ensures efficient testing.',
                     experience: 15,
-                    tool: 'Documentation Review'
                 },
                 {
                     text: 'During the first test session to work in parallel with test execution',
@@ -98,7 +95,6 @@ export const timeManagementScenarios = {
                     text: 'Check the resource sheet and review any project changes',
                     outcome: 'Excellent! Resource updates are crucial for daily planning.',
                     experience: 15,
-                    tool: 'Resource Management'
                 },
                 {
                     text: 'Start testing immediately to make sure project time lines are kept on track',
@@ -127,7 +123,6 @@ export const timeManagementScenarios = {
                     text: 'Factor in preparation and wrap-up time, not just meeting duration',
                     outcome: 'Perfect! Complete meeting time management includes preparation.',
                     experience: 15,
-                    tool: 'Meeting Planning'
                 },
                 {
                     text: 'Schedule back-to-back meetings to keep in the same mindset',
@@ -157,7 +152,6 @@ export const timeManagementScenarios = {
                     text: 'As functional testing is sold in blocks of time and clients should get maximum value',
                     outcome: 'Correct! As testers, it is important that you manage your time effectively. This ensures our clients get the most value out of the time they have procured from us.',
                     experience: 15,
-                    tool: 'Effective Time Management'
                 },
                 {
                     text: 'To ensure personal career advancement opportunities',
@@ -196,7 +190,6 @@ export const timeManagementScenarios = {
                     text: 'Having colleagues need to cover your outstanding tasks, leading to frustration',
                     outcome: 'Correct! Your colleagues may be required to cover your outstanding tasks, which could lead to frustration or resentment within the team.',
                     experience: 15,
-                    tool: 'Ineffective Time Management'
                 },
                 {
                     text: 'Discovering too many bugs which delays project completion',
@@ -225,7 +218,6 @@ export const timeManagementScenarios = {
                     text: 'Prioritise environments and journeys based on how end users will access the software',
                     outcome: 'Correct! for example, if a website is designed for use on tablet devices, prioritise tablet coverage, as issues found here will be of a higher value to the client.',
                     experience: 15,
-                    tool: 'Environment Time Management'
                 },
                 {
                     text: 'Follow the script order exactly as written regardless of priorities',
@@ -244,7 +236,6 @@ export const timeManagementScenarios = {
                     text: 'Project timings should be assessed throughout the day based on progress and remaining coverage',
                     outcome: 'Correct! It is important to re-assess timings throughout the day based on progress, and keep in mind what is left to cover.',
                     experience: 15,
-                    tool: 'Project Time Assessment'
                 },
                 {
                     text: 'Project time assessment should be carried out at the end of the day to avoid disrupting workflow',
@@ -273,7 +264,6 @@ export const timeManagementScenarios = {
                     text: 'Higher levels of productivity are a benefit of good time management',
                     outcome: 'Correct! Productivity levels have proven to increase when good time management of projects are applied.',
                     experience: 15,
-                    tool: 'Time Management Benefit'
                 },
                 {
                     text: 'A benefit of good time management increases the ability to multitask on multiple projects simultaneously',
@@ -305,8 +295,7 @@ export const timeManagementScenarios = {
                 {
                     text: 'Review Statement Of Work timings, environment count, software size, and core user journeys',
                     outcome: 'Excellent! A comprehensive review ensures accurate timing.',
-                    experience: 20,
-                    tool: 'Time Estimation'
+                    experience: 20,     
                 },
                 {
                     text: 'Use a standard default timing for all projects that require test activities',
@@ -335,7 +324,6 @@ export const timeManagementScenarios = {
                     text: 'Consider experience levels, individual paces, and project familiarity',
                     outcome: 'Perfect! Fair distribution considers individual capabilities.',
                     experience: 20,
-                    tool: 'Workload Management'
                 },
                 {
                     text: 'Divide tasks equally between the team by number',
@@ -364,7 +352,6 @@ export const timeManagementScenarios = {
                     text: 'Analyse client priorities, core functions, and user patterns',
                     outcome: 'Excellent! Strategic prioritisation maximizes testing value.',
                     experience: 20,
-                    tool: 'Priority Management'
                 },
                 {
                     text: 'Test in a linear order to gain as much coverage as possible',
@@ -393,7 +380,6 @@ export const timeManagementScenarios = {
                     text: 'Regularly assess coverage, adjust timings, and communicate any concerns',
                     outcome: 'Perfect! Active monitoring enables timely adjustments.',
                     experience: 20,
-                    tool: 'Progress Tracking'
                 },
                 {
                     text: 'Wait until end of day before reporting on any progress',
@@ -422,7 +408,6 @@ export const timeManagementScenarios = {
                     text: 'Start with primary environment, then adjust timing for others based on global issues',
                     outcome: 'Excellent! This is an efficient environment coverage strategy.',
                     experience: 20,
-                    tool: 'Environment Management'
                 },
                 {
                     text: 'Test all environments equally in regards to time spent on testing activities',
@@ -455,7 +440,6 @@ export const timeManagementScenarios = {
                     text: 'Review all project requirements, create daily schedules, maintain clear separation',
                     outcome: 'Perfect! This is a good structured approach to multiple projects.',
                     experience: 25,
-                    tool: 'Multi-Project Management'
                 },
                 {
                     text: 'Handle projects as and when they are requested',
@@ -484,7 +468,6 @@ export const timeManagementScenarios = {
                     text: 'Identify risks early, implement mitigation steps, communicate with the project manager',
                     outcome: 'Excellent! Proactive risk management saves time.',
                     experience: 25,
-                    tool: 'Risk Management'
                 },
                 {
                     text: 'Deal with time risks as they arise during test activities',
@@ -513,7 +496,6 @@ export const timeManagementScenarios = {
                     text: 'Immediately notify the project manager, document thoroughly, reprioritise remaining time',
                     outcome: 'Perfect! A quick response and clear communication is essential to mitigating any delays.',
                     experience: 25,
-                    tool: 'Issue Management'
                 },
                 {
                     text: 'Continue with the tasks within the original project plan',
@@ -542,7 +524,6 @@ export const timeManagementScenarios = {
                     text: 'Review changes immediately, adjust plans, ensure smooth transitions',
                     outcome: 'Excellent! Adaptable planning maintains efficiency.',
                     experience: 25,
-                    tool: 'Change Management'
                 },
                 {
                     text: 'Continue with the current tasks assigned to completion',
@@ -571,7 +552,6 @@ export const timeManagementScenarios = {
                     text: 'Establish sustainable routines, regularly review efficiency, adapt processes as needed',
                     outcome: 'Perfect! This is sustainable approach to long-term projects.',
                     experience: 25,
-                    tool: 'Long-term Planning'
                 },
                 {
                     text: 'Keep same routine throughout the project to maintain consistency',

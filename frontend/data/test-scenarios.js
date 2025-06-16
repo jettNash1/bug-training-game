@@ -10,7 +10,6 @@ export const testScenarios = {
                     text: 'Understand requirements first, then create a test plan before executing tests',
                     outcome: 'Excellent! Understanding requirements is the foundation of effective testing.',
                     experience: 15,
-                    tool: 'Test Planning'
                 },
                 {
                     text: 'Start testing immediately to find bugs quickly',
@@ -39,7 +38,6 @@ export const testScenarios = {
                     text: 'Steps to reproduce, expected vs. actual results, environment details, and severity assessment',
                     outcome: 'Perfect! This provides all the essential information for developers to understand and fix the issue.',
                     experience: 15,
-                    tool: 'Bug Reporting'
                 },
                 {
                     text: 'Just a screenshot of the error and a brief description',
@@ -68,7 +66,6 @@ export const testScenarios = {
                     text: 'To provide a record of what was tested, how it was tested, and the results for future reference',
                     outcome: 'Correct! Good documentation helps with knowledge sharing, traceability, and repeatability.',
                     experience: 15,
-                    tool: 'Test Documentation'
                 },
                 {
                     text: 'To satisfy management requirements for paperwork',
@@ -99,7 +96,6 @@ export const testScenarios = {
                     text: 'Document detailed steps, environment info, and include screen recordings or logs',
                     outcome: 'Perfect! Comprehensive documentation helps developers reproduce and fix the issue.',
                     experience: 20,
-                    tool: 'Bug Documentation'
                 },
                 {
                     text: 'Report it verbally to the developer to save time',
@@ -128,7 +124,6 @@ export const testScenarios = {
                     text: 'Boundary value analysis and equivalence partitioning to efficiently cover input ranges',
                     outcome: 'Excellent! These techniques provide good coverage while minimizing the number of test cases.',
                     experience: 20,
-                    tool: 'Test Design Techniques'
                 },
                 {
                     text: 'Random testing of different inputs to see what happens',
@@ -157,7 +152,6 @@ export const testScenarios = {
                     text: 'Create an environment that closely matches production with isolated test data',
                     outcome: 'Perfect! A production-like environment with isolated test data provides realistic testing conditions.',
                     experience: 20,
-                    tool: 'Environment Management'
                 },
                 {
                     text: 'Use the production environment to ensure accuracy',
@@ -188,7 +182,6 @@ export const testScenarios = {
                     text: 'Create a balanced pyramid with more unit tests, fewer integration tests, and selective UI tests',
                     outcome: 'Excellent! The test pyramid approach ensures efficient and effective test coverage.',
                     experience: 25,
-                    tool: 'Test Architecture'
                 },
                 {
                     text: 'Focus on automating all manual UI tests first since they\'re most visible to users',
@@ -217,7 +210,6 @@ export const testScenarios = {
                     text: 'Define clear performance requirements, identify key scenarios, simulate realistic loads, and measure against business metrics',
                     outcome: 'Perfect! This approach ensures performance testing addresses actual business needs.',
                     experience: 25,
-                    tool: 'Performance Testing'
                 },
                 {
                     text: 'Run the maximum possible load to see when the system breaks',
@@ -245,8 +237,7 @@ export const testScenarios = {
                 {
                     text: 'Aligning testing efforts with business risks and priorities to deliver the most value',
                     outcome: 'Excellent! Risk-based testing ensures resources focus on the most important areas.',
-                    experience: 25,
-                    tool: 'Strategic Planning'
+                    experience: 25, 
                 },
                 {
                     text: 'Ensuring 100% test coverage of all code',

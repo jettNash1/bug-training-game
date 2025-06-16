@@ -12,7 +12,6 @@ export const riskAnalysisScenarios = {
                         outcome: 'Perfect! Comprehensive risk severity assessment considers multiple factors.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Severity Assessment Framework'
                     },
                     {
                         text: 'Consider immediate impact on the system under test',
@@ -44,7 +43,6 @@ export const riskAnalysisScenarios = {
                         text: 'Historical occurrence, interaction frequency, known triggers, and prior experience',
                         outcome: 'Excellent! Multiple factors help determine likelihood accurately.',
                         experience: 15,
-                        tool: 'Likelihood Assessment Tool'
                     },
                     {
                         text: 'Check prior occurrences of the same type of issue being raised',
@@ -73,7 +71,6 @@ export const riskAnalysisScenarios = {
                         text: 'Review time availability, device readiness, and project understanding',
                         outcome: 'Perfect! Morning assessment prevents day-long issues.',
                         experience: 15,
-                        tool: 'Daily Risk Checklist'
                     },
                     {
                         text: 'Commence functional testing activates straight away to make sure coverage within time constraints are sufficiently met',
@@ -102,7 +99,6 @@ export const riskAnalysisScenarios = {
                         text: 'Multiply severity by likelihood ratings',
                         outcome: 'Excellent! This calculation provides accurate risk levels.',
                         experience: 15,
-                        tool: 'Risk Calculator'
                     },
                     {
                         text: 'Consider the severity of the issue and base the overall risk on this',
@@ -131,7 +127,6 @@ export const riskAnalysisScenarios = {
                         text: 'Progress rate, device status, new client information, and blocking issues',
                         outcome: 'Perfect! Mid-day check helps maintain progress.',
                         experience: 15,
-                        tool: 'Progress Tracking'
                     },
                     {
                         text: 'Check the time remaining in the day for testing activities to factor in test coverage',
@@ -161,7 +156,6 @@ export const riskAnalysisScenarios = {
                         text: 'Questions should be the primary focus of risk identification',
                         outcome: 'Correct! Questioning the who, what, why, and where of activities to identify potential issues ahead of time should be the primary focus.',
                         experience: 15,
-                        tool: 'Risk Identification Focus'
                     },
                     {
                         text: 'Documentation should be the primary focus of risk identification',
@@ -200,7 +194,6 @@ export const riskAnalysisScenarios = {
                         text: 'The history of the risk occurring',
                         outcome: 'Correct! The history of the risk occurring is a factor to consider when estimating the likelihood of a risk, not the severity.',
                         experience: 15,
-                        tool: 'Risk Severity Estimation'
                     },
                     {
                         text: 'The impact when the risk occurs',
@@ -229,7 +222,6 @@ export const riskAnalysisScenarios = {
                         text: 'Certain',
                         outcome: 'Correct! according to the Likelihood Scale in the guide, the highest level (5) is defined as Certain. This represents risks that are guaranteed to occur.',
                         experience: 15,
-                        tool: 'Likelihood Scale'
                     },
                     {
                         text: 'Inevitable',
@@ -248,7 +240,6 @@ export const riskAnalysisScenarios = {
                         text: 'The start of the workday should be determined as key checkpoint for risk assessment',
                         outcome: 'Correct! The start of each day is a great time to start assessing project risk as this is a primary operation that allow for greater success throughout a day.',
                         experience: 15,
-                        tool: 'Risk Assessment Checkpoint'
                     },
                     {
                         text: 'The end of each test case should be determined as key checkpoint for risk assessment',
@@ -277,7 +268,6 @@ export const riskAnalysisScenarios = {
                         text: 'Delivery Manager, Head of Service or Project Manager if involving in scoping should be responsible for the risk assessment',
                         outcome: 'Correct! If involved in scoping the responsibility belongs to Delivery Manager, Head of Service or Project Manager.',
                         experience: 15,
-                        tool: 'Project Scoping Risk Assessment'
                     },
                     {
                         text: 'Test analysts only should be responsible for the risk assessment',
@@ -309,8 +299,7 @@ export const riskAnalysisScenarios = {
                     {
                         text: 'Evaluate resource availability, information gathering time, fix windows, and timeline flexibility',
                         outcome: 'Excellent! Comprehensive timeline risk assessment.',
-                        experience: 20,
-                        tool: 'Timeline Risk Assessment'
+                        experience: 20,     
                     },
                     {
                         text: 'Check the duration of time allocated for functional test activities on the system under test',
@@ -338,8 +327,7 @@ export const riskAnalysisScenarios = {
                     {
                         text: 'Check documentation availability, detail level, business rules, and acceptance criteria',
                         outcome: 'Perfect! Documentation completeness is crucial.',
-                        experience: 20,
-                        tool: 'Documentation Review'
+                        experience: 20, 
                     },
                     {
                         text: 'Check if documentation has been supplied by the client to form operational project details',
@@ -367,8 +355,7 @@ export const riskAnalysisScenarios = {
                     {
                         text: 'Verify access methods, specific requirements, user permissions, and environment stability',
                         outcome: 'Excellent! Complete access risk assessment.',
-                        experience: 20,
-                        tool: 'Access Risk Checklist'
+                        experience: 20, 
                     },
                     {
                         text: 'Check a user can login can login to the environment specified by the URL or application provided by the client',
@@ -396,8 +383,7 @@ export const riskAnalysisScenarios = {
                     {
                         text: 'Evaluate platform performance impact, potential conflicts, and workflow interruptions',
                         outcome: 'Perfect! Multi-user impact needs thorough assessment.',
-                        experience: 20,
-                        tool: 'Concurrent Testing Assessment'
+                        experience: 20, 
                     },
                     {
                         text: 'Assess the impact of logging into the environment sequentially with different users',
@@ -425,8 +411,7 @@ export const riskAnalysisScenarios = {
                     {
                         text: 'Establish urgent contact methods, verify response times, and ensure clear escalation paths',
                         outcome: 'Excellent! Communication channel assessment.',
-                        experience: 20,
-                        tool: 'Communication Risk Assessment'
+                        experience: 20, 
                     },
                     {
                         text: 'Promote email as the one communication channel',
@@ -458,8 +443,7 @@ export const riskAnalysisScenarios = {
                     {
                         text: 'Evaluate impact on testing time, triage requirements, and need for additional verification',
                         outcome: 'Perfect! Comprehensive bug impact assessment.',
-                        experience: 25,
-                        tool: 'Bug Impact Analysis'
+                        experience: 25, 
                     },
                     {
                         text: 'Continue following the planned test script and report findings at the end of the day to the project manager',
@@ -487,8 +471,7 @@ export const riskAnalysisScenarios = {
                     {
                         text: 'Assess impact on timeline, coverage, and team capability, then adjust plans accordingly',
                         outcome: 'Excellent! Resource change impact analysis.',
-                        experience: 25,
-                        tool: 'Resource Risk Management'
+                        experience: 25, 
                     },
                     {
                         text: 'Continue with the original testing activities set out in planning and inform the project manager of progress at the end of the day',
@@ -516,8 +499,7 @@ export const riskAnalysisScenarios = {
                     {
                         text: 'Evaluate fix timeline, regression impact, and remaining test time, then reprioritize',
                         outcome: 'Perfect! Late-stage issue impact assessment.',
-                        experience: 25,
-                        tool: 'Late-Stage Risk Analysis'
+                        experience: 25, 
                     },
                     {
                         text: 'Reduce the remaining test areas to meet the project timeline set out in planning',
@@ -545,8 +527,7 @@ export const riskAnalysisScenarios = {
                     {
                         text: 'Analyse impact on timeline, coverage, and existing tests, then adjust strategy',
                         outcome: 'Excellent! Change impact analysis.',
-                        experience: 25,
-                        tool: 'Change Impact Assessment'
+                        experience: 25, 
                     },
                     {
                         text: 'Continue with the original testing activities set out in planning',
@@ -574,8 +555,7 @@ export const riskAnalysisScenarios = {
                     {
                         text: 'Review project challenges, identify process improvements, and document lessons learned',
                         outcome: 'Perfect! Comprehensive project review.',
-                        experience: 25,
-                        tool: 'Project Review Framework'
+                        experience: 25, 
                     },
                     {
                         text: 'Document all major issues in a project review',

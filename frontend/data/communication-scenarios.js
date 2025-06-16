@@ -10,7 +10,6 @@ export const communicationScenarios = {
                         text: 'Clearly state what you completed yesterday, what you\'re working on today, and any blockers',
                         outcome: 'Perfect! This provides a clear and structured update.',
                         experience: 15,
-                        tool: 'Meeting Communication'
                     },
                     {
                         text: 'Give a detailed explanation of every task you worked on',
@@ -39,7 +38,6 @@ export const communicationScenarios = {
                         text: 'Use a clear subject line, organize content with headings, and highlight key points',
                         outcome: 'Excellent! This makes the email easy to read and understand.',
                         experience: 15,
-                        tool: 'Email Etiquette'
                     },
                     {
                         text: 'Write a paragraph which includes all possible information that might be required',
@@ -68,7 +66,6 @@ export const communicationScenarios = {
                         text: 'Provide a clear answer with relevant documentation links',
                         outcome: 'Perfect! This helps both now and in the future.',
                         experience: 15,
-                        tool: 'Documentation Reference'
                     },
                     {
                         text: 'Advise them to search for suggestions online and give general direction',
@@ -97,7 +94,6 @@ export const communicationScenarios = {
                         text: 'Promptly inform stakeholders, explain the cause, and provide an updated timeline',
                         outcome: 'Excellent! This maintains transparency and builds trust.',
                         experience: 15,
-                        tool: 'Status Reporting'
                     },
                     {
                         text: 'Wait until someone else affected asks about the delay in the project',
@@ -126,7 +122,6 @@ export const communicationScenarios = {
                         text: 'Write clear, organised documentation with examples and update relevant guides',
                         outcome: 'Perfect! This helps the team understand and maintain the feature.',
                         experience: 15,
-                        tool: 'Technical Documentation'
                     },
                     {
                         text: 'Leave comments in the specific code that you have access to',
@@ -156,7 +151,6 @@ export const communicationScenarios = {
                         text: 'Review project documents, prepare questions, and understand your role in the project',
                         outcome: 'Excellent! Being prepared shows professionalism and helps make meetings productive.',
                         experience: 15,
-                        tool: 'Meeting Preparation'
                     },
                     {
                         text: 'Just attend the meeting and catch up as things progress',
@@ -185,7 +179,6 @@ export const communicationScenarios = {
                         text: 'Research what you can, then ask specific, well-formulated questions about remaining uncertainties',
                         outcome: 'Perfect! This shows initiative while seeking necessary clarification.',
                         experience: 15,
-                        tool: 'Effective Questioning'
                     },
                     {
                         text: 'Ask the project manager to explain everything about the task again',
@@ -214,7 +207,6 @@ export const communicationScenarios = {
                         text: 'Take concise notes of key points, decisions, and action items with clear ownership',
                         outcome: 'Excellent! This creates a useful record that can be shared and referenced.',
                         experience: 15,
-                        tool: 'Note Taking'
                     },
                     {
                         text: 'Record every detail of the conversation word for word',
@@ -243,7 +235,6 @@ export const communicationScenarios = {
                         text: 'Provide specific, constructive comments with a balance of positive points and areas for improvement',
                         outcome: 'Perfect! This approach is helpful and motivating.',
                         experience: 15,
-                        tool: 'Constructive Feedback'
                     },
                     {
                         text: 'Focus only on what needs to be fixed',
@@ -272,7 +263,6 @@ export const communicationScenarios = {
                         text: 'Write a concise email with your role, relevant experience, and enthusiasm for contributing to the project',
                         outcome: 'Excellent! This provides helpful context and establishes a positive first impression.',
                         experience: 15,
-                        tool: 'Professional Introduction'
                     },
                     {
                         text: 'Share detailed information about your entire work history and all your skills',
@@ -302,7 +292,6 @@ export const communicationScenarios = {
                         text: 'Say you\'re unsure but will find out the answer',
                         outcome: 'Correct! giving incorrect information could lead to accountability issues later.',
                         experience: 15,
-                        tool: 'Client Enquiry'
                     },
                     {
                         text: 'Provide your best guess to maintain credibility',
@@ -341,7 +330,6 @@ export const communicationScenarios = {
                         text: 'Post a friendly reply with context and link to the existing issue',
                         outcome: 'Correct! A friendly, informative approach prevents the duplicate issue ticket from being raised.',
                         experience: 15,
-                        tool: 'Duplicate Issue Prevention'
                     },
                     {
                         text: 'Allow them to raise the duplicate ticket as the client will sort it out later',
@@ -370,7 +358,6 @@ export const communicationScenarios = {
                         text: 'Being persuasive is a key characteristic of effective communication',
                         outcome: 'Correct! being persuasive is not a characteristic of effective communication. The following characteristics should be observed. Being Clear, Consistent, Relevant, Timely, Honest, Open, and Approachable',
                         experience: 15,
-                        tool: 'Communication Characteristics'
                     },
                     {
                         text: 'Being approachable is a key characteristic of effective communication',
@@ -389,7 +376,6 @@ export const communicationScenarios = {
                         text: 'Ask a peer or project manager to review and provide feedback',
                         outcome: 'Correct! ask a peer or project manager to review and provide feedback. This helps ensure communication maintains the appropriate professional tone.',
                         experience: 15,
-                        tool: 'Electronic Messaging'
                     },
                     {
                         text: 'Send it anyway as overthinking can delay important communications',
@@ -418,7 +404,6 @@ export const communicationScenarios = {
                         text: 'Body language is an aspect of communication that is often overlooked',
                         outcome: 'Correct! this is an aspect that is often overlooked but just as important, our body language says a lot about us, before we even speak.',
                         experience: 15,
-                        tool: 'Communication Aspects'
                     },
                     {
                         text: 'Email signatures are an aspect of communication that is often overlooked',
@@ -451,7 +436,6 @@ export const communicationScenarios = {
                         text: 'Use clear analogies and visual aids, avoid jargon, and focus on business impact',
                         outcome: 'Excellent! This makes technical concepts accessible.',
                         experience: 20,
-                        tool: 'Stakeholder Communication'
                     },
                     {
                         text: 'Use technical terms to maintain a professional approach',
@@ -480,7 +464,6 @@ export const communicationScenarios = {
                         text: 'Facilitate a discussion, document different viewpoints, and work toward consensus',
                         outcome: 'Perfect! This promotes constructive resolution.',
                         experience: 20,
-                        tool: 'Conflict Resolution'
                     },
                     {
                         text: 'The most senior person within the team should decide the outcome',
@@ -509,7 +492,6 @@ export const communicationScenarios = {
                         text: 'Provide specific, constructive feedback with examples and suggestions for improvement',
                         outcome: 'Excellent! This helps learning and improvement.',
                         experience: 20,
-                        tool: 'Code Review'
                     },
                     {
                         text: 'List all the problems found in document and send these to be addressed',
@@ -538,7 +520,6 @@ export const communicationScenarios = {
                         text: 'Set up regular video calls, use screen sharing, and maintain detailed documentation',
                         outcome: 'Perfect! This maintains clear communication channels.',
                         experience: 20,
-                        tool: 'Remote Collaboration'
                     },
                     {
                         text: 'Use email as your source of communication and copy everyone in that\'s involved in the project',
@@ -567,7 +548,6 @@ export const communicationScenarios = {
                         text: 'Create a structured report with key metrics, milestones, and risks, and schedule a presentation',
                         outcome: 'Excellent! This provides comprehensive project visibility.',
                         experience: 20,
-                        tool: 'Project Communication'
                     },
                     {
                         text: 'Send quick updates on the fly as changes to projects or issue occur',
@@ -597,7 +577,6 @@ export const communicationScenarios = {
                         text: 'Set up an initial meeting to align on goals, establish communication channels, and define roles and responsibilities',
                         outcome: 'Perfect! This creates clear expectations and structures for collaboration.',
                         experience: 20,
-                        tool: 'Cross-team Coordination'
                     },
                     {
                         text: 'Send a detailed email explaining what you need them to do',
@@ -626,7 +605,6 @@ export const communicationScenarios = {
                         text: 'Create a layered presentation with executive summary, business impacts, and technical details as supporting information',
                         outcome: 'Excellent! This serves various audience needs while keeping everyone engaged.',
                         experience: 20,
-                        tool: 'Data Presentation'
                     },
                     {
                         text: 'Focus entirely on the technical details as they\'re the most important part',
@@ -655,7 +633,6 @@ export const communicationScenarios = {
                         text: 'Document the current pain points, your proposed solution with benefits, and request a meeting to discuss implementation',
                         outcome: 'Perfect! This provides context, a solution, and opens a collaborative discussion.',
                         experience: 20,
-                        tool: 'Process Improvement'
                     },
                     {
                         text: 'Implement the changes yourself to demonstrate their effectiveness',
@@ -684,7 +661,6 @@ export const communicationScenarios = {
                         text: 'Acknowledge their concerns, explain the situation transparently, provide a revised timeline with confidence, and offer regular updates',
                         outcome: 'Excellent! This addresses the frustration while rebuilding trust.',
                         experience: 20,
-                        tool: 'Client Management'
                     },
                     {
                         text: 'Explain all the technical challenges that led to the delay in detail',
@@ -713,7 +689,6 @@ export const communicationScenarios = {
                         text: 'Prepare a structured template, conduct focused individual interviews, and follow up with a collaborative session to resolve conflicts',
                         outcome: 'Perfect! This ensures comprehensive input while managing different perspectives.',
                         experience: 20,
-                        tool: 'Requirements Gathering'
                     },
                     {
                         text: 'Send an email asking everyone to list their requirements',
@@ -746,7 +721,6 @@ export const communicationScenarios = {
                         text: 'Establish a clear communication channel, provide regular updates, and document the resolution process',
                         outcome: 'Perfect! This ensures effective crisis management.',
                         experience: 25,
-                        tool: 'Crisis Management'
                     },
                     {
                         text: 'Send an email about the issue and copy everyone in that\'s involved in the project',
@@ -775,7 +749,6 @@ export const communicationScenarios = {
                         text: 'Use clear, inclusive language, provide written follow-ups, and be mindful of cultural differences',
                         outcome: 'Excellent! This promotes inclusive global collaboration.',
                         experience: 25,
-                        tool: 'Global Communication'
                     },
                     {
                         text: 'Use your preferred communication style',
@@ -804,7 +777,6 @@ export const communicationScenarios = {
                         text: 'Create multiple versions of the presentation with appropriate technical depth for different audiences',
                         outcome: 'Perfect! This ensures understanding at all levels.',
                         experience: 25,
-                        tool: 'Technical Presentation'
                     },
                     {
                         text: 'Focus on the technical details as these should be understood to move forward',
@@ -833,7 +805,6 @@ export const communicationScenarios = {
                         text: 'Create comprehensive documentation, conduct training sessions, and have overlap period with new team',
                         outcome: 'Excellent! This ensures smooth transition.',
                         experience: 25,
-                        tool: 'Knowledge Management'
                     },
                     {
                         text: 'Leave detailed comments relating to the code of the system under test within the project',
@@ -862,7 +833,6 @@ export const communicationScenarios = {
                         text: 'Prepare a detailed proposal with impact analysis, gather feedback from stakeholders, and present a phased implementation plan',
                         outcome: 'Perfect! This demonstrates strategic thinking and stakeholder management.',
                         experience: 25,
-                        tool: 'Change Management'
                     },
                     {
                         text: 'Send the proposal by email so everyone can digest the information when they have time',
@@ -892,7 +862,6 @@ export const communicationScenarios = {
                         text: 'Focus on business impact, provide clear visualizations, highlight key risks and mitigation plans, and prepare concise answers to potential questions',
                         outcome: 'Excellent! This aligns technical information with executive concerns.',
                         experience: 25,
-                        tool: 'Executive Communication'
                     },
                     {
                         text: 'Present detailed test reports showing all the tests conducted and their results',
@@ -921,7 +890,6 @@ export const communicationScenarios = {
                         text: 'Map stakeholders with their information needs, create a multi-channel approach with regular touchpoints, and plan for both push and pull communication methods',
                         outcome: 'Perfect! This creates a comprehensive approach tailored to different stakeholders.',
                         experience: 25,
-                        tool: 'Communication Planning'
                     },
                     {
                         text: 'Create a monthly newsletter that will update everyone on progress',
@@ -950,7 +918,6 @@ export const communicationScenarios = {
                         text: 'Present data showing current constraints, business impact of quality issues, cost-benefit analysis of additional resources, and a phased implementation plan',
                         outcome: 'Excellent! This provides a compelling business case for the resources.',
                         experience: 25,
-                        tool: 'Resource Negotiation'
                     },
                     {
                         text: 'Explain that the team is overworked and needs more help to get everything done',
@@ -979,7 +946,6 @@ export const communicationScenarios = {
                         text: 'Facilitate a structured workshop to identify root causes, establish shared goals, and develop collaborative solutions that meet both teams\' needs',
                         outcome: 'Perfect! This addresses the underlying issues and builds collaboration.',
                         experience: 25,
-                        tool: 'Conflict Mediation'
                     },
                     {
                         text: 'Escalate the issue to senior management to make a final decision',
@@ -1008,7 +974,6 @@ export const communicationScenarios = {
                         text: 'Develop tailored presentations for different audiences, create practical guidelines with examples, offer training sessions, and identify champions in each team',
                         outcome: 'Excellent! This multi-faceted approach drives understanding and adoption.',
                         experience: 25,
-                        tool: 'Change Implementation'
                     },
                     {
                         text: 'Send a comprehensive document explaining the new strategy in detail',

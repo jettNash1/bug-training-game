@@ -11,7 +11,6 @@ export const sanitySmokeScenarios = {
                     text: 'Sanity testing is a subset of regression testing that validates specific code changes',
                     outcome: 'Correct! Sanity testing is a subset of regression testing that focuses on verifying specific code changes and their intended functionality.',
                     experience: 15,
-                    tool: 'Sanity Testing Framework'
                 },
                 {
                     text: 'A comprehensive testing method that checks all system functionality',
@@ -50,7 +49,6 @@ export const sanitySmokeScenarios = {
                     text: 'After smoke testing, typically to check critical bug fixes',
                     outcome: 'Correct! Sanity testing is performed after smoke tests, usually for critical bug fixes or before immediate production deployment.',
                     experience: 15,
-                    tool: 'Sanity Test Execution'
                 },
                 {
                     text: 'Sanity testing should be performed during the initial design phase of the project',
@@ -69,7 +67,6 @@ export const sanitySmokeScenarios = {
                     text: 'To verify that critical features are working and there are no blocking issues that prevent further testing',
                     outcome: 'Perfect! Smoke testing is a minimal set of tests run on each build to confirm the critical features of a system are working and there are no blocking issues that would prevent further testing.',
                     experience: 15,
-                    tool: 'Smoke Test Characteristics'
                 },
                 {
                     text: 'To completely test all software functionality within the system under test',
@@ -98,7 +95,6 @@ export const sanitySmokeScenarios = {
                     text: 'At the start of every new software release or when new functionality is developed and integrated',
                     outcome: 'Excellent! Smoke Testing is completed at the start of every new software release to ensure that all critical functionalities are working correctly or not.',
                     experience: 15,
-                    tool: 'Smoke Test Execution'
                 },
                 {
                     text: 'Smoke testing is typically carried out during final software release',
@@ -127,7 +123,6 @@ export const sanitySmokeScenarios = {
                     text: 'Both development and QA teams should perform smoke testing',
                     outcome: 'Perfect! Smoke testing is normally completed by both the development team and the quality assurance team, with each playing a specific roles in identifying issues',
                     experience: 15,
-                    tool: 'Performing Smoke Tests'
                 },
                 {
                     text: 'Only developers should perform smoke tests',
@@ -156,7 +151,6 @@ export const sanitySmokeScenarios = {
                     text: 'On builds where production deployment is required immediately',
                     outcome: 'Correct! Sanity testing is a subset of regression testing and focus is on changes to specific functionality and critical surrounding areas.',
                     experience: 15,
-                    tool: 'Sanity Test Performance'
                 },
                 {
                     text: 'During the initial development phase by the development team',
@@ -195,7 +189,6 @@ export const sanitySmokeScenarios = {
                     text: 'The software product is rejected by the testing team.',
                     outcome: 'Correct! If the sanity test fails, the software product is rejected by the testing team to save on time and money.',
                     experience: 15,
-                    tool: 'Sanity Test Failure'
                 },
                 {
                     text: 'The development team performs regression testing',
@@ -224,7 +217,6 @@ export const sanitySmokeScenarios = {
                     text: 'It can be carried out quickly when testing time is limited.',
                     outcome: 'Correct! Sanity tests help in the scenario when the time for testing of the product is limited.',
                     experience: 15,
-                    tool: 'Sanity Test Scenario'
                 },
                 {
                     text: 'It focuses primarily on design structure issues',
@@ -243,7 +235,6 @@ export const sanitySmokeScenarios = {
                     text: 'It reduces the risk of major bugs not being identified in software',
                     outcome: 'Correct! It reduces the risk of major bugs not being identified in software, as it focusses is on functionality critical to the system under test.',
                     experience: 15,
-                    tool: 'Smoke Test Advantages'
                 },
                 {
                     text: 'It eliminates the need for functional testing for the system under test',
@@ -272,7 +263,6 @@ export const sanitySmokeScenarios = {
                     text: 'Smoke test failures should be raised as critical issues',
                     outcome: 'Correct! They should be raised as critical issues as they focus on functionality critical to the system under test.',
                     experience: 15,
-                    tool: 'Smoke Test Failure'
                 },
                 {
                     text: 'They should be documented and fixed in the next sprint',
@@ -303,8 +293,7 @@ export const sanitySmokeScenarios = {
                 {
                     text: 'A narrow and deep approach with limited, in-depth functionality testing',
                     outcome: 'Excellent! Sanity testing is characterised by a narrow and deep approach, focusing on limited functionality in depth.',
-                    experience: 20,
-                    tool: 'Focus Area Validation'
+                    experience: 20,     
                 },
                 {
                     text: 'Sanity testing is characterised by a scripted and extensively documented approach',
@@ -333,7 +322,6 @@ export const sanitySmokeScenarios = {
                     text: 'It covers only a few areas and can miss issues in unchecked system functionality',
                     outcome: 'Sanity testing focuses on a narrow range of functionalities, which means potential issues in unchecked areas might go undetected.',
                     experience: 20,
-                    tool: 'Sanity Check Risk'
                 },
                 {
                     text: 'It can be too time-consuming and expensive to execute the tests',
@@ -362,7 +350,6 @@ export const sanitySmokeScenarios = {
                     text: 'Testing is halted for that area of functionality, and the build is returned to development',
                     outcome: 'If a smoke test fails, it typically results in testing being halted for that area of functionality. The system would be handed back to the development team for correction, whilst functional testing on other areas can still be performed.',
                     experience: 20,
-                    tool: 'Smoke Test Failure Process'
                 },
                 {
                     text: 'The software can be released as smoke tests generally don\'t detect issues in critical functionality',
@@ -391,7 +378,6 @@ export const sanitySmokeScenarios = {
                     text: 'It helps identify critical bugs early and aligns teams on the software\'s current state',
                     outcome: 'Perfect! Smoke testing plays a crucial role by capturing the state of the software early, saving test effort, and bringing teams to a known state.',
                     experience: 20,
-                    tool: 'Smoke Test Benefit'
                 },
                 {
                     text: 'It increases development time, therefore decreasing testing activity time',
@@ -420,7 +406,6 @@ export const sanitySmokeScenarios = {
                     text: 'Smoke testing is a prerequisite for comprehensive functional testing',
                     outcome: 'Excellent! Smoke testing is a confirmation for the QA team to proceed with further software testing. Only after smoke tests pass can the team move on to comprehensive functional testing.',
                     experience: 20,
-                    tool: 'Smoke And Functional Test Relationship'
                 },
                 {
                     text: 'Smoke testing and functional testing are completely unrelated testing methods',
@@ -453,7 +438,6 @@ export const sanitySmokeScenarios = {
                     text: 'Sanity testing is performed after smoke testing to verify specific code changes',
                     outcome: 'Perfect! Sanity testing focuses on verifying a specific code change/critical bug fix and its intended functionality. Smoke testing is performed at the beginning of every new release and focus is on all critical functionality.',
                     experience: 25,
-                    tool: 'Sanity and Smoke Test Validator'
                 },
                 {
                     text: 'Both sanity and smoke testing employ exactly the same testing methodology',
@@ -482,7 +466,6 @@ export const sanitySmokeScenarios = {
                     text: 'Sanity testing is a stoppage to check whether testing for the build can proceed or not',
                     outcome: 'Excellent! The primary goal is to quickly identify critical defects in core functionalities, helping teams decide whether further testing is worthwhile',
                     experience: 25,
-                    tool: 'Exploratory Test Skills'
                 },
                 {
                     text: 'To completely eliminate all software bugs within the system under test',
@@ -511,7 +494,6 @@ export const sanitySmokeScenarios = {
                     text: 'A minimal set of tests focusing on critical functionality within the system under test',
                     outcome: 'Perfect! Effective smoke tests are characterised by being a minimal set of tests that focus on critical functionalities.',
                     experience: 25,
-                    tool: 'JavaScript Checker'
                 },
                 {
                     text: 'Long and detailed test cases that focus on critical functionality within the system under test',
@@ -540,7 +522,6 @@ export const sanitySmokeScenarios = {
                     text: 'Development teams conduct initial sanity checks, while QA teams determine major functionality to verify the build\'s stability',
                     outcome: 'Excellent! Developers use smoke tests to verify basic functionality (sanity checks) during the development phase, while QA teams determine and test the major functionalities to ensure the build\'s overall stability before proceeding with further testing.',
                     experience: 25,
-                    tool: 'Smoke test Definition'
                 },
                 {
                     text: 'Developers use smoke tests for basic sanity checks during code development',
@@ -569,7 +550,6 @@ export const sanitySmokeScenarios = {
                     text: 'Major defects may be encountered in later stages, affecting project timelines and resource allocation',
                     outcome: 'Perfect! Without smoke testing, critical issues might only be discovered during later stages of development or testing, which can substantially impact project timelines, resource allocation, and overall project efficiency.',
                     experience: 25,
-                    tool: 'Smoke Test Inclusion'
                 },
                 {
                     text: 'There should be no significant impact on the software development timeline',

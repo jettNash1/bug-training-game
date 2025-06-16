@@ -12,7 +12,6 @@ export const CMSTestingScenarios = {
                         outcome: 'Perfect! This is the core purpose of a content management system.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Content Management System Fundamentals'
                     },
                     {
                         text: 'To write code to display content on the front end of a website',
@@ -44,7 +43,6 @@ export const CMSTestingScenarios = {
                         text: 'Create, read, update, and delete functionality checks for content management',
                         outcome: 'Excellent! These are the fundamental CRUD operations.',
                         experience: 15,
-                        tool: 'CRUD Testing'
                     },
                     {
                         text: 'Content creation and content update functionality',
@@ -73,7 +71,6 @@ export const CMSTestingScenarios = {
                         text: 'Review documentation, understand content management system architecture, and define testing objectives',
                         outcome: 'Perfect! Preparation ensures effective testing.',
                         experience: 15,
-                        tool: 'Test Planning'
                     },
                     {
                         text: 'Begin testing straight away to make sure timeline management is kept on course',
@@ -102,7 +99,6 @@ export const CMSTestingScenarios = {
                         text: 'Text, images, videos, audio, and other media supported by the system',
                         outcome: 'Excellent! All supported content types need testing.',
                         experience: 15,
-                        tool: 'Content Management'
                     },
                     {
                         text: 'Text, images, videos must be tested and verified',
@@ -131,7 +127,6 @@ export const CMSTestingScenarios = {
                         text: 'Verify access levels, permissions, and restrictions for different user types',
                         outcome: 'Perfect! Role-based access control is crucial.',
                         experience: 15,
-                        tool: 'Permission Testing'
                     },
                     {
                         text: 'As long as admin permissions behave as intended, other access levels can be left out of testing activities',
@@ -164,7 +159,6 @@ export const CMSTestingScenarios = {
                         text: 'Test upload, edit, delete functions with various file types and sizes',
                         outcome: 'Excellent! Comprehensive media testing is essential.',
                         experience: 20,
-                        tool: 'Media Testing'
                     },
                     {
                         text: 'Test media uploads as this is sufficient for general media management',
@@ -193,7 +187,6 @@ export const CMSTestingScenarios = {
                         text: 'Verify customisation options, layout consistency, and content rendering',
                         outcome: 'Perfect! Template functionality is key.',
                         experience: 20,
-                        tool: 'Template Validation'
                     },
                     {
                         text: 'Check the default settings for templates within the content management system',
@@ -222,7 +215,6 @@ export const CMSTestingScenarios = {
                         text: 'Meta tags, URLs, sitemaps, and other SEO tools provided by the content management system',
                         outcome: 'Excellent! SEO functionality is crucial.',
                         experience: 20,
-                        tool: 'SEO Testing'
                     },
                     {
                         text: 'URLs and Meta tags should be tested',
@@ -251,7 +243,6 @@ export const CMSTestingScenarios = {
                         text: 'Test save, revert, compare, and restore functionality for content changes',
                         outcome: 'Perfect! Version control ensures content safety.',
                         experience: 20,
-                        tool: 'Version Testing'
                     },
                     {
                         text: 'Test the save functionality of content within the content management system',
@@ -280,7 +271,6 @@ export const CMSTestingScenarios = {
                         text: 'Verify installation, functionality, compatibility, and interaction with core features',
                         outcome: 'Excellent! Plugin testing ensures stability.',
                         experience: 20,
-                        tool: 'Plugin Testing'
                     },
                     {
                         text: 'Test installation verification as this is sufficient for plug in testing',
@@ -313,7 +303,6 @@ export const CMSTestingScenarios = {
                         text: 'Test load times, multiple users, heavy content, and system responsiveness',
                         outcome: 'Perfect! Performance impacts user experience.',
                         experience: 25,
-                        tool: 'Performance Testing'
                     },
                     {
                         text: 'Check response time for newly updated content',
@@ -342,7 +331,6 @@ export const CMSTestingScenarios = {
                         text: 'Test authentication, permissions, vulnerabilities, and data protection',
                         outcome: 'Excellent! Security is critical for content management systems.',
                         experience: 25,
-                        tool: 'Security Testing'
                     },
                     {
                         text: 'The user credential login function as is sufficient for security testing',
@@ -371,7 +359,6 @@ export const CMSTestingScenarios = {
                         text: 'Verify backup creation, storage, restoration, and data integrity',
                         outcome: 'Perfect! Data recovery is essential.',
                         experience: 25,
-                        tool: 'Backup Testing'
                     },
                     {
                         text: 'Test that backups are stored correctly and in order',
@@ -400,7 +387,6 @@ export const CMSTestingScenarios = {
                         text: 'Test functionality across browsers, devices, and operating systems',
                         outcome: 'Excellent! Cross-environment testing ensures compatibility.',
                         experience: 25,
-                        tool: 'Environment Testing'
                     },
                     {
                         text: 'Test one browser across multiple devices as this is sufficient',
@@ -429,7 +415,6 @@ export const CMSTestingScenarios = {
                         text: 'Test data flow, API connections, third-party services, and system interactions',
                         outcome: 'Perfect! Integration ensures system cohesion.',
                         experience: 25,
-                        tool: 'Integration Testing'
                     },
                     {
                         text: 'Test Application Programme Interface connection features',

@@ -11,7 +11,6 @@ export const testSupportScenarios = {
                     text: 'Send a message to the client checking for specific test tasks and confirm your presence',
                     outcome: 'Perfect! This shows proactive communication and readiness to begin.',
                     experience: 15,
-                    tool: 'Client Communication'
                 },
                 {
                     text: 'Start test activities without checking in with client contacts for the project',
@@ -40,7 +39,6 @@ export const testSupportScenarios = {
                     text: 'Verify access to test URLs, designs, documentation, and tracker board',
                     outcome: 'Excellent! This ensures you\'re fully prepared for testing.',
                     experience: 15,
-                    tool: 'Access Management'
                 },
                 {
                     text: 'Check test environment access associated with the URL\'s provided by the client',
@@ -69,7 +67,6 @@ export const testSupportScenarios = {
                     text: 'Create a process document noting important information and project procedures',
                     outcome: 'Perfect! This ensures knowledge retention and consistent processes.',
                     experience: 15,
-                    tool: 'Process Documentation'
                 },
                 {
                     text: 'Rely on processes from memory and experience of working with the client on an ongoing basis',
@@ -98,7 +95,6 @@ export const testSupportScenarios = {
                     text: 'Check with the project manager about getting added to relevant communication channels',
                     outcome: 'Excellent! This ensures a proper communication setup for moving forward.',
                     experience: 15,
-                    tool: 'Communication Setup'
                 },
                 {
                     text: 'Proceed without direct communication with the client as the project manager can cover this',
@@ -127,7 +123,6 @@ export const testSupportScenarios = {
                     text: 'Keep the board open and regularly monitor it for new tickets and progress updates',
                     outcome: 'Perfect! This ensures timely response to new testing needs.',
                     experience: 15,
-                    tool: 'Project Tracking'
                 },
                 {
                     text: 'Check the project board once daily and continue with testing activities',
@@ -157,7 +152,6 @@ export const testSupportScenarios = {
                     text: 'Testers become embedded in the client\'s development team, sometimes joining sprint planning and daily standups',
                     outcome: 'Correct! during test support, testers essentially become a part of the client\'s development team.',
                     experience: 15,
-                    tool: 'Test Support Relationships'
                 },
                 {
                     text: 'Testers work completely independently with no client interaction',
@@ -196,7 +190,6 @@ export const testSupportScenarios = {
                     text: 'The line between Zoonou\'s and the client\'s ways of working can become blurred',
                     outcome: 'Correct! This can occur with the way Zoonou operates and the way the client operates which needs to be managed on a regular basis.',
                     experience: 15,
-                    tool: 'Test Support Disadvantage'
                 },
                 {
                     text: 'Test support slows down the development process significantly',
@@ -225,7 +218,6 @@ export const testSupportScenarios = {
                     text: 'Handover and process guides should be created and maintained',
                     outcome: 'Correct! It is important that some form of process guide is present on test support projects, especially on longer running ongoing test support projects',
                     experience: 15,
-                    tool: 'Test Support Documentation'
                 },
                 {
                     text: 'Detailed coding standards document should be created and maintained',
@@ -244,7 +236,6 @@ export const testSupportScenarios = {
                     text: 'Rigid adherence to standardised test processes',
                     outcome: 'Correct! Flexibility is a key characteristic of test support and the need to adapt to client practices while maintaining Zoonou\'s characteristics is essential.',
                     experience: 15,
-                    tool: 'Test Support Characteristics'
                 },
                 {
                     text: 'Flexibility in testing tasks is a characteristic of test support',
@@ -273,7 +264,6 @@ export const testSupportScenarios = {
                     text: 'As and when new information is introduced or processes change',
                     outcome: 'Correct! These guides should not be stagnant, it is important to update these documents as and when new information is introduced to the project or changes are made to the processes.',
                     experience: 15,
-                    tool: 'Documentation Updates'
                 },
                 {
                     text: 'A handover guide should only be updated at the beginning of the project',
@@ -305,8 +295,7 @@ export const testSupportScenarios = {
                 {
                     text: 'Adapt to client terminology and processes while maintaining Zoonou standards',
                     outcome: 'Excellent! This shows flexibility and professionalism.',
-                    experience: 20,
-                    tool: 'Process Adaptation'
+                    experience: 20,     
                 },
                 {
                     text: 'Subtly introduce Zoonou terminology throughout the project',
@@ -335,7 +324,6 @@ export const testSupportScenarios = {
                     text: 'Inform the project manager and explore additional ways to add value to the project',
                     outcome: 'Excellent! This ensures productive use of time and adds value.',
                     experience: 20,
-                    tool: 'Time Management'
                 },
                 {
                     text: 'Wait for tasks to be assigned by the client project manager',
@@ -364,7 +352,6 @@ export const testSupportScenarios = {
                     text: 'Maintain open communication, update the project manager, and suggest raising the issue in regular catch-ups',
                     outcome: 'Excellent! This ensures issues are addressed and communication remains open.',
                     experience: 20,
-                    tool: 'Communication Management'
                 },
                 {
                     text: 'Stop testing until client responds with how to proceed',
@@ -393,7 +380,6 @@ export const testSupportScenarios = {
                     text: 'Prioritise tasks based on deadlines and importance, communicate availability to project managers',
                     outcome: 'Excellent! This ensures effective workload management.',
                     experience: 20,
-                    tool: 'Workload Management'
                 },
                 {
                     text: 'Focus on one project at a time using prior experience and preference',
@@ -422,7 +408,6 @@ export const testSupportScenarios = {
                     text: 'Communicate regularly, provide valuable feedback, and demonstrate understanding of their needs',
                     outcome: 'Excellent! This builds trust and rapport with the client.',
                     experience: 20,
-                    tool: 'Relationship Building'
                 },
                 {
                     text: 'Communicate if necessary and when major issues need resolving',
@@ -455,7 +440,6 @@ export const testSupportScenarios = {
                     text: 'Communicate the approach to the project manager and client, providing rationale and expected benefits',
                     outcome: 'Excellent! This demonstrates initiative and effective communication.',
                     experience: 25,
-                    tool: 'Decision Making'
                 },
                 {
                     text: 'Implement the approach after consulting with the Zoonou project manager',
@@ -484,7 +468,6 @@ export const testSupportScenarios = {
                     text: 'Discuss the request with your line manager for approval before responding to the client',
                     outcome: 'Excellent! This ensures proper alignment and authority.',
                     experience: 25,
-                    tool: 'Request Management'
                 },
                 {
                     text: 'Agree to the request and carry out the process within the project testing activities',
@@ -513,7 +496,6 @@ export const testSupportScenarios = {
                     text: 'Create a comprehensive handover guide documenting processes and key information',
                     outcome: 'Excellent! This ensures smooth transition and knowledge retention.',
                     experience: 25,
-                    tool: 'Knowledge Management'
                 },
                 {
                     text: 'Promote a verbal handover process that doesn\'t require documentation',
@@ -542,7 +524,6 @@ export const testSupportScenarios = {
                     text: 'Communicate scope limitations clearly and discuss potential adjustments with the project manager',
                     outcome: 'Excellent! This ensures clear expectations and potential solutions.',
                     experience: 25,
-                    tool: 'Expectation Management'
                 },
                 {
                     text: 'Attempt to meet the client expectations regardless of scope',
@@ -571,7 +552,6 @@ export const testSupportScenarios = {
                     text: 'Maintain regular communication, adapt to client needs, and continuously improve processes',
                     outcome: 'Excellent! This ensures long-term success and client satisfaction.',
                     experience: 25,
-                    tool: 'Project Leadership'
                 },
                 {
                     text: 'Follow initial client processes without change',

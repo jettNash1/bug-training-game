@@ -16,7 +16,6 @@ export const standardScriptScenarios = {
                         text: 'A documented set of instructions and conditions that outline how to execute specific test cases within a software testing process',
                         outcome: 'Correct! This is the exact definition of a standard test script.',
                         experience: 15,
-                        tool: 'Script Fundamentals'
                     },
                     {
                         text: 'A set of programming commands used to create software',
@@ -50,7 +49,6 @@ export const standardScriptScenarios = {
                         text: 'Gherkin language',
                         outcome: 'Correct! Gherkin language is used for writing test cases.',
                         experience: 15,
-                        tool: 'Test Case Writing'
                     },
                     {
                         text: 'JSON format',
@@ -79,7 +77,6 @@ export const standardScriptScenarios = {
                         text: '75-100 test cases',
                         outcome: 'Correct! It is specifically recommended that 75-100 test cases is the average per day of testing.',
                         experience: 15,
-                        tool: 'Test Planning'
                     },
                     {
                         text: '100-125 test cases',
@@ -108,7 +105,6 @@ export const standardScriptScenarios = {
                         text: 'Review the Operational Project Details and Statement of Work',
                         outcome: 'Correct! The is the first step before writing the test cases to ascertain any project specifics',
                         experience: 15,
-                        tool: 'Script Execution'
                     },
                     {
                         text: 'Create a new test environment',
@@ -137,7 +133,6 @@ export const standardScriptScenarios = {
                         text: 'To maintain a record of submitted data for traceability',
                         outcome: 'Correct! The tab is used for recording submitted data, including user credentials for traceability',
                         experience: 15,
-                        tool: 'Data Management'
                     },
                     {
                         text: 'To track bug reports raised against the system under test',
@@ -156,7 +151,6 @@ export const standardScriptScenarios = {
                         text: 'Run the set of smoke tests',
                         outcome: 'Correct! Running the smoke tests first should identify defects in functionality critical to the application under test.',
                         experience: 15,
-                        tool: 'Test Script Execution'
                     },
                     {
                         text: 'Run compatibility tests',
@@ -195,7 +189,6 @@ export const standardScriptScenarios = {
                         text: 'They ensure consistency and reproducibility across the testing team',
                         outcome: 'Correct! Standard scripts ensure consistent execution of tests across the testing team, and over time. This is crucial for tracking progress.',
                         experience: 15,
-                        tool: 'Standard Scripting Advantages'
                     },
                     {
                         text: 'They reduce the time required for test planning',
@@ -224,7 +217,6 @@ export const standardScriptScenarios = {
                         text: 'Follow a logical process to maintain clarity for the tester',
                         outcome: 'Correct! When writing test cases, a logical process should be observed. Avoid jumping around the page to maintain clarity for the tester.',
                         experience: 15,
-                        tool: 'Standard Scripting Approach'
                     },
                     {
                         text: 'Create test cases with minimal detail to allow for tester interpretation',
@@ -243,7 +235,6 @@ export const standardScriptScenarios = {
                         text: 'Mark the test case and add comments to highlight uncertainties',
                         outcome: 'Correct! If there are doubts around any test cases, comments can be added to the cell to highlight this and confirmed by either the author or the client.',
                         experience: 15,
-                        tool: 'Test Case Accuracy'
                     },
                     {
                         text: 'Delete the test case from the script and continue with other test cases',
@@ -272,7 +263,6 @@ export const standardScriptScenarios = {
                         text: 'The complexity of the software and the client\'s preference for involvement',
                         outcome: 'Correct! If the software has critical components that must function to a high standard and If the client prefers to be closely involved in the testing process, then this is the correct approach.',
                         experience: 15,
-                        tool: 'Standard Script Allocation'
                     },
                     {
                         text: 'Project budget and timeline should be factors when taking a standard scripting process into consideration',
@@ -314,8 +304,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'The impact of the feature being tested and frequency of use',
                         outcome: 'Correct! These are key factors in determining priority of test cases',
-                        experience: 20,
-                        tool: 'Priority Management'
+                        experience: 20,     
                     },
                     {
                         text: 'The preference and experience of the individual tester',
@@ -349,7 +338,6 @@ export const standardScriptScenarios = {
                         text: 'These sections should be greyed out and the dashes removed from the result and date columns',
                         outcome: 'Correct! This is the recommended approach for environments that are not in scope for the project',
                         experience: 20,
-                        tool: 'Environment Management'
                     }
                 ]
             },
@@ -373,7 +361,6 @@ export const standardScriptScenarios = {
                         text: 'By complexity and risk factors using high, medium, and low priorities',
                         outcome: 'Correct! Suites should be prioritised by complexity and risk factors',
                         experience: 20,
-                        tool: 'Suite Organization'
                     },
                     {
                         text: 'These should be organised by the date they were created',
@@ -397,7 +384,6 @@ export const standardScriptScenarios = {
                         text: 'Information that aided in creating the test case and which will help during execution',
                         outcome: 'Correct! References should include anything that aided creation and that will help with execution of the test case.',
                         experience: 20,
-                        tool: 'Documentation Management'
                     },
                     {
                         text: 'The tester\'s name should be included as reference',
@@ -426,7 +412,6 @@ export const standardScriptScenarios = {
                         text: 'These should be performed first, before other test cases',
                         outcome: 'Correct! Smoke tests should be run first as these are devised from the highest priority test cases.',
                         experience: 20,
-                        tool: 'Smoke Testing'
                     },
                     {
                         text: 'These should all be run, only when issues are found',
@@ -459,7 +444,6 @@ export const standardScriptScenarios = {
                         text: 'Copy and modify test suites as needed, adjusting for environment-specific differences',
                         outcome: 'Correct! Test suites can be copied and modified for different environments',
                         experience: 25,
-                        tool: 'Environment Testing'
                     },
                     {
                         text: 'Perform test activities only on the highest priority environment',
@@ -493,7 +477,6 @@ export const standardScriptScenarios = {
                         text: 'This can be started alongside primary testing in parallel, depending on project scheduling',
                         outcome: 'Correct! Compatibility testing can be done in parallel with primary environment testing',
                         experience: 25,
-                        tool: 'Compatibility Testing'
                     },
                     {
                         text: 'Compatibility testing must be done before primary testing',
@@ -517,7 +500,6 @@ export const standardScriptScenarios = {
                         text: 'Mark test cases where expected behaviour is in question, add comments for clarification, and remove comments once clarified',
                         outcome: 'Correct! This is the process for handling requirement changes.',
                         experience: 25,
-                        tool: 'Requirements Management'
                     },
                     {
                         text: 'Pause testing until all requirements are finalised with client feedback',
@@ -546,7 +528,6 @@ export const standardScriptScenarios = {
                         text: 'These don\'t require Gherkin format but should contain logical step processes',
                         outcome: 'Correct! User journeys don\'t require Gherkin but should be stated in logical steps.',
                         experience: 25,
-                        tool: 'Journey Testing'
                     },
                     {
                         text: 'These should be written in technical programming language',
@@ -575,7 +556,6 @@ export const standardScriptScenarios = {
                         text: 'A combination of target audience, project timing, risk assessment, and client requirements',
                         outcome: 'Correct! These are all factors for important considerations.',
                         experience: 25,
-                        tool: 'Test Structure'
                     },
                     {
                         text: 'The tester\'s previous experience with similar projects should be the determining factor',

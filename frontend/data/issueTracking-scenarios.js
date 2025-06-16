@@ -11,7 +11,6 @@ export const issueTrackingScenarios = {
                         text: 'Select the "+" icon, fill in details, and submit the issue',
                         outcome: 'Perfect! This is the correct process for creating an issue.',
                         experience: 15,
-                        tool: 'Issue Creation'
                     },
                     {
                         text: 'Email the issue details to the developer so they can start debugging straight away',
@@ -40,7 +39,6 @@ export const issueTrackingScenarios = {
                         text: 'Use the search bar next to "Issues" to find the project',
                         outcome: 'Excellent! This is the correct method for searching projects.',
                         experience: 15,
-                        tool: 'Project Search'
                     },
                     {
                         text: 'Scroll through the projects manually to locate the correct one',
@@ -69,7 +67,6 @@ export const issueTrackingScenarios = {
                         text: 'Select the issue and use the pencil icon to edit details',
                         outcome: 'Perfect! This is the correct process for editing an issue.',
                         experience: 15,
-                        tool: 'Issue Editing'
                     },
                     {
                         text: 'Delete the issue and create a new one for completeness',
@@ -98,7 +95,6 @@ export const issueTrackingScenarios = {
                         text: 'Use the dropdowns below the project title to filter by tags, due date, etc.',
                         outcome: 'Excellent! This is the correct method for filtering issues.',
                         experience: 15,
-                        tool: 'Issue Filtering'
                     },
                     {
                         text: 'Manually search through all issues to find the required ticket',
@@ -127,7 +123,6 @@ export const issueTrackingScenarios = {
                         text: 'A tool using lanes and cards to manage workflow and issues',
                         outcome: 'Perfect! This describes the Kanban style.',
                         experience: 15,
-                        tool: 'Kanban Understanding'
                     },
                     {
                         text: 'A tool that uses a list format of submitted tickets',
@@ -156,7 +151,6 @@ export const issueTrackingScenarios = {
                         text: 'Automated bug fixing is not a feature of tracking tools',
                         outcome: 'Correct! during test support, testers essentially become a part of the client\'s development team.',
                         experience: 15,
-                        tool: 'Test Support Relationships'
                     },
                     {
                         text: 'Raising/Logging issues is not a feature of tracking tools',
@@ -195,7 +189,6 @@ export const issueTrackingScenarios = {
                         text: 'Kanban is an issue tracking style',
                         outcome: 'Correct! Kanban is a style that uses a series of lanes and containing cards to manage workflow and issues.',
                         experience: 15,
-                        tool: 'Issue Tracking Styles'
                     },
                     {
                         text: 'Sequential is an issue tracking style',
@@ -224,7 +217,6 @@ export const issueTrackingScenarios = {
                         text: 'Editing multiple issues at once is an action that can be performed if you have admin rights',
                         outcome: 'Correct! If you have Admin permissions in DoneDone, you are permitted to edit tickets in bulk',
                         experience: 15,
-                        tool: 'Test Support Documentation'
                     },
                     {
                         text: 'Searching for a project is an action that can be performed if you have admin rights',
@@ -243,7 +235,6 @@ export const issueTrackingScenarios = {
                         text: 'Ineffective usage is a risk of using a tracking tool',
                         outcome: 'Correct! Despite having issues organised within a tracker, if used ineffectively the issues raised can become redundant or ignored by developers and testers, with no development progress being made.',
                         experience: 15,
-                        tool: 'Tracking Tool Risk'
                     },
                     {
                         text: 'Decreased collaboration is a risk of using a tracking tool',
@@ -272,7 +263,6 @@ export const issueTrackingScenarios = {
                         text: 'To organize issues more effectively',
                         outcome: 'Correct! many tracking tools include the ability to apply custom tags which aids in organising and searching for issues more effectively.',
                         experience: 15,
-                        tool: 'Issue Tracker Tags'
                     },
                     {
                         text: 'To create visual distinctions between issues',
@@ -304,8 +294,7 @@ export const issueTrackingScenarios = {
                     {
                         text: 'Use the bulk edit feature, select issues with checkboxes, and change \'fixer\' for all selected',
                         outcome: 'Perfect! This is the most efficient way to edit multiple issues.',
-                        experience: 20,
-                        tool: 'Bulk Editing'
+                        experience: 20,         
                     },
                     {
                         text: 'Edit each issue individually and add the \'fixer\' details for each one',
@@ -333,8 +322,7 @@ export const issueTrackingScenarios = {
                     {
                         text: 'Use the Reports feature to generate pie charts showing Status, Priority, Fixer, and Tester',
                         outcome: 'Excellent! This provides comprehensive issue status visualization.',
-                        experience: 20,
-                        tool: 'Reporting'
+                        experience: 20, 
                     },
                     {
                         text: 'Manually count all issues and report this back to the client',
@@ -363,7 +351,6 @@ export const issueTrackingScenarios = {
                         text: 'Apply relevant tags consistently and link to appropriate epics and parent tickets',
                         outcome: 'Perfect! This ensures proper issue organisation and hierarchy.',
                         experience: 20,
-                        tool: 'Issue Organization'
                     },
                     {
                         text: 'Use personal preference for tags associated with tickets',
@@ -392,7 +379,6 @@ export const issueTrackingScenarios = {
                         text: 'Use the Activity feature to view time-stamped logs of all project changes',
                         outcome: 'Excellent! This shows complete activity history.',
                         experience: 20,
-                        tool: 'Activity Monitoring'
                     },
                     {
                         text: 'Ask team members what has changed within specified issues',
@@ -421,7 +407,6 @@ export const issueTrackingScenarios = {
                         text: 'Export data from DoneDone and ensure proper formatting for Jira import',
                         outcome: 'Perfect! This ensures correct data migration.',
                         experience: 20,
-                        tool: 'Data Migration'
                     },
                     {
                         text: 'Manually recreate all the issues in Jira and reference these in the project test script',
@@ -454,7 +439,6 @@ export const issueTrackingScenarios = {
                         text: 'Document tool-specific processes while maintaining consistent issue format and tracking principles',
                         outcome: 'Excellent! This ensures consistency across different tools.',
                         experience: 25,
-                        tool: 'Tool Integration'
                     },
                     {
                         text: 'Use different formats for tickets within each bug tracking tool',
@@ -483,7 +467,6 @@ export const issueTrackingScenarios = {
                         text: 'Create parent-child relationships, use epics, and maintain clear linking between related issues',
                         outcome: 'Perfect! This creates clear issue relationships.',
                         experience: 25,
-                        tool: 'Issue Hierarchy'
                     },
                     {
                         text: 'Keep all issues completely separate as to not confuse root cause',
@@ -512,7 +495,6 @@ export const issueTrackingScenarios = {
                         text: 'Analyse the current process, propose improvements, and implement streamlined workflow with team agreement',
                         outcome: 'Excellent! This ensures systematic improvement.',
                         experience: 25,
-                        tool: 'Workflow Management'
                     },
                     {
                         text: 'Change the workflow without prior consultation',
@@ -541,7 +523,6 @@ export const issueTrackingScenarios = {
                         text: 'Create comprehensive documentation for each tool with examples and best practices',
                         outcome: 'Perfect! This ensures effective knowledge transfer.',
                         experience: 25,
-                        tool: 'Training'
                     },
                     {
                         text: 'Let them explore the features with the tracking tools and learn by trial and error',
@@ -570,7 +551,6 @@ export const issueTrackingScenarios = {
                         text: 'Analyse their needs, compare tool features, and recommend based on specific requirements',
                         outcome: 'Excellent! This provides tailored recommendations.',
                         experience: 25,
-                        tool: 'Tool Selection'
                     },
                     {
                         text: 'Recommend DoneDone issue tracker for use with all their projects',

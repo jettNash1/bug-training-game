@@ -10,7 +10,6 @@ export const automationInterviewScenarios = {
                             text: 'Introduce standard practices, encourage collaboration, and provide workshops on different automation topics',
                             outcome: 'Perfect! This provides a comprehensive approach to team development.',
                             experience: 15,
-                            tool: 'Team Development',
                             isCorrect: true
                         },
                         {
@@ -43,7 +42,6 @@ export const automationInterviewScenarios = {
                             text: 'Handover document/read me file containing set up details',
                             outcome: 'Excellent! This ensures the client has all necessary information for maintenance.',
                             experience: 15,
-                            tool: 'Documentation'
                         },
                         {
                             text: 'Hand them the code and a run command',
@@ -72,7 +70,6 @@ export const automationInterviewScenarios = {
                             text: 'The approach should include the use unique IDs and data attributes',
                             outcome: 'Perfect! This creates reliable and maintainable tests.',
                             experience: 15,
-                            tool: 'Element Location'
                         },
                         {
                             text: 'Create complex CSS selectors that chain multiple classes and attributes together for maximum specificity',
@@ -101,7 +98,6 @@ export const automationInterviewScenarios = {
                             text: 'Use page object model with clear separation of concerns',
                             outcome: 'Excellent! This promotes reusability and maintainability.',
                             experience: 15,
-                            tool: 'Code Organization'
                         },
                         {
                             text: 'Write long, detailed test scripts that cover multiple scenarios in a single file',
@@ -130,7 +126,6 @@ export const automationInterviewScenarios = {
                             text: 'Implement smart waits and proper synchronization',
                             outcome: 'Perfect! This helps create stable tests.',
                             experience: 15,
-                            tool: 'Test Stability'
                         },
                         {
                             text: 'Add Thread.sleep() or fixed delays throughout the test scripts',
@@ -163,7 +158,6 @@ export const automationInterviewScenarios = {
                             text: 'Use external data sources with proper cleanup',
                             outcome: 'Excellent! This ensures efficient test data management.',
                             experience: 20,
-                            tool: 'Data Management'
                         },
                         {
                             text: 'Create elaborate setup scripts that generate fresh test data before each test execution',
@@ -192,7 +186,6 @@ export const automationInterviewScenarios = {
                             text: 'Organise tests in stages with appropriate triggers',
                             outcome: 'Perfect! This enables continuous testing.',
                             experience: 20,
-                            tool: 'CI/CD Integration'
                         },
                         {
                             text: 'Execute the complete test suite sequentially after every code change',
@@ -221,7 +214,6 @@ export const automationInterviewScenarios = {
                             text: 'Create branches for each new test feature',
                             outcome: 'Perfect! This enables organized and controlled development.',
                             experience: 20,
-                            tool: 'Version Control'
                         },
                         {
                             text: 'Keep a single, main branch, and push all changes',
@@ -250,7 +242,6 @@ export const automationInterviewScenarios = {
                             text: 'Allows for efficient collaboration and auditability',
                             outcome: 'Excellent! Version control is crucial for team collaboration.',
                             experience: 20,
-                            tool: 'Collaboration'
                         },
                         {
                             text: 'Usage should be avoided, as this slows down the development and coverage of tests',
@@ -279,7 +270,6 @@ export const automationInterviewScenarios = {
                             text: 'Implement custom exception handlers with retry logic',
                             outcome: 'Perfect! This enables good error diagnosis.',
                             experience: 20,
-                            tool: 'Error Handling'
                         },
                         {
                             text: 'Write extensive try-catch blocks around every possible point of failure in the test scripts',
@@ -312,7 +302,6 @@ export const automationInterviewScenarios = {
                             text: 'Monitor key metrics under various load conditions',
                             outcome: 'Perfect! This ensures comprehensive testing.',
                             experience: 25,
-                            tool: 'Performance Testing'
                         },
                         {
                             text: 'Create complex performance test scenarios that simulate every possible user interaction simultaneously',
@@ -341,7 +330,6 @@ export const automationInterviewScenarios = {
                             text: 'Validate contracts and response schemas',
                             outcome: 'Excellent! This ensures robust API testing.',
                             experience: 25,
-                            tool: 'API Testing'
                         },
                         {
                             text: 'Write exhaustive tests covering every possible combination of API parameters and headers',
@@ -370,7 +358,6 @@ export const automationInterviewScenarios = {
                             text: 'Outlining the advantages of the recommended framework',
                             outcome: 'Perfect! This promotes informed decision-making.',
                             experience: 25,
-                            tool: 'Framework Analysis'
                         },
                         {
                             text: 'Agree with their requirement and use their framework of choice',
@@ -399,7 +386,6 @@ export const automationInterviewScenarios = {
                             text: 'A client whose budget is limited, and the project\'s scope is small',
                             outcome: 'Excellent! Automation should be cost-effective.',
                             experience: 25,
-                            tool: 'Project Assessment'
                         },
                         {
                             text: 'A client with repetitive and time-consuming manual tests',
@@ -428,7 +414,6 @@ export const automationInterviewScenarios = {
                             text: 'Investigate the root cause to improve the automation for the next run',
                             outcome: 'Perfect! This ensures continuous improvement.',
                             experience: 25,
-                            tool: 'Root Cause Analysis'
                         },
                         {
                             text: 'Ignore the error as it\'s not part of the original scope',

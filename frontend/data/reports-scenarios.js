@@ -12,7 +12,6 @@ export const reportsScenarios = {
                         outcome: 'Perfect! This ensures most important issues are verified.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Prioritization'
                     },
                     {
                         text: 'Verify tickets in chronological order to address the most current issues first',
@@ -44,7 +43,6 @@ export const reportsScenarios = {
                         text: 'Verify on the original environment where possible, or clearly document any environment differences',
                         outcome: 'Excellent! This maintains testing consistency.',
                         experience: 15,
-                        tool: 'Environment Management'
                     },
                     {
                         text: 'Test on any available device to verify the issue has been resolved',
@@ -73,7 +71,6 @@ export const reportsScenarios = {
                         text: 'Use template format with status, date, observations, version, environments, and evidence',
                         outcome: 'Perfect! This provides comprehensive verification documentation.',
                         experience: 15,
-                        tool: 'Documentation'
                     },
                     {
                         text: 'Update the ticket status, as this ensures proper traceability of the issue',
@@ -102,7 +99,6 @@ export const reportsScenarios = {
                         text: 'Use appropriate tools, highlight issues clearly, repeat demonstrations in videos',
                         outcome: 'Excellent! This provides clear verification evidence.',
                         experience: 15,
-                        tool: 'Evidence Capture'
                     },
                     {
                         text: 'Included screenshots don\'t need labelling as attachment should provide enough detail',
@@ -131,7 +127,6 @@ export const reportsScenarios = {
                         text: 'Mark as partially fixed with a detailed explanation of the remaining issues',
                         outcome: 'Perfect! This accurately reflects partial fixes.',
                         experience: 15,
-                        tool: 'Status Management'
                     },
                     {
                         text: 'Change the status to fixed, adding a note to re-open once fully fixed',
@@ -161,7 +156,6 @@ export const reportsScenarios = {
                         outcome: 'Correct! This is an issue that has been noted as partly showing expected behaviour or improvements, but part of the issue remains unresolved.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Issue Status'
                     },
                     {
                         text: 'Won\'t Fix',
@@ -206,7 +200,6 @@ export const reportsScenarios = {
                         outcome: 'Correct! It is critical you ensure time for regression testing to identify new issues that may have been introduced as a result of fixes.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Issue Verification & Additional Testing'
                     },
                     {
                         text: 'Redesigning the user interface to prevent future issues',
@@ -239,7 +232,6 @@ export const reportsScenarios = {
                         outcome: 'Correct! The reporting process differs from, exploratory testing which is focused on detailing destructive/edge case methods and reporting the issues found. Instead, it is centred around verifying and building a picture of product quality.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Issue Verification Characteristics'
                     },
                     {
                         text: 'Issue verification allows for more creative test approaches than exploratory testing',
@@ -260,7 +252,6 @@ export const reportsScenarios = {
                         outcome: 'Correct! Stating global is making a calculated assumption based on observations that the issue is present on all environments and all operating systems.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Issue Verification Terms'
                     },
                     {
                         text: 'The issue affects all users in all countries worldwide',
@@ -293,7 +284,6 @@ export const reportsScenarios = {
                         outcome: 'Correct! Where possible, confirm with the project manager which & how many issues the client has been able to work on ahead of the issue verification session. If there are known unresolved issues, identify them as lower priority for retest.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Unresolved Issues'
                     },
                     {
                         text: 'Cancel the session and reschedule for a later date',
@@ -328,8 +318,7 @@ export const reportsScenarios = {
                     {
                         text: 'Focus on areas where fixes were implemented, while also checking surrounding functionality',
                         outcome: 'Perfect! This ensures thorough regression coverage.',
-                        experience: 20,
-                        tool: 'Regression Testing'
+                        experience: 20, 
                     },
                     {
                         text: 'Check all of the fixed issues as confirmed by the client',
@@ -357,8 +346,7 @@ export const reportsScenarios = {
                     {
                         text: 'Set goals for ticket verification numbers and allocate specific time for regression',
                         outcome: 'Excellent! This ensures balanced coverage.',
-                        experience: 20,
-                        tool: 'Time Management'
+                        experience: 20, 
                     },
                     {
                         text: 'Work through verification of all tickets to completion',
@@ -386,8 +374,7 @@ export const reportsScenarios = {
                     {
                         text: 'Raise new tickets and note if they\'re related to recent fixes',
                         outcome: 'Perfect! This tracks new issues properly.',
-                        experience: 20,
-                        tool: 'Issue Management'
+                        experience: 20, 
                     },
                     {
                         text: 'Add any new issues to existing tickets within the project',
@@ -415,8 +402,7 @@ export const reportsScenarios = {
                     {
                         text: 'Contact the device owner early, check device lists and consider BrowserStack with PM approval',
                         outcome: 'Excellent! This shows correct device management.',
-                        experience: 20,
-                        tool: 'Resource Management'
+                        experience: 20, 
                     },
                     {
                         text: 'Test on any available device to verify the issue has been resolved',
@@ -444,8 +430,7 @@ export const reportsScenarios = {
                     {
                         text: 'Contact the Project Manager to confirm which issues have been worked on and prioritise known fixed issues',
                         outcome: 'Perfect! This ensures efficient verification.',
-                        experience: 20,
-                        tool: 'Communication'
+                        experience: 20, 
                     },
                     {
                         text: 'Test all tickets that have previously been raised within the project',
@@ -477,8 +462,7 @@ export const reportsScenarios = {
                     {
                         text: 'Test all connected features, document dependencies, verify full workflow',
                         outcome: 'Perfect! This ensures thorough verification.',
-                        experience: 25,
-                        tool: 'Complex Testing'
+                        experience: 25, 
                     },
                     {
                         text: 'Test the main feature and document the outcome',
@@ -506,8 +490,7 @@ export const reportsScenarios = {
                     {
                         text: 'Test each environment, document specific behaviours, note any variations',
                         outcome: 'Excellent! This provides complete environment coverage.',
-                        experience: 25,
-                        tool: 'Environment Testing'
+                        experience: 25, 
                     },
                     {
                         text: 'Test any of the affected environments to verify the issue has been addressed by the client',
@@ -535,8 +518,7 @@ export const reportsScenarios = {
                     {
                         text: 'Research fix relationships, test impacted areas, document any cascading effects',
                         outcome: 'Perfect! This ensures comprehensive regression analysis.',
-                        experience: 25,
-                        tool: 'Impact Analysis'
+                        experience: 25, 
                     },
                     {
                         text: 'Verify any client stated fixes specifically',
@@ -564,8 +546,7 @@ export const reportsScenarios = {
                     {
                         text: 'Document verified issues, regression findings, new issues, and quality assessment',
                         outcome: 'Excellent! This provides complete verification coverage.',
-                        experience: 25,
-                        tool: 'Reporting'
+                        experience: 25, 
                     },
                     {
                         text: 'List all issues fixed by the client within the application release',
@@ -593,8 +574,7 @@ export const reportsScenarios = {
                     {
                         text: 'Analyse fix impact, regression findings, and new issues to recommend next steps',
                         outcome: 'Perfect! This provides informed testing recommendations.',
-                        experience: 25,
-                        tool: 'Quality Assessment'
+                        experience: 25, 
                     },
                     {
                         text: 'Check that all open issues within the release have been fixed',

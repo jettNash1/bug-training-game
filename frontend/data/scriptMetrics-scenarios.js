@@ -16,7 +16,6 @@ export const scriptMetricsScenarios = {
                         text: 'To gauge project progress and inform report writing',
                         outcome: 'Correct! - Metrics are used to track progress and help with daily reporting',
                         experience: 15,
-                        tool: 'Metrics Fundamentals'
                     },
                     {
                         text: 'To track employee performance to match individuals with specific projects',
@@ -45,7 +44,6 @@ export const scriptMetricsScenarios = {
                         text: 'Within the existing table, above the final row',
                         outcome: 'Correct! - This ensures formulas remain intact and metrics update properly.',
                         experience: 15,
-                        tool: 'Table Management'
                     },
                     {
                         text: 'In a new separate table',
@@ -79,7 +77,6 @@ export const scriptMetricsScenarios = {
                         text: 'Chart size and data arrangement',
                         outcome: 'Correct! - Labels may be missing due to chart size or how data is arranged in the table.',
                         experience: 15,
-                        tool: 'Chart Management'
                     },
                     {
                         text: 'Chart size in relation to the rest of the metrics features on the tab',
@@ -103,7 +100,6 @@ export const scriptMetricsScenarios = {
                         text: 'Copy formulas from existing rows and update environment details',
                         outcome: 'Correct! - This maintains formula integrity while allowing new environment details.',
                         experience: 15,
-                        tool: 'Environment Management'
                     },
                     {
                         text: 'Hide the environment rows within the environment checks tab',
@@ -127,7 +123,6 @@ export const scriptMetricsScenarios = {
                         text: 'Insufficient lines for all dates in the sessions totals table',
                         outcome: 'Correct! - The error appears when there aren\'t enough lines for all testing dates.',
                         experience: 15,
-                        tool: 'Error Handling'
                     },
                     {
                         text: 'Corrupted data within the spreadsheet',
@@ -156,7 +151,6 @@ export const scriptMetricsScenarios = {
                         text: 'Check that new rows were added within the existing table and have the correct formulas',
                         outcome: 'Correct! first ensure that new rows in the table are always added within the existing table and copy formulas from existing rows.',
                         experience: 15,
-                        tool: 'Environment Metrics'
                     },
                     {
                         text: 'Verify that Microsoft Excel is updated to the latest version',
@@ -195,7 +189,6 @@ export const scriptMetricsScenarios = {
                         text: 'The count of compatibility environments that have Yes in the Checked? column',
                         outcome: 'Correct! The Compatibility Environments Complete figure counts how many compatibility environments have Yes in the Checked? column.',
                         experience: 15,
-                        tool: 'Compatibility Environments Completed'
                     },
                     {
                         text: 'Environments marked as Complete and verified by a second tester',
@@ -224,7 +217,6 @@ export const scriptMetricsScenarios = {
                         text: 'Double click the cell with the incorrect figure to check if the formula encompasses all rows',
                         outcome: 'Correct! The first port of call should be to double click the cell in the data table with the incorrect figure and ensure that the dotted lines displayed over the environment table encompass all rows containing environments.',
                         experience: 15,
-                        tool: 'New Metrics Table Rows'
                     },
                     {
                         text: 'Contact your manager immediately to report the broken formula',
@@ -243,7 +235,6 @@ export const scriptMetricsScenarios = {
                         text: 'Point the formulas to the equivalent cells in the newly created tab',
                         outcome: 'Correct! The formula in each cell of the new table that\'s pointing to the Environment Checks tab should be edited to instead point to the equivalent cell in the newly created tab.',
                         experience: 15,
-                        tool: 'Formula Editing'
                     },
                     {
                         text: 'Change the formula to use absolute cell references instead of relative references',
@@ -272,7 +263,6 @@ export const scriptMetricsScenarios = {
                         text: 'The formula in the cell showing the figure isn\'t encompassing all environment rows',
                         outcome: 'Correct! by double clicking the cell showing the incorrect figure, you can see if the formula is not encompassing the newly added environment row.',
                         experience: 15,
-                        tool: 'Environment Count'
                     },
                     {
                         text: 'The environment is marked as a primary environment rather than a compatibility environment',
@@ -309,8 +299,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Copy and update existing table with new tab references',
                         outcome: 'Correct! - This maintains consistency while incorporating new data.',
-                        experience: 20,
-                        tool: 'Tab Management'
+                        experience: 20,     
                     },
                     {
                         text: 'Merge all environment data into one tab',
@@ -349,7 +338,6 @@ export const scriptMetricsScenarios = {
                         text: 'Both primary and \'Checked\' columns within the environments table',
                         outcome: 'Correct! - Both columns together determine the completion status.',
                         experience: 20,
-                        tool: 'Compatibility Tracking'
                     }
                 ]
             },
@@ -368,7 +356,6 @@ export const scriptMetricsScenarios = {
                         text: 'Update the environment list tab and remove excess rows',
                         outcome: 'Correct! - This ensures consistent updates across all linked tickets.',
                         experience: 20,
-                        tool: 'List Management'
                     },
                     {
                         text: 'Create new environment lists across multiple tabs',
@@ -407,7 +394,6 @@ export const scriptMetricsScenarios = {
                         text: 'Double-click and update cell ranges for the affected rows',
                         outcome: 'Correct! - This allows proper adjustment of formula ranges.',
                         experience: 20,
-                        tool: 'Formula Management'
                     }
                 ]
             },
@@ -426,7 +412,6 @@ export const scriptMetricsScenarios = {
                         text: 'Combine global and specific environments as needed',
                         outcome: 'Correct! - This allows flexibility while maintaining consistency.',
                         experience: 20,
-                        tool: 'Coverage Management'
                     },
                     {
                         text: 'Use only global environments within the test script',
@@ -459,7 +444,6 @@ export const scriptMetricsScenarios = {
                         text: 'Update all references and verify formula accuracy',
                         outcome: 'Correct! - This ensures complete and accurate metric tracking',
                         experience: 25,
-                        tool: 'Reference Management'
                     },
                     {
                         text: 'Copy all formulas exactly for the duplicated environments checks tab',
@@ -493,7 +477,6 @@ export const scriptMetricsScenarios = {
                         text: 'Verify all formula chains and dependencies',
                         outcome: 'Correct! - This ensures accurate tracking across all dependencies',
                         experience: 25,
-                        tool: 'Dependency Management'
                     },
                     {
                         text: 'Check individual formulas that relate to the environment table',
@@ -512,7 +495,6 @@ export const scriptMetricsScenarios = {
                         text: 'Maintain formula relationships while updating references',
                         outcome: 'Correct! - This preserves metric integrity across tabs',
                         experience: 25,
-                        tool: 'Cross-Tab Management'
                     },
                     {
                         text: 'Update each tab independently across the test script tabs',
@@ -556,7 +538,6 @@ export const scriptMetricsScenarios = {
                         text: 'Trace formula chains and verify all connections',
                         outcome: 'Correct! - This identifies and resolves the source of discrepancies.',
                         experience: 25,
-                        tool: 'Discrepancy Resolution'
                     }
                 ]
             },
@@ -580,7 +561,6 @@ export const scriptMetricsScenarios = {
                         text: 'Verify all dependencies and update systematically',
                         outcome: 'Correct! - This maintains accuracy while allowing updates.',
                         experience: 25,
-                        tool: 'Update Management'
                     },
                     {
                         text: 'Update primary metrics across the test script',

@@ -11,7 +11,6 @@ export const initiativeScenarios = {
                         text: 'Proactively offer help and support before they ask',
                         outcome: 'Perfect! Taking initiative to help others shows great team spirit.',
                         experience: 15,
-                        tool: 'Team Support'
                     },
                     {
                         text: 'Wait for the team member to ask for help as this encourages them to integrate into the team quicker',
@@ -40,7 +39,6 @@ export const initiativeScenarios = {
                         text: 'Start cleaning up and organising without being asked',
                         outcome: 'Excellent! Taking responsibility for shared spaces shows great initiative.',
                         experience: 15,
-                        tool: 'Workplace Responsibility'
                     },
                     {
                         text: 'Leave it for the cleaning staff to fully perform a deep clean',
@@ -69,7 +67,6 @@ export const initiativeScenarios = {
                         text: 'Create a FAQ or cheat sheet for the team',
                         outcome: 'Great! Creating resources proactively helps the whole team.',
                         experience: 15,
-                        tool: 'Knowledge Sharing'
                     },
                     {
                         text: 'Answer questions as they are queried to promote team interaction',
@@ -98,7 +95,6 @@ export const initiativeScenarios = {
                         text: 'Update the documentation and add missing information',
                         outcome: 'Perfect! Proactively improving documentation helps everyone.',
                         experience: 15,
-                        tool: 'Documentation Management'
                     },
                     {
                         text: 'Wait for someone else to update it who has been on the project previously',
@@ -127,7 +123,6 @@ export const initiativeScenarios = {
                         text: 'Identify and work on valuable tasks that benefit the team or project',
                         outcome: 'Excellent! Using spare time productively shows great initiative.',
                         experience: 15,
-                        tool: 'Time Management'
                     },
                     {
                         text: 'Wait for new tasks to be assigned by the project manager',
@@ -160,7 +155,6 @@ export const initiativeScenarios = {
                         text: 'Create comprehensive handover notes and context documentation',
                         outcome: 'Perfect! Proactive knowledge transfer shows excellent initiative.',
                         experience: 20,
-                        tool: 'Knowledge Transfer'
                     },
                     {
                         text: 'Answer any questions the testers might have on processes or outstanding tasks',
@@ -189,7 +183,6 @@ export const initiativeScenarios = {
                         text: 'Proactively identify who has access and arrange coverage early',
                         outcome: 'Excellent! Taking early action to solve access issues shows great initiative.',
                         experience: 20,
-                        tool: 'Resource Management'
                     },
                     {
                         text: 'Wait for the project manager to organise project team access',
@@ -218,7 +211,6 @@ export const initiativeScenarios = {
                         text: 'Contact the client directly with clear, professional questions',
                         outcome: 'Perfect! Taking initiative to gather needed information directly.',
                         experience: 20,
-                        tool: 'Client Communication'
                     },
                     {
                         text: 'Ask the project manager to contact the client with the requested questions',
@@ -247,7 +239,6 @@ export const initiativeScenarios = {
                         text: 'Review less-tested areas and enhance documentation',
                         outcome: 'Excellent! Using extra time to improve coverage shows great initiative.',
                         experience: 20,
-                        tool: 'Quality Assurance'
                     },
                     {
                         text: 'Report that you\'ve completed the main coverage of the project and wait for instruction',
@@ -276,7 +267,6 @@ export const initiativeScenarios = {
                         text: 'Review available project materials and prepare testing environment',
                         outcome: 'Perfect! Preparing ahead shows excellent initiative.',
                         experience: 20,
-                        tool: 'Project Preparation'
                     },
                     {
                         text: 'Leave preparation of the upcoming project until the start date as operational details may change',
@@ -308,8 +298,7 @@ export const initiativeScenarios = {
                     {
                         text: 'Investigate root cause, document findings, and propose prevention measures',
                         outcome: 'Excellent! Comprehensive problem-solving shows advanced initiative.',
-                        experience: 25,
-                        tool: 'Issue Resolution'
+                        experience: 25,     
                     },
                     {
                         text: 'Investigate the immediate issue and report findings to the project manager',
@@ -338,7 +327,6 @@ export const initiativeScenarios = {
                         text: 'Document issues, research solutions, and present improvement proposals',
                         outcome: 'Perfect! Taking leadership in process improvement shows advanced initiative.',
                         experience: 25,
-                        tool: 'Process Improvement'
                     },
                     {
                         text: 'Raise the issues in the next team meeting for full team feedback',
@@ -367,7 +355,6 @@ export const initiativeScenarios = {
                         text: 'Coordinate with all affected teams and lead resolution efforts',
                         outcome: 'Excellent! Taking leadership in cross-team issues shows advanced initiative.',
                         experience: 25,
-                        tool: 'Collaboration Management'
                     },
                     {
                         text: 'Report the issue through communication channels to each team separately',
@@ -396,7 +383,6 @@ export const initiativeScenarios = {
                         text: 'Create comprehensive guides and organise training sessions',
                         outcome: 'Perfect! Proactively sharing knowledge shows advanced initiative.',
                         experience: 25,
-                        tool: 'Knowledge Management'
                     },
                     {
                         text: 'Share the testing methods and processes when requested to do so',
@@ -425,7 +411,6 @@ export const initiativeScenarios = {
                         text: 'Develop and present a strategic plan to address future challenges',
                         outcome: 'Excellent! Strategic thinking and planning shows advanced initiative.',
                         experience: 25,
-                        tool: 'Strategic Planning'
                     },
                     {
                         text: 'Wait until the challenges become actual problems and then raise these with the project manager',

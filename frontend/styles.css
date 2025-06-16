@@ -780,9 +780,9 @@ body {
 }
 
 .option input[type="radio"]:checked + label::before {
-    background-color: var(--secondary-color);
-    box-shadow: inset 0 0 0 4px white;
-    transition: none;
+    background-color: var(--secondary-color) !important;
+    box-shadow: inset 0 0 0 4px white !important;
+    transition: none !important;
 }
 
 .submit-button {
@@ -891,6 +891,10 @@ body {
 /* Focus states */
 .option input[type="radio"]:focus + label::before {
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.option input[type="radio"]:focus:checked + label::before {
+    box-shadow: inset 0 0 0 4px white, 0 0 0 3px rgba(52, 152, 219, 0.2) !important;
 }
 
 /* Loading state */

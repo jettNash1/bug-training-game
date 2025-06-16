@@ -12,7 +12,6 @@ export const riskManagementScenarios = {
                     outcome: 'Perfect! This is the correct formula for calculating risk impact.',
                     experience: 15,
                     isCorrect: true,
-                    tool: 'Risk Calculator'
                 },
                 {
                     text: 'Consider the severity of the issue and base the risk level of that only',
@@ -51,7 +50,6 @@ export const riskManagementScenarios = {
                     outcome: 'Perfect! Documentation review is key to identifying risks.',
                     experience: 15,
                     isCorrect: true,
-                    tool: 'Risk Assessment Template'
                 },
                 {
                     text: 'Implement extensive monitoring systems to track all possible system behaviours and performance metrics',
@@ -77,7 +75,6 @@ export const riskManagementScenarios = {
                     text: 'Monitor payments at regular intervals throughout the day',
                     outcome: 'Perfect! Regular testing and prompt reporting helps manage payment risks.',
                     experience: 15,
-                    tool: 'Payment Testing'
                 },
                 {
                     text: 'Test payments once at the start of the day to check during peak hours',
@@ -106,7 +103,6 @@ export const riskManagementScenarios = {
                     text: 'Immediately identify who has the device and arrange access',
                     outcome: 'Excellent! Proactive device access management reduces project risks.',
                     experience: 15,
-                    tool: 'Resource Management'
                 },
                 {
                     text: 'Leave testing on that device and use the closest environment possible',
@@ -135,7 +131,6 @@ export const riskManagementScenarios = {
                     text: 'Document issues locally and immediately alert the project manager about the lack of tracker details',
                     outcome: 'Perfect! This ensures no information is lost while addressing the risk.',
                     experience: 15,
-                    tool: 'Issue Management'
                 },
                 {
                     text: 'Continue with testing without documentation while waiting for the tracker details to be provided by the client',
@@ -165,7 +160,6 @@ export const riskManagementScenarios = {
                     text: 'Being reactive responding to problems as they arise',
                     outcome: 'Correct! Being proactive is as a characteristic, emphasising being mindful of potential risks rather than reacting to problems. Reactive approaches are the opposite of the recommended approach.',
                     experience: 15,
-                    tool: 'Risk Management Characteristics'
                 },
                 {
                     text: 'Being proactive and mindful of potential risks',
@@ -204,7 +198,6 @@ export const riskManagementScenarios = {
                     text: 'Offer to repurpose issue verification time to accommodate the release feature when available',
                     outcome: 'Correct! The project manager should, if within notice period offer to repurpose issue verification time to accommodate the release feature when available.',
                     experience: 15,
-                    tool: 'Project Feature Management'
                 },
                 {
                     text: 'Automatically extend the project timeline without client consultation',
@@ -233,7 +226,6 @@ export const riskManagementScenarios = {
                     text: 'A mitigation should be to identify further prioritisation of software to ensure critical features receive high coverage',
                     outcome: 'Correct! If the script cannot be completed, then reprioritisation of test effort to cover critical areas should be considered',
                     experience: 15,
-                    tool: 'Test Duration Risk Mitigation'
                 },
                 {
                     text: 'A mitigation should be to test all features with equal depth but at a faster pace',
@@ -252,7 +244,6 @@ export const riskManagementScenarios = {
                     text: 'To understand how risks can affect our work',
                     outcome: 'Correct! This is the primary objective for risk management.',
                     experience: 15,
-                    tool: 'Risk Management Objectives'
                 },
                 {
                     text: 'To eliminate the need for client communication during projects',
@@ -281,7 +272,6 @@ export const riskManagementScenarios = {
                     text: 'It improves delivery of projects, ensuring they are completed on time and to the best ability',
                     outcome: 'Correct! It can help identify and manage risks to prioritise risk areas and deliver projects on time.',
                     experience: 15,
-                    tool: 'Risk Management Importance'
                 },
                 {
                     text: 'It eliminates the need for client involvement in project decisions',
@@ -314,7 +304,6 @@ export const riskManagementScenarios = {
                     text: 'Flag the issue in the project channel, raise the highest severity ticket, assign the ticket as advised by the client, and actively monitor for changes',
                     outcome: 'Perfect! This follows proper risk management protocol for blocking issues.',
                     experience: 20,
-                    tool: 'Issue Escalation'
                 },
                 {
                     text: 'Continue testing other areas that can be worked around the blocking issue',
@@ -343,7 +332,6 @@ export const riskManagementScenarios = {
                     text: 'Assess impact and notify project manager',
                     outcome: 'Excellent! This provides data-driven risk assessment and communication.',
                     experience: 20,
-                    tool: 'Resource Planning'
                 },
                 {
                     text: 'Attempt to test everything within the original timeline',
@@ -372,7 +360,6 @@ export const riskManagementScenarios = {
                     text: 'Check all devices, raise the highest severity issue and coordinate with team for coverage',
                     outcome: 'Perfect! This addresses both technical and project risks comprehensively.',
                     experience: 20,
-                    tool: 'Build Management'
                 },
                 {
                     text: 'Test the new build on devices that can install the build only',
@@ -401,7 +388,6 @@ export const riskManagementScenarios = {
                     text: 'Confirm with project manager, document missing coverage, suggest alternative testing approaches',
                     outcome: 'Excellent! This provides clear risk documentation and mitigation options.',
                     experience: 20,
-                    tool: 'Coverage Management'
                 },
                 {
                     text: 'Mark feature as passed as long as all other available features have been tested',
@@ -430,7 +416,6 @@ export const riskManagementScenarios = {
                     text: 'Perform a quick site assessment, estimate total bugs, inform the project manager and prioritise by severity',
                     outcome: 'Perfect! This provides structured risk assessment and prioritization.',
                     experience: 20,
-                    tool: 'Bug Management'
                 },
                 {
                     text: 'Try to document every issue possible regardless of severity',
@@ -463,7 +448,6 @@ export const riskManagementScenarios = {
                     text: 'Analyse critical paths, propose coverage priorities, document risks of reduced testing',
                     outcome: 'Excellent! This provides structured risk management for scope reduction.',
                     experience: 25,
-                    tool: 'Scope Management'
                 },
                 {
                     text: 'Attempt to complete all testing in scope within the reduced time frame',
@@ -492,7 +476,6 @@ export const riskManagementScenarios = {
                     text: 'Immediately inform manager with impact assessment and timeline if possible',
                     outcome: 'Perfect! This allows proper resource risk management and support.',
                     experience: 25,
-                    tool: 'Resource Management'
                 },
                 {
                     text: 'Attempt to continue working normally and to the timeline set out in planning',
@@ -520,8 +503,7 @@ export const riskManagementScenarios = {
                 {
                     text: 'Include clear caveats, specific conditions, and potential impacts',
                     outcome: 'Excellent! This provides comprehensive risk documentation.',
-                    experience: 25,
-                    tool: 'Risk Documentation'
+                    experience: 25, 
                 },
                 {
                     text: 'Document resolved issues related to all risks in the client report',
@@ -550,7 +532,6 @@ export const riskManagementScenarios = {
                     text: 'Prioritise risks by impact score, create mitigation plans for each and communicate this clearly',
                     outcome: 'Perfect! This provides structured management of multiple risks.',
                     experience: 25,
-                    tool: 'Risk Prioritization'
                 },
                 {
                     text: 'Focus only on the most visible risks to the system and user',
@@ -579,7 +560,6 @@ export const riskManagementScenarios = {
                     text: 'Document clear caveats, potential impacts, and maintain detailed risk records',
                     outcome: 'Excellent! This ensures proper risk documentation despite client decisions.',
                     experience: 25,
-                    tool: 'Risk Documentation'
                 },
                 {
                     text: 'Accept the decision without documentation as this is a known issue to the client',

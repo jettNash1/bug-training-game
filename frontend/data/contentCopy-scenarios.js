@@ -155,7 +155,6 @@ export const contentCopyScenarios = {
                         text: 'Content proofing typically costs more than other types of testing',
                         outcome: 'Correct! content proofing doesn\'t cost any more than other types of testing general.',
                         experience: 15,
-                        tool: 'Content Proofing Risks'
                     },
                     {
                         text: 'Changes to content after testing may void previous verification',
@@ -194,7 +193,6 @@ export const contentCopyScenarios = {
                         text: 'It depends on the scale and focus of the project',
                         outcome: 'Correct! They can be raised either as a content or \'for reference\' ticket depending on the scale & focus of the project.',
                         experience: 15,
-                        tool: 'Placeholder Testing'
                     },
                     {
                         text: 'Only when comparing against a design document',
@@ -223,7 +221,6 @@ export const contentCopyScenarios = {
                         text: 'These should be raised as queries in case the designs are not up to date',
                         outcome: 'Correct! when the content is not a main focus of the project, this can be raised as a query in case the designs are not up to date.',
                         experience: 15,
-                        tool: 'Documentation Inconsistencies'
                     },
                     {
                         text: 'Implement corrections without consulting the client',
@@ -242,7 +239,6 @@ export const contentCopyScenarios = {
                         text: 'Attention to detail',
                         outcome: 'Correct! Attention to detail is a key characteristic of content proofing tests.',
                         experience: 15,
-                        tool: 'Contant Proofing Characteristics'
                     },
                     {
                         text: 'Technical knowledge',
@@ -271,7 +267,6 @@ export const contentCopyScenarios = {
                         text: 'Both can occur, with content proofing focusing only on content issues',
                         outcome: 'Correct! both can occur at the same time with content proofing maintaining its specific focus.',
                         experience: 15,
-                        tool: 'Content Proofing Test Execution'
                     },
                     {
                         text: 'Content proofing must be completed before functional testing begins',

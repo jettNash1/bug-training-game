@@ -11,7 +11,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Create a basic test plan with goals and areas to explore',
                         outcome: 'Perfect! Having a plan with clear objectives guides effective exploratory testing.',
                         experience: 15,
-                        tool: 'Test Planning'
                     },
                     {
                         text: 'Start clicking around immediately to find issues',
@@ -40,7 +39,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Use timeboxed sessions with clear focus areas for each',
                         outcome: 'Excellent! Timeboxing helps maintain focus and ensures coverage of important areas.',
                         experience: 15,
-                        tool: 'Session-Based Testing'
                     },
                     {
                         text: 'Test continuously until time runs out',
@@ -69,7 +67,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Take notes of your actions, observations, and issues during and after testing',
                         outcome: 'Perfect! Lightweight but effective documentation captures valuable information without hindering exploration.',
                         experience: 15,
-                        tool: 'Test Notes'
                     },
                     {
                         text: 'Don\'t document anything during testing to maintain flow',
@@ -98,7 +95,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Detailed steps to reproduce, expected vs. actual results, and context of discovery',
                         outcome: 'Excellent! Comprehensive bug reports help developers understand and fix issues.',
                         experience: 15,
-                        tool: 'Bug Reporting'
                     },
                     {
                         text: 'Just a screenshot of the error',
@@ -127,7 +123,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Boundary testing - checking edge cases and limits',
                         outcome: 'Perfect! Boundary testing is highly effective at finding issues during exploration.',
                         experience: 15,
-                        tool: 'Boundary Testing'
                     },
                     {
                         text: 'Following the same path each time',
@@ -157,7 +152,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Focus areas should be kept broad with sub-focus areas that serve as prompts for core testing areas',
                         outcome: 'Correct! It is important not to break the focus areas up too much and keep them broad. Helping to prevent exploratory testing from becoming too rigid in its approach.',
                         experience: 15,
-                        tool: 'Focus Area Structure'
                     },
                     {
                         text: 'Focus areas should be limited to only critical functionality, without scope for rendering aspects',
@@ -196,7 +190,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Inform the project manager at the earliest opportunity and make notes in the test script of potential additional issues',
                         outcome: 'Correct! Documenting the areas of concern helps the client make a decision moving forward and informing the project manager of the issues may result in negotiation for additional testing.',
                         experience: 15,
-                        tool: 'Exploratory Test Time Management'
                     },
                     {
                         text: 'Automatically allocate time from other focus areas to complete the current area',
@@ -225,7 +218,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Run a spell check across all sheets and ensure all unused tabs are hidden',
                         outcome: 'Correct! This ensures professionalism and standards required if test scripts are requested by the client.',
                         experience: 15,
-                        tool: 'Exploratory Test Review'
                     },
                     {
                         text: 'Revise time allocations for each focus area based on actual time spent',
@@ -244,7 +236,6 @@ export const exploratoryTestingScenarios = {
                         text: 'As high-level user journeys without restricting testers to specific steps',
                         outcome: 'Correct! This allows the tester to take a fresh approach per environment and doesn\'t restrict them to following the same set of steps.',
                         experience: 15,
-                        tool: 'Exploratory Smoke Tests'
                     },
                     {
                         text: 'As detailed step-by-step instructions with expected results for each action',
@@ -273,7 +264,6 @@ export const exploratoryTestingScenarios = {
                         text: 'More time should be allocated to areas with important functionality, with less time for simpler elements',
                         outcome: 'Correct! More time should be allocated to areas with important functionality, with less time for simpler elements.',
                         experience: 15,
-                        tool: 'Test Time Allocation'
                     },
                     {
                         text: 'Equal time should be allocated to all focus areas to ensure balanced coverage',
@@ -306,7 +296,6 @@ export const exploratoryTestingScenarios = {
                         text: 'CRUD operations - test all Create, Read, Update, Delete operations with customer data',
                         outcome: 'Excellent! CRUD testing ensures all data operations in the checkout work correctly.',
                         experience: 20,
-                        tool: 'Testing Heuristics'
                     },
                     {
                         text: 'Consistency checks only',
@@ -335,7 +324,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Clear mission, scope, targeted areas, time allocation, and reporting method',
                         outcome: 'Perfect! A well-structured charter guides effective exploration.',
                         experience: 20,
-                        tool: 'Test Charter'
                     },
                     {
                         text: 'Just the general area to test',
@@ -364,7 +352,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Use a structured template capturing actions, observations, questions, and ideas',
                         outcome: 'Excellent! Structured notes enhance the value of exploratory sessions.',
                         experience: 20,
-                        tool: 'Session Notes'
                     },
                     {
                         text: 'Random jottings of interesting observations',
@@ -393,7 +380,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Focus on high-risk areas first based on business impact and technical complexity',
                         outcome: 'Perfect! Risk-based prioritization maximizes the value of testing time.',
                         experience: 20,
-                        tool: 'Risk Assessment'
                     },
                     {
                         text: 'Test everything equally',
@@ -422,7 +408,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Prepare diverse test data sets in advance but remain flexible to create new data during testing',
                         outcome: 'Excellent! This balances preparation with adaptability.',
                         experience: 20,
-                        tool: 'Test Data Management'
                     },
                     {
                         text: 'Only use production data',
@@ -467,7 +452,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Divide testing into time-boxed sessions with specific focus areas, moving from critical to secondary functionality',
                         outcome: 'Excellent! This structured approach maintains the exploratory nature while ensuring comprehensive coverage of a complex system.',
                         experience: 20,
-                        tool: 'Exploratory Session Planning'
                     }
                 ]
             },
@@ -486,7 +470,6 @@ export const exploratoryTestingScenarios = {
                         text: 'A high-level summary of what was tested and any issues found, with detailed exploration paths and observations',
                         outcome: 'Perfect! This balances the needed detail with the exploratory nature of the testing.',
                         experience: 20,
-                        tool: 'Exploratory Reporting'
                     },
                     {
                         text: 'Only defects found, with no information about areas tested',
@@ -520,7 +503,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Investigate further to understand the behavior, documenting your observations and determining if it represents a genuine issue',
                         outcome: 'Excellent! This demonstrates the exploratory mindset of investigation and discovery.',
                         experience: 20,
-                        tool: 'Defect Investigation'
                     },
                     {
                         text: 'Ask a developer if this is expected behavior before proceeding with testing',
@@ -544,7 +526,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Design time-boxed sessions focused on previously defective areas, with freedom to explore related functionality',
                         outcome: 'Perfect! This combines regression goals with exploratory methods effectively.',
                         experience: 20,
-                        tool: 'Exploratory Regression'
                     },
                     {
                         text: 'Conduct standard scripted regression tests separately from exploratory testing',
@@ -573,7 +554,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Conduct paired testing sessions, followed by debriefings where insights are shared across the team',
                         outcome: 'Excellent! This combines the benefits of collaborative and independent exploration.',
                         experience: 20,
-                        tool: 'Collaborative Exploration'
                     },
                     {
                         text: 'Assign specific test cases to each tester to prevent overlap',
@@ -601,7 +581,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Connection tour - focusing on how different components communicate',
                         outcome: 'Perfect! Connection tours specifically target integration points and data flow.',
                         experience: 25,
-                        tool: 'Test Touring'
                     },
                     {
                         text: 'Feature tour - testing all features',
@@ -630,7 +609,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Review findings, identify blockers, refine strategies, and plan next sessions',
                         outcome: 'Excellent! Effective debriefing maximizes learning and improves future sessions.',
                         experience: 25,
-                        tool: 'Session Debriefing'
                     },
                     {
                         text: 'Just list bugs found',
@@ -659,7 +637,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Conduct paired exploratory testing sessions with developers and share insights in sprint reviews',
                         outcome: 'Perfect! Collaboration enhances knowledge sharing and test effectiveness.',
                         experience: 25,
-                        tool: 'Paired Testing'
                     },
                     {
                         text: 'Test independently and report bugs',
@@ -688,7 +665,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Use exploratory testing to identify areas for automation and automate repetitive checks to free up exploration time',
                         outcome: 'Excellent! This creates a virtuous cycle where each approach strengthens the other.',
                         experience: 25,
-                        tool: 'Automation Strategy'
                     },
                     {
                         text: 'Keep them completely separate',
@@ -717,7 +693,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Thinking like an attacker and using threat modeling to guide exploration',
                         outcome: 'Perfect! This mindset is critical for effective security testing.',
                         experience: 25,
-                        tool: 'Security Testing'
                     },
                     {
                         text: 'Running standard functional tests',
@@ -756,8 +731,7 @@ export const exploratoryTestingScenarios = {
                     {
                         text: 'Present a concise summary with key findings, risk assessment, coverage highlights, and strategic recommendations',
                         outcome: 'Excellent! This provides stakeholders with actionable information at the right level of detail.',
-                        experience: 25,
-                        tool: 'Stakeholder Reporting'
+                        experience: 25, 
                     },
                     {
                         text: 'Explain your testing approach and methodology in detail',
@@ -786,7 +760,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Balance of session time spent on different activities and value of issues discovered',
                         outcome: 'Perfect! These metrics provide insight into exploration efficiency and effectiveness without constraining the process.',
                         experience: 25,
-                        tool: 'Exploratory Metrics'
                     },
                     {
                         text: 'Total number of defects found compared to scripted testing',
@@ -810,7 +783,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Develop a model of the system architecture and design targeted tours that focus on intercomponent communication and data flow',
                         outcome: 'Excellent! This structured exploration approach helps navigate complex systems effectively.',
                         experience: 25,
-                        tool: 'System Modeling'
                     },
                     {
                         text: 'Conduct random testing across the system without a specific focus',
@@ -849,7 +821,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Implement continuous exploration with time-boxed sessions aligned to development iterations and focused on newly delivered features',
                         outcome: 'Perfect! This aligns exploratory testing with the continuous delivery rhythm.',
                         experience: 25,
-                        tool: 'Continuous Exploration'
                     }
                 ]
             },
@@ -868,7 +839,6 @@ export const exploratoryTestingScenarios = {
                         text: 'Trained testers with strong domain knowledge, supported by charters, debriefing processes, and knowledge sharing mechanisms',
                         outcome: 'Excellent! This combines skilled personnel with appropriate processes for maximum effectiveness.',
                         experience: 25,
-                        tool: 'Enterprise Exploration Strategy'
                     },
                     {
                         text: 'Detailed documentation of all exploratory processes',

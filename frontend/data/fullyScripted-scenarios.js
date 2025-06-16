@@ -16,7 +16,6 @@ export const fullyScriptedScenarios = {
                         text: 'To ensure precision and accuracy through structured, detailed test cases',
                         outcome: 'Correct! This ensures precision and accuracy, especially for high-risk applications.',
                         experience: 15,
-                        tool: 'Scripted Testing Fundamentals'
                     },
                     {
                         text: 'To reduce testing time by using minimal documentation',
@@ -45,7 +44,6 @@ export const fullyScriptedScenarios = {
                         text: '50-70 test cases',
                         outcome: 'Correct! This is the estimate described within the guidelines.',
                         experience: 15,
-                        tool: 'Test Planning'
                     },
                     {
                         text: '30-40 test cases',
@@ -74,7 +72,6 @@ export const fullyScriptedScenarios = {
                         text: 'Gherkin language',
                         outcome: 'Correct! This is the correct format used for ease of understanding.',
                         experience: 15,
-                        tool: 'Test Case Writing'
                     },
                     {
                         text: 'Basic bullet point structure',
@@ -103,7 +100,6 @@ export const fullyScriptedScenarios = {
                         text: 'High, Medium, Low',
                         outcome: 'Correct! These are the levels described in the fully scripted approach guidelines.',
                         experience: 15,
-                        tool: 'Priority Management'
                     },
                     {
                         text: 'Urgent, Normal, Low',
@@ -132,7 +128,6 @@ export const fullyScriptedScenarios = {
                         text: 'In the topmost suite of the primary functional tests tab',
                         outcome: 'Correct! This is where the guidelines state the smoke tests should be placed.',
                         experience: 15,
-                        tool: 'Test Organization'
                     },
                     {
                         text: 'In a separate document',
@@ -156,7 +151,6 @@ export const fullyScriptedScenarios = {
                         text: 'To calculate the number of tests remaining or not started',
                         outcome: 'Correct! While greying out does indicate sections not in scope, removing dashes serves as to calculate the number of tests remaining or not started.',
                         experience: 15,
-                        tool: 'Environment Metrics'
                     },
                     {
                         text: 'To indicate that these sections are no longer included in the test scope',
@@ -195,7 +189,6 @@ export const fullyScriptedScenarios = {
                         text: 'It can lead to outdated and redundant test cases',
                         outcome: 'Correct! These decisions can impact on test execution by having outdated and redundant test cases that were developed against original designs',
                         experience: 15,
-                        tool: 'Change Impact'
                     },
                     {
                         text: 'It simplifies the test execution process',
@@ -224,7 +217,6 @@ export const fullyScriptedScenarios = {
                         text: 'To run pre-defined smoke tests on a range of environments',
                         outcome: 'Correct! Smoke tests should be performed on a wide range of environments across desktop, tablet and mobile platforms unless a certain environment type is out of scope.',
                         experience: 15,
-                        tool: 'Compatibility Testing'
                     },
                     {
                         text: 'To create unique test cases for each device type',
@@ -243,7 +235,6 @@ export const fullyScriptedScenarios = {
                         text: 'It is recommended larger scale or complex projects with specific scope requirements',
                         outcome: 'Correct! fully scripted testing is for larger scale or complex projects that need specific test scenarios.',
                         experience: 15,
-                        tool: 'Fully Scripted Scoping'
                     },
                     {
                         text: 'It is recommended for simple projects with minimal requirements',
@@ -272,7 +263,6 @@ export const fullyScriptedScenarios = {
                         text: 'The ability to follow detailed test steps with minimal deviation',
                         outcome: 'Correct! Testers need to have the qualities and ability to follow a sequence of detailed test steps with minimal deviation from the script.',
                         experience: 15,
-                        tool: 'Fully Scripted Testing Characteristics'
                     },
                     {
                         text: 'The ability to identify software architecture flaws',
@@ -309,8 +299,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'The addition of \'Test Steps\' and \'Expected Behaviour\' columns in primary Environments',
                         outcome: 'Correct! This is a key difference and these columns are not included in a standard test script',
-                        experience: 20,
-                        tool: 'Script Management'
+                        experience: 20, 
                     },
                     {
                         text: 'The testing environments used is only reported in one test script',
@@ -339,7 +328,6 @@ export const fullyScriptedScenarios = {
                         text: 'These should be based on impact, frequency of use, and potential for critical defects',
                         outcome: 'Correct! This is the correct criteria used when deciding priority.',
                         experience: 20,
-                        tool: 'Priority Assessment'
                     },
                     {
                         text: 'Priority of test cases should be based on system development timeline',
@@ -368,7 +356,6 @@ export const fullyScriptedScenarios = {
                         text: 'Grey them out and remove dashes from results/date columns',
                         outcome: 'Correct! This is the correct approach to ensure these environments are not included in the metrics.',
                         experience: 20,
-                        tool: 'Environment Management'
                     },
                     {
                         text: 'Leave all out of scope environments unchanged',
@@ -397,7 +384,6 @@ export const fullyScriptedScenarios = {
                         text: 'Run it in parallel with primary environment testing',
                         outcome: 'Correct! This is an approach that can be taken and can maximise time management.',
                         experience: 20,
-                        tool: 'Compatibility Testing'
                     },
                     {
                         text: 'Do it only after all other testing is completed',
@@ -426,7 +412,6 @@ export const fullyScriptedScenarios = {
                         text: 'Include references that aid in creation and execution of tests',
                         outcome: 'Correct! This is the correct approach to help testers with execution of test cases.',
                         experience: 20,
-                        tool: 'Documentation Management'
                     },
                     {
                         text: 'Only include technical references within the documentation',
@@ -459,7 +444,6 @@ export const fullyScriptedScenarios = {
                         text: 'Consider allocated days, test case complexity, and environment coverage',
                         outcome: 'Correct! These are all important factors when considering test execution planning',
                         experience: 25,
-                        tool: 'Test Planning'
                     },
                     {
                         text: 'Environment coverage should be solely focused on as this determines resources required',
@@ -488,7 +472,6 @@ export const fullyScriptedScenarios = {
                         text: 'Update test cases and document impact on timeline and coverage',
                         outcome: 'Correct! This addresses both technical and project management needs.',
                         experience: 25,
-                        tool: 'Change Management'
                     },
                     {
                         text: 'Testing should be started again to compensate for the new requirements',
@@ -517,7 +500,6 @@ export const fullyScriptedScenarios = {
                         text: 'Balance them against core objectives based on risk and time constraints',
                         outcome: 'Correct! This is a correct risk-based approach.',
                         experience: 25,
-                        tool: 'Risk Assessment'
                     },
                     {
                         text: 'Leave edge case inclusion until everything else has been covered completely',
@@ -546,7 +528,6 @@ export const fullyScriptedScenarios = {
                         text: 'Create user journeys that align with functional test suites while maintaining distinct objectives',
                         outcome: 'Correct! This is the correct approach and creates distinct parity with the associated test suites.',
                         experience: 25,
-                        tool: 'Test Integration'
                     },
                     {
                         text: 'Functional tests can be replaced with user journeys',
@@ -575,7 +556,6 @@ export const fullyScriptedScenarios = {
                         text: 'Adapt test cases for platform-specific features while maintaining core test objectives',
                         outcome: 'Correct! This is the recommended approach and maintains core coverage.',
                         experience: 25,
-                        tool: 'Platform Testing'
                     },
                     {
                         text: 'Create completely separate test suites for each platform',
