@@ -1117,6 +1117,7 @@ export class APIService {
             const allowedQuizzes = user.allowedQuizzes || [];
             const hiddenQuizzes = user.hiddenQuizzes || [];
             const quizProgress = user.quizProgress || {};
+            const quizResults = user.quizResults || [];
             // Use QUIZ_CATEGORIES as the master list of all quizzes
             const allQuizzes = Object.values(QUIZ_CATEGORIES).flat().map(q => q.toLowerCase());
             // Determine visible quizzes for this user
