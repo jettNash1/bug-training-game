@@ -2295,13 +2295,8 @@ export class Admin2Dashboard {
                             calculatedScore: score
                         });
                     } else if (questionsAnswered === 15 && !questionHistory) {
-                        // For completed quizzes without question history, try to fetch it from API
-                        console.log(`[Admin] Quiz completed but no question history found. Attempting to fetch from API...`);
-                        
-                        // Make async call to fetch question history (don't await to avoid blocking UI)
-                        this.fetchAndUpdateQuizScore(username, quizType, quizCard).catch(error => {
-                            console.warn(`[Admin] Failed to fetch question history for ${username}/${quizType}:`, error);
-                        });
+                        // For completed quizzes without question history, we'll fetch it after card creation
+                        console.log(`[Admin] Quiz completed but no question history found. Will fetch from API after card creation.`);
                         
                         // For now, show as completed but with unknown score
                         score = 0; // This will be updated when the API call completes
@@ -2395,8 +2390,11 @@ export class Admin2Dashboard {
                     
                     // If we need to fetch score data asynchronously, do it after adding to DOM
                     if (questionsAnswered === 15 && !questionHistory && score === 0) {
-                        // The fetchAndUpdateQuizScore call was already made above in the score calculation
-                        // The quizCard is now available in the DOM for updating
+                        console.log(`[Admin] Triggering async score fetch for ${username}/${quizType}`);
+                        // Now we can safely call fetchAndUpdateQuizScore with the created quizCard
+                        this.fetchAndUpdateQuizScore(username, quizType, quizCard).catch(error => {
+                            console.warn(`[Admin] Failed to fetch question history for ${username}/${quizType}:`, error);
+                        });
                     }
                 });
             
