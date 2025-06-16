@@ -367,19 +367,24 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
             [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
         }
             
-            shuffledOptions.forEach((option, idx) => {
+                        shuffledOptions.forEach((option, idx) => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'option';
                 optionDiv.innerHTML = `
-                <input type="radio" 
-                    name="option" 
-                    value="${option.originalIndex}" 
+                    <input type="radio" 
+                        name="option" 
+                        value="${option.originalIndex}" 
                         id="option${idx}"
-                    tabindex="0"
-                    aria-label="${option.text}"
-                    role="radio">
+                        tabindex="0"
+                        aria-label="${option.text}"
+                        role="radio">
                     <label for="option${idx}">${option.text}</label>
                 `;
+                
+                // Enhance option interactivity using the BaseQuiz helper method
+                const radioInput = optionDiv.querySelector('input[type="radio"]');
+                this.enhanceOptionInteractivity(optionDiv, radioInput, option.text);
+                
                 optionsContainer.appendChild(optionDiv);
             });
         }

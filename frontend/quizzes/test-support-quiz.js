@@ -370,6 +370,11 @@ export class TestSupportQuiz extends BaseQuiz {
                     role="radio">
                     <label for="option${idx}">${option.text}</label>
                 `;
+                
+                // Enhance option interactivity using the BaseQuiz helper method
+                const radioInput = optionDiv.querySelector('input[type="radio"]');
+                this.enhanceOptionInteractivity(optionDiv, radioInput, option.text);
+                
                 optionsContainer.appendChild(optionDiv);
             });
         }
