@@ -228,6 +228,29 @@ body {
     z-index: 2;
 }
 
+.quiz-pass-fail {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    z-index: 2;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.quiz-pass-fail.pass {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.quiz-pass-fail.fail {
+    background-color: #F44336;
+    color: white;
+}
+
 /* Quiz Status Classes for .quiz-item-wrapper only */
 .quiz-item-wrapper.not-started {
     background-color: #fff !important;

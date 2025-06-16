@@ -549,6 +549,30 @@ class IndexPage {
             progressElement.textContent = progressText;
             progressElement.style.display = progressText ? '' : 'none';
 
+            // Update Pass/Fail indicator for completed quizzes
+            const passFail = document.getElementById(`${quizId}-pass-fail`);
+            if (passFail) {
+                if (questionsAnswered === 15) {
+                    // Quiz is completed, show Pass/Fail based on 80% threshold
+                    const effectiveScore = (score !== undefined && score !== null) ? score : (scorePercentage !== undefined && scorePercentage !== null ? scorePercentage : 0);
+                    
+                    if (effectiveScore >= 80) {
+                        passFail.textContent = 'PASS';
+                        passFail.className = 'quiz-pass-fail pass';
+                        passFail.style.display = '';
+                    } else {
+                        passFail.textContent = 'FAIL';
+                        passFail.className = 'quiz-pass-fail fail';
+                        passFail.style.display = '';
+                    }
+                    
+                    console.log(`[Index] - Pass/Fail indicator: ${effectiveScore >= 80 ? 'PASS' : 'FAIL'} (score: ${effectiveScore}%)`);
+                } else {
+                    // Quiz not completed, hide Pass/Fail indicator
+                    passFail.style.display = 'none';
+                }
+            }
+
             console.log(`[Index] - Quiz ${quizId} processing complete`);
             console.log('---');
         });

@@ -113,6 +113,7 @@ export class QuizList {
                     return `
                         <div class="quiz-item-wrapper">
                             <a href="pages/${quizLower}-quiz.html" class="quiz-item" data-quiz="${quizLower}" aria-label="Start ${this.formatQuizName(quizName)} quiz">
+                                <div class="quiz-pass-fail" role="status" id="${quizLower}-pass-fail" style="display: none;"></div>
                                 <div class="quiz-completion" role="status" id="${quizLower}-progress">${progressText}</div>
                                 <div class="quiz-info">
                                     <div>
