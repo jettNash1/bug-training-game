@@ -5749,7 +5749,7 @@ export class Admin2Dashboard {
                         // Check if this is a failed quiz (has score but not earned) or in-progress
                         if (badge.isFromQuizResults || badge.hasCompletedAllQuestions) {
                             // Quiz completed but failed (< 80%)
-                            scoreInfoHtml = `<div class="badge-score-failed">Score: ${badge.scorePercentage}% (Failed)</div>`;
+                            scoreInfoHtml = `<div class="badge-score-failed">Failed</div>`;
                         } else {
                             // In-progress quiz
                             scoreInfoHtml = `<div class="badge-score-progress">Current: ${badge.scorePercentage}% (Need: 80%)</div>`;
