@@ -553,7 +553,7 @@ export class FunctionalInterviewQuiz extends BaseQuiz {
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
         const totalAnswered = this.player.questionHistory.length;
-        const questionNumber = totalAnswered + 1;
+        const questionNumber = Math.min(totalAnswered + 1, 15);
         
         // Update level indicator
         const levelIndicator = document.getElementById('level-indicator');
