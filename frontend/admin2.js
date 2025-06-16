@@ -6310,7 +6310,7 @@ export class Admin2Dashboard {
                     user.username || '',
                     user.email || '',
                     user.accountType || 'user',
-                    this.getLastActiveDate(user)
+                    this.formatDate(this.getLastActiveDate(user))
                 ];
 
                 // Add quiz scores for selected quizzes only
