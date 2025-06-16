@@ -2233,13 +2233,32 @@ export class Admin2Dashboard {
                     // Calculate score from question history if available
                     let score = 0;
                     const questionHistory = quizResult?.questionHistory || quizProgress?.questionHistory;
+                    
+                    console.log(`[Admin] Score calculation for ${quizType}:`, {
+                        quizResult: quizResult ? 'found' : 'not found',
+                        quizProgress: quizProgress ? 'found' : 'not found',
+                        questionHistory: questionHistory ? `array of ${questionHistory.length}` : 'not found',
+                        questionsAnswered
+                    });
+                    
                     if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                        const correctAnswers = questionHistory.filter(q => q.isCorrect).length;
+                        const correctAnswers = questionHistory.filter(q => q && q.isCorrect === true).length;
                         score = Math.round((correctAnswers / questionHistory.length) * 100);
+                        
+                        console.log(`[Admin] Calculated score from question history:`, {
+                            totalQuestions: questionHistory.length,
+                            correctAnswers,
+                            calculatedScore: score
+                        });
                     } else {
                         // Fallback to stored score if no question history available
-                        const rawScore = quizResult?.score || 0;
+                        const rawScore = quizResult?.score || quizResult?.scorePercentage || 0;
                         score = rawScore < 1 && rawScore > 0 ? Math.round(rawScore * 100) : Math.round(rawScore);
+                        
+                        console.log(`[Admin] Using fallback score:`, {
+                            rawScore,
+                            finalScore: score
+                        });
                     }
                     const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
                     
@@ -2252,23 +2271,23 @@ export class Admin2Dashboard {
                     if (questionsAnswered > 0) {
                         if (questionsAnswered === 15) {
                             // All questions completed
-                            if (score >= 100) {
-                                backgroundColor = '#e8f5e9'; // Light green for perfect score
+                            if (score >= 80) {
+                                backgroundColor = '#e8f5e9'; // Light green for 80% or higher
                             } else {
-                                backgroundColor = '#fff3e0'; // Light yellow for completed but not perfect score
+                                backgroundColor = '#fff3e0'; // Light orange for completed but less than 80%
                             }
                         } else {
-                            backgroundColor = '#ffebee'; // Light red for in progress
+                            backgroundColor = '#f5f2e8'; // Light beige for in progress
                         }
                     }
                     
                     // Determine quiz status class
                     let statusClass = 'not-started';
                     if (questionsAnswered === 15) {
-                        if (score >= 100) {
-                            statusClass = 'completed-perfect'; // Perfect score
+                        if (score >= 80) {
+                            statusClass = 'completed-perfect'; // 80% or higher score
                         } else {
-                            statusClass = 'completed-partial'; // Completed but not perfect
+                            statusClass = 'completed-partial'; // Completed but less than 80%
                         }
                     } else if (questionsAnswered > 0) {
                         statusClass = 'in-progress';

@@ -418,6 +418,23 @@ class IndexPage {
                         });
                     }
                     
+                    // Calculate score from question history if available (most accurate)
+                    const questionHistory = progress?.questionHistory || result?.questionHistory;
+                    if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
+                        const correctAnswers = questionHistory.filter(q => q.isCorrect).length;
+                        const calculatedScore = Math.round((correctAnswers / questionHistory.length) * 100);
+                        
+                        // Use calculated score if it's more accurate than stored values
+                        combinedData.score = calculatedScore;
+                        combinedData.scorePercentage = calculatedScore;
+                        
+                        console.log(`[Index] - Calculated score from question history for ${lookupId}:`, {
+                            correctAnswers,
+                            totalQuestions: questionHistory.length,
+                            calculatedScore: calculatedScore
+                        });
+                    }
+                    
                     console.log(`[Index] - Final processed data for quiz ${lookupId}:`, combinedData);
                     return combinedData;
                 })
