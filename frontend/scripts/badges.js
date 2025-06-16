@@ -97,20 +97,21 @@ class BadgesPage {
             // Preload default badge image
             this.preloadImage('assets/badges/default.svg');
 
-            // Load badges data with timeout
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('Loading badges timed out')), 30000); // Increased to 30 seconds
-            });
-
-            const loadBadgesPromise = this.loadBadges();
-            await Promise.race([loadBadgesPromise, timeoutPromise]);
-            
+            // Show the page immediately and load badges in background
             this.hideLoadingOverlay();
+            this.showLoadingState();
+            
+            // Load badges data without timeout - let it run in background
+            this.loadBadges().catch(error => {
+                console.error('Failed to load badges:', error);
+                this.showError('Failed to load your badges. Please refresh the page to try again.');
+                this.hideLoadingState();
+            });
+            
         } catch (error) {
             console.error('Failed to initialize badges page:', error);
             this.hideLoadingOverlay();
-            this.showError(error.message || 'Failed to load your badges. Please try again later.');
-            throw error; // Re-throw to be caught by the constructor
+            this.showError(error.message || 'Failed to initialize the badges page. Please try again later.');
         }
     }
 
@@ -234,6 +235,10 @@ class BadgesPage {
                 `;
                 badgesGrid.appendChild(noBadgesMessage);
             }
+            
+            // Hide loading state when done
+            this.hideLoadingState();
+            
         } catch (error) {
             console.error('Error loading badges:', error);
             throw error; // Re-throw to be caught by initialize()
@@ -334,6 +339,37 @@ class BadgesPage {
         }
         
         return img;
+    }
+
+    showLoadingState() {
+        // Show a loading state in the badges grid instead of blocking the whole page
+        const badgesGrid = document.getElementById('badges-grid');
+        if (badgesGrid) {
+            badgesGrid.innerHTML = `
+                <div class="loading-state" style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
+                    <div class="loading-spinner" style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+                    <h3 style="color: #555; margin-bottom: 10px;">Loading Your Badges...</h3>
+                    <p style="color: #777;">This may take a moment while we fetch your achievements.</p>
+                </div>
+            `;
+        }
+        
+        // Set default progress values
+        const earnedElement = document.getElementById('badges-earned');
+        const totalElement = document.getElementById('badges-total');
+        const progressElement = document.getElementById('badges-progress');
+        
+        if (earnedElement) earnedElement.textContent = '...';
+        if (totalElement) totalElement.textContent = '...';
+        if (progressElement) progressElement.style.width = '0%';
+    }
+
+    hideLoadingState() {
+        // Remove loading state from badges grid
+        const loadingState = document.querySelector('.loading-state');
+        if (loadingState) {
+            loadingState.remove();
+        }
     }
 }
 
