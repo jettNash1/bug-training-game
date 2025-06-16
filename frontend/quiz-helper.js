@@ -1405,6 +1405,12 @@ export class BaseQuiz {
             if (this.outcomeScreen) this.outcomeScreen.classList.add('hidden');
             if (this.endScreen) this.endScreen.classList.remove('hidden');
 
+            // Hide the progress counter on final screen
+            const quizProgress = document.getElementById('quiz-progress');
+            if (quizProgress) {
+                quizProgress.style.display = 'none';
+            }
+
             // Update final score display
             const finalScoreElement = document.getElementById('final-score');
             if (finalScoreElement) {

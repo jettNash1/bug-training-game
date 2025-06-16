@@ -594,6 +594,12 @@ export class TestSupportQuiz extends BaseQuiz {
             if (timerContainer) {
                 timerContainer.classList.add('hidden');
             }
+            
+            // Hide the progress counter on final screen
+            const quizProgress = document.getElementById('quiz-progress');
+            if (quizProgress) {
+                quizProgress.style.display = 'none';
+            }
         
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
