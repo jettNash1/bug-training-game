@@ -403,6 +403,10 @@ export class Admin2Dashboard {
                             // Refresh badges user dropdown when badge section is activated
                             this.populateBadgesUserDropdown();
                             break;
+                        case 'export-section':
+                            // Initialize custom export when export section is activated
+                            setTimeout(() => this.initializeCustomExport(), 300);
+                            break;
                     }
                 });
             }
@@ -483,7 +487,7 @@ export class Admin2Dashboard {
 
         // Initialize custom export section when Export menu is accessed
         document.querySelector('[data-section="export-section"]')?.addEventListener('click', () => {
-            setTimeout(() => this.initializeCustomExport(), 100);
+            setTimeout(() => this.initializeCustomExport(), 300);
         });
 
         // Badges section
@@ -6101,6 +6105,15 @@ export class Admin2Dashboard {
     // Initialize custom export section
     initializeCustomExport() {
         console.log('Initializing custom export section...');
+        console.log('Users available:', this.users ? this.users.length : 'none');
+        
+        // Ensure users are loaded before populating
+        if (!this.users || !Array.isArray(this.users) || this.users.length === 0) {
+            console.log('Users not loaded yet, waiting...');
+            setTimeout(() => this.initializeCustomExport(), 500);
+            return;
+        }
+        
         this.populateUsersCheckboxList();
         this.populateQuizzesCheckboxList();
         this.setupCustomExportEventListeners();
@@ -6134,13 +6147,43 @@ export class Admin2Dashboard {
             return;
         }
 
-        // Use the same QUIZ_CATEGORIES as in the export functions
+        // Use the correct QUIZ_CATEGORIES from quiz-list.js
         const QUIZ_CATEGORIES = {
-            'Security Awareness': ['phishing-awareness', 'password-security', 'social-engineering', 'data-protection', 'incident-response'],
-            'Bug Bounty': ['web-vulnerabilities', 'mobile-security', 'api-security', 'cloud-security', 'network-security'],
-            'QA Processes': ['test-planning', 'test-execution', 'defect-management', 'automation-testing', 'performance-testing', 'usability-testing'],
-            'Project Management': ['project-initiation', 'project-planning', 'project-execution', 'project-monitoring', 'project-closure'],
-            'System Testing': ['functional-testing', 'integration-testing', 'system-testing', 'acceptance-testing', 'regression-testing']
+            'Core QA Skills': [
+                'tester-mindset',
+                'communication',
+                'initiative',
+                'standard-script-testing',
+                'fully-scripted',
+                'exploratory'
+            ],
+            'Technical Testing': [
+                'script-metrics-troubleshooting',
+                'locale-testing',
+                'build-verification',
+                'test-types-tricks',
+                'test-support',
+                'sanity-smoke'
+            ],
+            'Project Management': [
+                'time-management',
+                'risk-analysis',
+                'risk-management',
+                'non-functional',
+                'issue-verification',
+                'issue-tracking-tools',
+                'raising-tickets'
+            ],
+            'Content Testing': [
+                'cms-testing',
+                'email-testing',
+                'content-copy',
+                'reports'
+            ],
+            'Interview Preparation': [
+                'automation-interview',
+                'functional-interview'
+            ]
         };
 
         const allQuizzes = Object.values(QUIZ_CATEGORIES).flat();
