@@ -251,4 +251,52 @@ export class BaseQuiz {
             return 0;
         }
     }
+    
+    /**
+     * Enhances option interactivity for better click handling and rapid selection
+     * Call this method after creating option elements to improve user experience
+     * @param {HTMLElement} optionDiv - The option div element
+     * @param {HTMLInputElement} radioInput - The radio input element
+     * @param {string} optionText - The option text for accessibility
+     */
+    enhanceOptionInteractivity(optionDiv, radioInput, optionText) {
+        // Add click handler to the entire option div for better responsiveness
+        optionDiv.addEventListener('click', (e) => {
+            // Prevent double-clicking and ensure only one selection
+            if (!radioInput.checked) {
+                // Remove selected class from all other options
+                document.querySelectorAll('.option.selected').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                radioInput.checked = true;
+                optionDiv.classList.add('selected');
+                
+                // Trigger change event for consistency
+                radioInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+        
+        // Add keyboard support for accessibility
+        optionDiv.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (!radioInput.checked) {
+                    // Remove selected class from all other options
+                    document.querySelectorAll('.option.selected').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    
+                    radioInput.checked = true;
+                    optionDiv.classList.add('selected');
+                    radioInput.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+        });
+        
+        // Make the option div focusable for keyboard navigation
+        optionDiv.setAttribute('tabindex', '0');
+        optionDiv.setAttribute('role', 'radio');
+        optionDiv.setAttribute('aria-label', optionText);
+    }
 } 

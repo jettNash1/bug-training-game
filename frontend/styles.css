@@ -766,19 +766,31 @@ body {
     border: 2px solid var(--progress-bg);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
     background: var(--background-color);
+    /* Ensure the entire option area is clickable */
+    min-height: 60px;
+    display: flex;
+    align-items: center;
 }
 
 .option:hover {
     border-color: var(--secondary-color);
     background: white;
-    transform: translateX(4px);
+    /* Remove transform to prevent click area shifting */
 }
 
 .option input[type="radio"] {
     position: absolute;
     opacity: 0;
+    /* Expand the radio button area to cover the entire option */
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    margin: 0;
+    cursor: pointer;
+    z-index: 1;
 }
 
 .option label {
@@ -788,6 +800,16 @@ body {
     font-size: 1.1rem;
     color: var(--text-primary);
     user-select: none;
+    /* Make label fill available space and be clickable */
+    width: 100%;
+    line-height: 1.4;
+    /* Ensure proper click area */
+    position: relative;
+    z-index: 2;
+    /* Ensure the label covers the full clickable area */
+    min-height: 100%;
+    display: flex;
+    align-items: center;
 }
 
 .option label::before {
@@ -952,6 +974,31 @@ body {
 .option-text {
     pointer-events: none;
     user-select: none;
+}
+
+/* Enhanced option interaction styles */
+.option:active {
+    background-color: rgba(52, 152, 219, 0.1);
+    border-color: var(--secondary-color);
+}
+
+/* Ensure smooth rapid clicking */
+.option input[type="radio"]:checked + label::before {
+    background-color: var(--secondary-color) !important;
+    box-shadow: inset 0 0 0 4px white !important;
+    transition: none !important;
+}
+
+/* Improve visual feedback for selected options */
+.option:has(input[type="radio"]:checked) {
+    background-color: rgba(52, 152, 219, 0.05);
+    border-color: var(--secondary-color);
+}
+
+/* Fallback for browsers that don't support :has() selector */
+.option.selected {
+    background-color: rgba(52, 152, 219, 0.05);
+    border-color: var(--secondary-color);
 }
 
 /* Also prevent text selection in quiz option labels - rule updated above */
