@@ -4469,38 +4469,54 @@ export class Admin2Dashboard {
     async loadTimerSettings() {
         try {
             console.log('Loading timer settings via apiService');
+            
+            // Clear any timer-related localStorage to prevent interference
+            this.clearTimerLocalStorage();
+            
             const response = await this.apiService.getQuizTimerSettings();
             
-            if (response.success) {
+            if (response.success && response.data) {
                 this.timerSettings = response.data;
-                console.log('Successfully loaded timer settings:', this.timerSettings);
+                console.log('Timer settings loaded successfully from API:', this.timerSettings);
             } else {
-                throw new Error(response.message || 'Failed to load timer settings');
+                // Initialize with clean defaults (no localStorage fallback)
+                this.timerSettings = { 
+                    defaultSeconds: 60, 
+                    quizTimers: {},
+                    updatedAt: new Date()
+                };
+                console.warn('Failed to load timer settings from API, using clean defaults');
             }
         } catch (error) {
-            console.error('Failed to load timer settings:', error);
-            
-            // Try to load from localStorage as fallback
-            try {
-                const cachedSettings = localStorage.getItem('quizTimerSettings');
-                if (cachedSettings) {
-                    this.timerSettings = JSON.parse(cachedSettings);
-                    console.log('Loaded timer settings from localStorage:', this.timerSettings);
-                } else {
-                    // Set default values
-                    this.timerSettings = { defaultSeconds: 60, quizTimers: {} };
-                    console.log('Using default timer settings');
-                }
-            } catch (localStorageError) {
-                console.error('Error loading from localStorage:', localStorageError);
-                this.timerSettings = { defaultSeconds: 60, quizTimers: {} };
-            }
-            
-            // Show error notification if this was an API error (not on initial load)
-            if (document.readyState === 'complete') {
-                this.showInfo('Could not load timer settings from server. Using cached values.', 'warning');
-            }
+            console.error('Error loading timer settings:', error);
+            // Initialize with clean defaults on error
+            this.timerSettings = { 
+                defaultSeconds: 60, 
+                quizTimers: {},
+                updatedAt: new Date()
+            };
         }
+    }
+
+    // Clear timer-related localStorage to prevent interference
+    clearTimerLocalStorage() {
+        console.log('[CLEANUP] Clearing timer-related localStorage...');
+        const timerKeys = [
+            'quizTimerSettings',
+            'quizTimerValue', 
+            'perQuizTimerSettings',
+            'timerSettings',
+            'defaultTimerValue'
+        ];
+        
+        timerKeys.forEach(key => {
+            if (localStorage.getItem(key)) {
+                console.log(`[CLEANUP] Removing localStorage key: ${key}`);
+                localStorage.removeItem(key);
+            }
+        });
+        
+        console.log('[CLEANUP] Timer localStorage cleared');
     }
 
     // Helper method to generate HTML for the list of guide settings
