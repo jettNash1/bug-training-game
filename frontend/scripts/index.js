@@ -71,7 +71,7 @@ function clearAllQuizProgress() {
     const username = localStorage.getItem('username');
     if (!username) return false;
     
-    console.log('[Index] Clearing all quiz progress for emergency reset');
+    // console.log('[Index] Clearing all quiz progress for emergency reset');
     
     // Get all localStorage keys related to quiz progress
     const progressKeys = Object.keys(localStorage).filter(key => 
@@ -79,12 +79,12 @@ function clearAllQuizProgress() {
     );
     
     // Log the keys we're about to clear
-    console.log('[Index] Found these quiz progress keys to clear:', progressKeys);
+    // console.log('[Index] Found these quiz progress keys to clear:', progressKeys);
     
     // Clear all quiz progress keys
     progressKeys.forEach(key => {
         localStorage.removeItem(key);
-        console.log(`[Index] Cleared localStorage key: ${key}`);
+        // console.log(`[Index] Cleared localStorage key: ${key}`);
     });
     
     // Also clear session storage
@@ -95,13 +95,13 @@ function clearAllQuizProgress() {
         
         sessionKeys.forEach(key => {
             sessionStorage.removeItem(key);
-            console.log(`[Index] Cleared sessionStorage key: ${key}`);
+            // console.log(`[Index] Cleared sessionStorage key: ${key}`);
         });
     } catch (e) {
         console.error('[Index] Error clearing sessionStorage:', e);
     }
     
-    console.log('[Index] All quiz progress cleared. Page will reload.');
+    // console.log('[Index] All quiz progress cleared. Page will reload.');
     
     // Add a reload to refresh all data
     setTimeout(() => window.location.reload(), 500);
@@ -128,7 +128,7 @@ class IndexPage {
         this.loadGuideSettingsAndAddButtons = this.loadGuideSettingsAndAddButtons.bind(this);
         
         try {
-            console.log('[Index] Initializing IndexPage');
+            // console.log('[Index] Initializing IndexPage');
             this.user = new QuizUser(localStorage.getItem('username'));
             this.quizItems = document.querySelectorAll('.quiz-item:not(.locked-quiz)');
             
@@ -138,7 +138,7 @@ class IndexPage {
             // Set a backup timeout to ensure the loading overlay is hidden after a maximum time
             // This prevents the page from getting stuck in loading state
             this.loadingTimeout = setTimeout(() => {
-                console.log('[Index] Loading timeout reached - forcing loading overlay removal');
+                // console.log('[Index] Loading timeout reached - forcing loading overlay removal');
                 this.hideLoadingOverlay();
             }, 10000); // 10 seconds maximum loading time
             
@@ -221,7 +221,7 @@ class IndexPage {
 
     async initialize() {
         try {
-            console.log('[Index] Starting initialization');
+            // console.log('[Index] Starting initialization');
             
             // Show loading overlay
             this.showLoadingOverlay();
@@ -232,7 +232,7 @@ class IndexPage {
             // Initialize quiz list with retry logic
             await this.initializeWithRetry();
             
-            console.log('[Index] Initialization complete');
+            // console.log('[Index] Initialization complete');
 
             // Add visibilitychange listener to update guide buttons when returning to tab
             // Commented out to prevent auto-refresh or restoration on tab return
@@ -250,7 +250,7 @@ class IndexPage {
     async initializeWithRetry(maxRetries = 3) {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                console.log(`[Index] Initialization attempt ${attempt}/${maxRetries}`);
+                // console.log(`[Index] Initialization attempt ${attempt}/${maxRetries}`);
                 
                 // Initialize quiz list
                 this.quizList = new QuizList();
@@ -261,7 +261,7 @@ class IndexPage {
                 
                 // Get quiz items after they are created
                 this.quizItems = document.querySelectorAll('.quiz-item');
-                console.log(`[Index] Found ${this.quizItems.length} quiz items`);
+                // console.log(`[Index] Found ${this.quizItems.length} quiz items`);
                 
                 if (this.quizItems.length === 0) {
                     throw new Error('No quiz items found in DOM');
@@ -285,7 +285,7 @@ class IndexPage {
                 // Hide loading overlay
                 this.hideLoadingOverlay();
                 
-                console.log(`[Index] Initialization successful on attempt ${attempt}`);
+                // console.log(`[Index] Initialization successful on attempt ${attempt}`);
                 return; // Success, exit retry loop
                 
             } catch (error) {
@@ -296,7 +296,7 @@ class IndexPage {
                     this.hideLoadingOverlay();
                     throw error;
                 } else {
-                    console.log(`[Index] Retrying in ${attempt * 500}ms...`);
+                    // console.log(`[Index] Retrying in ${attempt * 500}ms...`);
                     await new Promise(resolve => setTimeout(resolve, attempt * 500));
                 }
             }
@@ -328,7 +328,7 @@ class IndexPage {
             const username = localStorage.getItem('username');
             if (!username) return;
 
-            console.log('[Index] Loading all quiz progress data');
+            // console.log('[Index] Loading all quiz progress data');
 
             // Use the QuizProgressService to get all quiz progress in a single call
             const progressResult = await this.quizProgressService.getAllQuizProgress();
@@ -339,7 +339,7 @@ class IndexPage {
             }
             
             const quizProgress = progressResult.data;
-            console.log('[Index] Loaded progress for', Object.keys(quizProgress).length, 'quizzes');
+            // console.log('[Index] Loaded progress for', Object.keys(quizProgress).length, 'quizzes');
             
             // Get quiz results and hidden quizzes from API
             let quizResults = [];
@@ -349,18 +349,18 @@ class IndexPage {
                 if (userData.success && userData.data) {
                     if (userData.data.quizResults) {
                     quizResults = userData.data.quizResults;
-                    console.log('[Index] Loaded', quizResults.length, 'quiz results');
+                    // console.log('[Index] Loaded', quizResults.length, 'quiz results');
                     }
                     if (userData.data.hiddenQuizzes) {
                         hiddenQuizzes = userData.data.hiddenQuizzes;
-                        console.log('[Index] Loaded', hiddenQuizzes.length, 'hidden quizzes:', hiddenQuizzes);
+                        // console.log('[Index] Loaded', hiddenQuizzes.length, 'hidden quizzes:', hiddenQuizzes);
                     }
                 }
             } catch (error) {
                 console.warn('[Index] Error loading user data:', error);
             }
             
-            console.log('[Index] Final quiz progress after all checks:', quizProgress);
+            // console.log('[Index] Final quiz progress after all checks:', quizProgress);
             
             // Process all visible quizzes using the already fetched data
             this.quizScores = Array.from(this.quizItems)
@@ -373,15 +373,15 @@ class IndexPage {
                     
                     // Check if this quiz is hidden
                     const isHidden = hiddenQuizzes.includes(lookupId) || hiddenQuizzes.includes(quizId);
-                    console.log(`[Index] Checking visibility for ${quizId} → ${lookupId}:`, {
-                        hiddenQuizzes,
-                        lookupId,
-                        quizId,
-                        isHidden
-                    });
+                    // console.log(`[Index] Checking visibility for ${quizId} → ${lookupId}:`, {
+                    //     hiddenQuizzes,
+                    //     lookupId,
+                    //     quizId,
+                    //     isHidden
+                    // });
                     
                     if (isHidden) {
-                        console.log(`[Index] Skipping hidden quiz: ${quizId} → ${lookupId}`);
+                        // console.log(`[Index] Skipping hidden quiz: ${quizId} → ${lookupId}`);
                         // Hide the quiz item in the DOM
                         const wrapper = item.closest('.quiz-item-wrapper');
                         if (wrapper) {
@@ -394,17 +394,17 @@ class IndexPage {
                         return null;
                     }
                     
-                    console.log(`[Index] Processing visible quiz data for: ${quizId} → ${lookupId}`);
+                    // console.log(`[Index] Processing visible quiz data for: ${quizId} → ${lookupId}`);
                     
                     // First check for quiz progress
                     const progress = quizProgress[lookupId];
-                    console.log(`[Index] - Progress data for ${lookupId}:`, progress);
+                    // console.log(`[Index] - Progress data for ${lookupId}:`, progress);
                     
                     // Then check for quiz results
                     const result = quizResults.find(r => 
                         this.quizProgressService.normalizeQuizName(r.quizName) === lookupId
                     );
-                    console.log(`[Index] - Result data for ${lookupId}:`, result);
+                    // console.log(`[Index] - Result data for ${lookupId}:`, result);
                     
                     // Combine data from both sources, with progress taking precedence
                     const combinedData = {
@@ -420,11 +420,11 @@ class IndexPage {
                         combinedData.score = result.score || 0;
                         combinedData.scorePercentage = result.scorePercentage || result.score || 0;
                         combinedData.experience = result.experience || 0;
-                        console.log(`[Index] - Applied result data for ${lookupId}:`, {
-                            score: combinedData.score,
-                            scorePercentage: combinedData.scorePercentage,
-                            experience: combinedData.experience
-                        });
+                        // console.log(`[Index] - Applied result data for ${lookupId}:`, {
+                        //     score: combinedData.score,
+                        //     scorePercentage: combinedData.scorePercentage,
+                        //     experience: combinedData.experience
+                        // });
                     }
                     
                     // Apply progress data if available (overrides result data)
@@ -440,12 +440,12 @@ class IndexPage {
                         if (progress.experience !== undefined) {
                             combinedData.experience = progress.experience;
                         }
-                        console.log(`[Index] - Applied progress data for ${lookupId}:`, {
-                            questionsAnswered: combinedData.questionsAnswered,
-                            status: combinedData.status,
-                            scorePercentage: combinedData.scorePercentage,
-                            experience: combinedData.experience
-                        });
+                        // console.log(`[Index] - Applied progress data for ${lookupId}:`, {
+                        //     questionsAnswered: combinedData.questionsAnswered,
+                        //     status: combinedData.status,
+                        //     scorePercentage: combinedData.scorePercentage,
+                        //     experience: combinedData.experience
+                        // });
                     }
                     
                     // Calculate score from question history if available (most accurate)
@@ -458,19 +458,19 @@ class IndexPage {
                         combinedData.score = calculatedScore;
                         combinedData.scorePercentage = calculatedScore;
                         
-                        console.log(`[Index] - Calculated score from question history for ${lookupId}:`, {
-                            correctAnswers,
-                            totalQuestions: questionHistory.length,
-                            calculatedScore: calculatedScore
-                        });
+                        // console.log(`[Index] - Calculated score from question history for ${lookupId}:`, {
+                        //     correctAnswers,
+                        //     totalQuestions: questionHistory.length,
+                        //     calculatedScore: calculatedScore
+                        // });
                     }
                     
-                    console.log(`[Index] - Final processed data for quiz ${lookupId}:`, combinedData);
+                    // console.log(`[Index] - Final processed data for quiz ${lookupId}:`, combinedData);
                     return combinedData;
                 })
                 .filter(Boolean);
 
-            console.log('[Index] All processed quiz scores:', this.quizScores);
+            // console.log('[Index] All processed quiz scores:', this.quizScores);
             return true;
         } catch (error) {
             console.error('[Index] Error loading user progress:', error);
@@ -485,15 +485,15 @@ class IndexPage {
             return;
         }
         
-        console.log(`[Index] Updating UI for ${this.quizItems.length} quiz items with ${this.quizScores.length} quiz scores`);
-        console.log('[Index] All quiz scores data:', this.quizScores);
+        // console.log(`[Index] Updating UI for ${this.quizItems.length} quiz items with ${this.quizScores.length} quiz scores`);
+        // console.log('[Index] All quiz scores data:', this.quizScores);
 
         // Add a small delay to ensure DOM is fully ready
         await new Promise(resolve => setTimeout(resolve, 100));
 
         // Re-query quiz items to ensure we have the latest DOM state
         this.quizItems = document.querySelectorAll('.quiz-item');
-        console.log(`[Index] Re-queried and found ${this.quizItems.length} quiz items`);
+        // console.log(`[Index] Re-queried and found ${this.quizItems.length} quiz items`);
                 
         this.quizItems.forEach((item, index) => {
             const quizId = item.dataset.quiz;
@@ -513,17 +513,17 @@ class IndexPage {
                 this.quizProgressService.normalizeQuizName(score.quizName) === this.quizProgressService.normalizeQuizName(quizId)
             );
 
-            console.log(`[Index] Processing quiz: ${quizId}`);
-            console.log(`[Index] - Normalized quiz ID: ${this.quizProgressService.normalizeQuizName(quizId)}`);
-            console.log(`[Index] - Found quiz score data:`, quizScore);
+            // console.log(`[Index] Processing quiz: ${quizId}`);
+            // console.log(`[Index] - Normalized quiz ID: ${this.quizProgressService.normalizeQuizName(quizId)}`);
+            // console.log(`[Index] - Found quiz score data:`, quizScore);
 
             const questionsAnswered = quizScore?.questionsAnswered || 0;
             const score = quizScore?.score || 0;
             const scorePercentage = quizScore?.scorePercentage || 0;
 
-            console.log(`[Index] - Questions answered: ${questionsAnswered}`);
-            console.log(`[Index] - Score: ${score}`);
-            console.log(`[Index] - Score percentage: ${scorePercentage}`);
+            // console.log(`[Index] - Questions answered: ${questionsAnswered}`);
+            // console.log(`[Index] - Score: ${score}`);
+            // console.log(`[Index] - Score percentage: ${scorePercentage}`);
 
             let statusClass = 'not-started';
             let progressText = '';
@@ -531,7 +531,7 @@ class IndexPage {
             if (questionsAnswered === 15) {
                 progressText = '15/15';
                 const effectiveScore = (score !== undefined && score !== null) ? score : (scorePercentage !== undefined && scorePercentage !== null ? scorePercentage : 0);
-                console.log(`[Index] - Quiz completed with effective score: ${effectiveScore}`);
+                // console.log(`[Index] - Quiz completed with effective score: ${effectiveScore}`);
                 if (effectiveScore >= 80) {
                     statusClass = 'completed-perfect';
                 } else {
@@ -545,8 +545,8 @@ class IndexPage {
                 progressText = '';
             }
 
-            console.log(`[Index] - Final status class: ${statusClass}`);
-            console.log(`[Index] - Final progress text: ${progressText}`);
+            // console.log(`[Index] - Final status class: ${statusClass}`);
+            // console.log(`[Index] - Final progress text: ${progressText}`);
 
             // Remove all status classes from .quiz-item
             item.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
@@ -555,11 +555,11 @@ class IndexPage {
             // Also apply the status class to the wrapper for robustness
             const wrapper = item.closest('.quiz-item-wrapper');
             if (wrapper) {
-                console.log(`[Index] - Applying status class to wrapper: ${statusClass}`);
-                console.log(`[Index] - Wrapper before update:`, wrapper.className);
+                // console.log(`[Index] - Applying status class to wrapper: ${statusClass}`);
+                // console.log(`[Index] - Wrapper before update:`, wrapper.className);
                 wrapper.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
                 wrapper.classList.add(statusClass);
-                console.log(`[Index] - Wrapper after update:`, wrapper.className);
+                // console.log(`[Index] - Wrapper after update:`, wrapper.className);
                 
                 // Force a style recalculation to ensure the changes take effect
                 wrapper.offsetHeight; // This forces a reflow
@@ -596,25 +596,25 @@ class IndexPage {
                         passFail.style.display = '';
                     }
                     
-                    console.log(`[Index] - Pass/Fail indicator: ${effectiveScore >= 80 ? 'PASS' : 'FAIL'} (score: ${effectiveScore}%)`);
+                    // console.log(`[Index] - Pass/Fail indicator: ${effectiveScore >= 80 ? 'PASS' : 'FAIL'} (score: ${effectiveScore}%)`);
                 } else {
                     // Quiz not completed, hide Pass/Fail indicator
                     passFail.style.display = 'none';
                 }
             }
 
-            console.log(`[Index] - Quiz ${quizId} processing complete`);
-            console.log('---');
+            // console.log(`[Index] - Quiz ${quizId} processing complete`);
+            // console.log('---');
         });
 
         // Add a final verification step
         setTimeout(() => {
-            console.log('[Index] Final verification of status classes:');
+            // console.log('[Index] Final verification of status classes:');
             this.quizItems.forEach(item => {
                 const quizId = item.dataset.quiz;
                 const wrapper = item.closest('.quiz-item-wrapper');
                 if (wrapper) {
-                    console.log(`[Index] ${quizId}: ${wrapper.className}`);
+                    // console.log(`[Index] ${quizId}: ${wrapper.className}`);
                 }
             });
         }, 200);
@@ -629,7 +629,7 @@ class IndexPage {
             return;
         }
 
-        console.log('[Index] Updating category progress displays');
+        // console.log('[Index] Updating category progress displays');
         
         document.querySelectorAll('.category-card').forEach(category => {
             const quizItems = category.querySelectorAll('.quiz-item:not(.locked-quiz)');
@@ -647,15 +647,15 @@ class IndexPage {
             // Get category name for logging
             const categoryName = category.querySelector('.category-header')?.textContent?.trim() || 'Unknown Category';
             
-            console.log(`[Index] Category ${categoryName}: ${quizItems.length} total quizzes, ${visibleQuizItems.length} visible quizzes`);
+            // console.log(`[Index] Category ${categoryName}: ${quizItems.length} total quizzes, ${visibleQuizItems.length} visible quizzes`);
             
             // Hide the category if there are no visible quizzes
             if (visibleQuizItems.length === 0) {
-                console.log(`[Index] Hiding empty category: ${categoryName}`);
+                // console.log(`[Index] Hiding empty category: ${categoryName}`);
                 category.style.display = 'none';
                 return;
             } else {
-                console.log(`[Index] Showing category: ${categoryName} with ${visibleQuizItems.length} visible quizzes`);
+                // console.log(`[Index] Showing category: ${categoryName} with ${visibleQuizItems.length} visible quizzes`);
                 category.style.display = '';
             }
 
@@ -679,9 +679,9 @@ class IndexPage {
                 // Count as completed if all 15 questions are answered, regardless of status
                 const isCompleted = quizScore && quizScore.questionsAnswered >= 15;
                 
-                if (isCompleted) {
-                    console.log(`[Index] Quiz ${normalizedQuizId} is completed (${quizScore.questionsAnswered}/15)`);
-                }
+                // if (isCompleted) {
+                //     console.log(`[Index] Quiz ${normalizedQuizId} is completed (${quizScore.questionsAnswered}/15)`);
+                // }
                 
                 return {
                     completedQuizzes: stats.completedQuizzes + (isCompleted ? 1 : 0),
@@ -693,7 +693,7 @@ class IndexPage {
             // Calculate percentage based on completed quizzes instead of total progress
             const categoryPercentage = Math.round((categoryStats.completedQuizzes / totalQuizzes) * 100);
 
-            console.log(`[Index] Category ${categoryName}: ${categoryStats.completedQuizzes}/${totalQuizzes} completed (${categoryPercentage}%)`);
+            // console.log(`[Index] Category ${categoryName}: ${categoryStats.completedQuizzes}/${totalQuizzes} completed (${categoryPercentage}%)`);
 
             // Update the category progress text and bar
             const progressTextElement = progressText.closest('.category-progress');
@@ -706,7 +706,7 @@ class IndexPage {
                 `;
             }
         });
-        console.log('[Index] Category progress display updated');
+        // console.log('[Index] Category progress display updated');
         // Ensure guide buttons are updated after category progress update
         this.loadGuideSettingsAndAddButtons();
     }
@@ -879,7 +879,7 @@ class IndexPage {
     }
 
     async loadGuideSettingsAndAddButtons() {
-        console.log('[Index] Loading guide settings for quiz items');
+        // console.log('[Index] Loading guide settings for quiz items');
         
         // Always try to load from API first, then fall back to localStorage if API fails
         let guideSettings = null;
@@ -887,19 +887,19 @@ class IndexPage {
         
         try {
             // 1. Try to fetch from API first
-            console.log('[Index] Attempting to fetch guide settings from API...');
+            // console.log('[Index] Attempting to fetch guide settings from API...');
             const response = await this.apiService.fetchGuideSettings();
-            console.log('[Index] API response:', response);
+            // console.log('[Index] API response:', response);
             
             if (response && response.success && response.data) {
                 guideSettings = response.data;
                 settingsSource = 'api';
-                console.log('[Index] Successfully loaded guide settings from API:', guideSettings);
+                // console.log('[Index] Successfully loaded guide settings from API:', guideSettings);
                 
                 // Save to localStorage for future use (if not in incognito mode)
                 try {
                     localStorage.setItem('guideSettings', JSON.stringify(guideSettings));
-                    console.log('[Index] Saved guide settings to localStorage');
+                    // console.log('[Index] Saved guide settings to localStorage');
                 } catch (e) {
                     console.warn('[Index] Could not save guide settings to localStorage (possibly incognito mode):', e);
                 }
@@ -915,9 +915,9 @@ class IndexPage {
                 if (cached) {
                     guideSettings = JSON.parse(cached);
                     settingsSource = 'localStorage';
-                    console.log('[Index] Using cached guide settings from localStorage:', guideSettings);
+                    // console.log('[Index] Using cached guide settings from localStorage:', guideSettings);
                 } else {
-                    console.log('[Index] No cached guide settings found in localStorage');
+                    // console.log('[Index] No cached guide settings found in localStorage');
                 }
             } catch (localStorageError) {
                 console.error('[Index] Error reading from localStorage:', localStorageError);
@@ -926,9 +926,9 @@ class IndexPage {
         
         // 3. Apply guide settings to buttons
         const guideButtons = document.querySelectorAll('.quiz-guide-button');
-        console.log(`[Index] Found ${guideButtons.length} guide buttons to configure`);
-        console.log(`[Index] Using guide settings from: ${settingsSource}`);
-        console.log(`[Index] Guide settings data:`, guideSettings);
+        // console.log(`[Index] Found ${guideButtons.length} guide buttons to configure`);
+        // console.log(`[Index] Using guide settings from: ${settingsSource}`);
+        // console.log(`[Index] Guide settings data:`, guideSettings);
         
         if (!guideSettings || Object.keys(guideSettings).length === 0) {
             console.warn('[Index] No guide settings available - hiding all guide buttons');
@@ -955,8 +955,8 @@ class IndexPage {
             
             const setting = guideSettings[normalizedQuiz] || guideSettings[quiz];
             
-            console.log(`[Index] Processing guide button for quiz: ${quiz} (normalized: ${normalizedQuiz})`);
-            console.log(`[Index] - Found setting:`, setting);
+            // console.log(`[Index] Processing guide button for quiz: ${quiz} (normalized: ${normalizedQuiz})`);
+            // console.log(`[Index] - Found setting:`, setting);
             
             if (setting && setting.enabled && setting.url) {
                 btn.href = setting.url;
@@ -965,18 +965,18 @@ class IndexPage {
                 btn.style.display = 'block';
                 btn.setAttribute('data-guide-url', setting.url);
                 btn.setAttribute('data-guide-enabled', 'true');
-                console.log(`[Index] - Enabled guide button: ${setting.url}`);
+                // console.log(`[Index] - Enabled guide button: ${setting.url}`);
             } else {
                 // Hide the button if no valid URL or not enabled
                 btn.style.display = 'none';
                 btn.removeAttribute('href');
                 btn.removeAttribute('data-guide-url');
                 btn.removeAttribute('data-guide-enabled');
-                console.log(`[Index] - Disabled guide button (no valid setting)`);
+                // console.log(`[Index] - Disabled guide button (no valid setting)`);
             }
         });
         
-        console.log(`[Index] Guide button configuration complete (source: ${settingsSource})`);
+        // console.log(`[Index] Guide button configuration complete (source: ${settingsSource})`);
     }
 
     // Debug helper method to check quiz name normalization
@@ -1046,7 +1046,7 @@ class IndexPage {
     }
 
     resetQuizVisibility() {
-        console.log('[Index] Resetting quiz visibility - showing all quizzes');
+        // console.log('[Index] Resetting quiz visibility - showing all quizzes');
         
         // Show all quiz items and remove hidden classes
         this.quizItems.forEach(item => {
@@ -1062,7 +1062,7 @@ class IndexPage {
     }
 
     async refreshAllQuizProgress() {
-        console.log('[Index] Refreshing all quiz progress');
+        // console.log('[Index] Refreshing all quiz progress');
         
         try {
             // First, reset all quiz visibility (show all quizzes)
@@ -1112,7 +1112,7 @@ class IndexPage {
                 }
             });
             
-            console.log('[Index] Quiz progress and guide buttons refresh complete');
+            // console.log('[Index] Quiz progress and guide buttons refresh complete');
         } catch (error) {
             console.error('[Index] Error during quiz progress refresh:', error);
         }
@@ -1130,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Store in window for global access
     window.indexPage = indexPage;
     
-    console.log('[Index] Initialization complete');
+    // console.log('[Index] Initialization complete');
 
     // Add visibilitychange listener to update guide buttons when returning to tab
     // Commented out to prevent auto-refresh or restoration on tab return

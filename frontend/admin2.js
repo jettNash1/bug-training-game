@@ -32,7 +32,7 @@ export class Admin2Dashboard {
                 console.error('Error during Admin2Dashboard initialization:', error);
             });
         } else {
-            console.log('On admin-login page, skipping dashboard initialization');
+            // Skip dashboard initialization on login page
         }
 
         this.autoResetSettings = null;
@@ -44,7 +44,7 @@ export class Admin2Dashboard {
         
         // Listen for scheduled resets processed event
         window.addEventListener('scheduledResetsProcessed', async (event) => {
-            console.log('Scheduled resets processed event received:', event.detail);
+            // console.log('Scheduled resets processed event received:', event.detail);
             // Refresh the schedules display
             await this.refreshScheduleData();
             // Show a success message
@@ -54,7 +54,7 @@ export class Admin2Dashboard {
 
     async handleAdminLogin(formData) {
         try {
-            console.log('Admin2Dashboard: Attempting admin login...');
+            // console.log('Admin2Dashboard: Attempting admin login...');
             
             const username = formData.get('username');
             const password = formData.get('password');
@@ -79,7 +79,7 @@ export class Admin2Dashboard {
 
     async init2() {
         try {
-            console.log('Initializing Admin2Dashboard...');
+            // console.log('Initializing Admin2Dashboard...');
             // Add a guard variable to prevent too frequent checks
             this.lastScheduleCheck = 0;
             const MIN_CHECK_INTERVAL = 30000; // 30 seconds minimum between checks
@@ -112,7 +112,6 @@ export class Admin2Dashboard {
             // Check if we're on admin login page - if so, skip token verification
             const currentPath = window.location.pathname;
             if (currentPath.includes('admin-login.html')) {
-                console.log('On admin login page, skipping token verification');
                 return;
             }
 
@@ -126,7 +125,7 @@ export class Admin2Dashboard {
             // Set up event listeners first to ensure menu functionality
             this.setupEventListeners();
 
-            console.log('Loading essential components...');
+            // console.log('Loading essential components...');
             // Initialize all components in parallel
             await Promise.all([
                 this.loadUsers(),
@@ -144,7 +143,7 @@ export class Admin2Dashboard {
             await this.loadTimerSettings();
 
             // Set up all UI components
-            console.log('Setting up UI components...');
+            // console.log('Setting up UI components...');
             this.setupCreateAccountForm();
             this.setupScenariosList();
             this.setupScheduleSection();
@@ -165,7 +164,7 @@ export class Admin2Dashboard {
 
             // Update dashboard with initial data
             await this.updateDashboard();
-            console.log('Admin2Dashboard initialization complete');
+            // console.log('Admin2Dashboard initialization complete');
         } catch (error) {
             console.error('Error initializing Admin2Dashboard:', error);
             this.showError('Failed to initialize dashboard. Please reload the page.');
@@ -178,7 +177,7 @@ export class Admin2Dashboard {
             const response = await this.apiService.getAllUsers();
             
             if (response.success) {
-                console.log('Loaded user data:', response.data);
+                // console.log('Loaded user data:', response.data);
                 
                 // Store users data
                 this.users = response.data;
@@ -216,7 +215,7 @@ export class Admin2Dashboard {
         const MAX_CONCURRENT_REQUESTS = 3;
         
         try {
-            console.log(`Loading progress for ${this.users.length} users with max ${MAX_CONCURRENT_REQUESTS} concurrent requests`);
+            // console.log(`Loading progress for ${this.users.length} users with max ${MAX_CONCURRENT_REQUESTS} concurrent requests`);
             
             // Process users in chunks to limit concurrent requests
             const processUserChunk = async (userChunk) => {
@@ -224,7 +223,7 @@ export class Admin2Dashboard {
                     userChunk.map(async (user) => {
                         try {
                             await this.loadUserProgress(user.username);
-                            console.log(`Successfully loaded progress for ${user.username}`);
+                            // console.log(`Successfully loaded progress for ${user.username}`);
                         } catch (error) {
                             console.warn(`Non-critical error loading progress for ${user.username}:`, error);
                         }
@@ -247,11 +246,11 @@ export class Admin2Dashboard {
             this.updateStatisticsDisplay(stats);
             this.updateUsersList();
             
-            console.log("Completed loading progress for all users");
-            // --- Ensure hero stats are updated after all progress is loaded ---
+            // console.log("Completed loading progress for all users");
+            // Ensure hero stats are updated after all progress is loaded
             await this.updateDashboard();
         } catch (error) {
-            console.error('Unexpected error loading all user progress:', error);
+            console.error('Error loading user progress:', error);
             
             // Still try to update the UI with whatever data we have
             try {
@@ -525,7 +524,7 @@ export class Admin2Dashboard {
         
         // Handle case when users haven't been loaded yet
         if (!usersForStats || !Array.isArray(usersForStats)) {
-            console.log('Users not loaded yet, returning zero statistics');
+            // console.log('Users not loaded yet, returning zero statistics');
             return {
                 totalUsers: 0,
                 activeToday: 0,
@@ -540,7 +539,7 @@ export class Admin2Dashboard {
         let totalCompletion = 0;
 
         // Debug: log each user's overall progress
-        console.log('--- Calculating Overall Progress for Hero Stat ---');
+        // console.log('--- Calculating Overall Progress for Hero Stat ---');
         usersForStats.forEach(user => {
             // Active Today: Use getLastActiveDate which considers both lastLogin and quiz activity
             const lastActiveTimestamp = this.getLastActiveDate(user);
@@ -554,12 +553,12 @@ export class Admin2Dashboard {
             // Use the same per-user overall progress as on the user card
             const percent = this.calculateQuestionsAnsweredPercent(user);
             totalCompletion += percent;
-            console.log(`User: ${user.username}, Overall Progress: ${percent.toFixed(1)}%, Last Active: ${this.formatDate(this.getLastActiveDate(user))}`);
+            // console.log(`User: ${user.username}, Overall Progress: ${percent.toFixed(1)}%, Last Active: ${this.formatDate(this.getLastActiveDate(user))}`);
         });
 
         // Mean average overall progress
         const averageCompletion = totalUsers > 0 ? totalCompletion / totalUsers : 0;
-        console.log(`Computed statistics - Total users: ${totalUsers}, Active today: ${activeToday}, Average completion: ${averageCompletion.toFixed(1)}%`);
+        // console.log(`Computed statistics - Total users: ${totalUsers}, Active today: ${activeToday}, Average completion: ${averageCompletion.toFixed(1)}%`);
 
         return {
             totalUsers,
@@ -569,7 +568,7 @@ export class Admin2Dashboard {
     }
 
     updateStatisticsDisplay(stats) {
-        console.log('[DEBUG] updateStatisticsDisplay called', stats);
+        // console.log('[DEBUG] updateStatisticsDisplay called', stats);
         const totalUsersElement = document.getElementById('totalUsers');
         const activeUsersElement = document.getElementById('activeUsers');
         // Rename Average Completion to Overall Progress
@@ -577,7 +576,7 @@ export class Admin2Dashboard {
         if (!averageCompletionElement) {
             console.warn('[DEBUG] averageCompletion element not found in DOM');
         } else {
-            console.log('[DEBUG] averageCompletion element found in DOM');
+            // console.log('[DEBUG] averageCompletion element found in DOM');
         }
         if (totalUsersElement) {
             totalUsersElement.textContent = stats.totalUsers || 0;
@@ -587,7 +586,7 @@ export class Admin2Dashboard {
         }
         if (averageCompletionElement) {
             const displayValue = `${(stats.averageCompletion || 0).toFixed(1)}%`;
-            console.log(`[UI] Setting hero Overall Progress to: ${displayValue}`);
+            // console.log(`[UI] Setting hero Overall Progress to: ${displayValue}`);
             averageCompletionElement.textContent = displayValue;
             // Also update the label if present
             const statCard = averageCompletionElement.closest('.stat-card');
@@ -604,7 +603,7 @@ export class Admin2Dashboard {
 
         // Handle case when users haven't been loaded yet
         if (!this.users || !Array.isArray(this.users)) {
-            console.log('Users not loaded yet, showing empty state');
+            // console.log('Users not loaded yet, showing empty state');
             container.innerHTML = '<div class="loading-message">Loading users...</div>';
             
             // Update statistics with empty data
@@ -645,7 +644,7 @@ export class Admin2Dashboard {
         // Clear existing content
         container.innerHTML = '';
 
-        console.log(`Creating ${filteredUsers.length} user cards...`);
+        // console.log(`Creating ${filteredUsers.length} user cards...`);
         
         // Update statistics based on filtered users
         const stats = this.updateStatistics(filteredUsers);
@@ -685,7 +684,7 @@ export class Admin2Dashboard {
             const overallProgress = this.calculateQuestionsAnsweredPercent(user);
             const overallProgressDisplay = `${overallProgress.toFixed(1)}%`;
             
-            console.log(`User ${user.username}: questions=${totalQuestionsAnswered}, progress=${overallProgressDisplay}`);
+            // console.log(`User ${user.username}: questions=${totalQuestionsAnswered}, progress=${overallProgressDisplay}`);
 
             const card = document.createElement('div');
             card.className = 'user-card';
@@ -6859,5 +6858,5 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // ... existing code ...
+
 });
