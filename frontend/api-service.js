@@ -1278,20 +1278,17 @@ export class APIService {
     async getQuizTimerSettings() {
         try {
             try {
-                // Try to get from API first
+                // Try to get from admin API first
                 const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`);
-                console.log('Raw timer settings response:', response);
+                console.log('Raw admin timer settings response:', response);
                 
                 // If response is successful, update localStorage and return the value
-                if (response.success && response.data) {
+                if (response && response.success && response.data) {
                     const settings = response.data;
-                    console.log('Timer settings loaded from API:', settings);
+                    console.log('Timer settings loaded from admin API:', settings);
                     
-                    // Handle the difference between admin API (secondsPerQuestion) and expected format (defaultSeconds)
-                    const defaultSeconds = typeof settings.secondsPerQuestion === 'number' ? 
-                        settings.secondsPerQuestion : 
-                        (typeof settings.defaultSeconds === 'number' ? settings.defaultSeconds : 60);
-                    
+                    // Use defaultSeconds directly from admin API response
+                    const defaultSeconds = typeof settings.defaultSeconds === 'number' ? settings.defaultSeconds : 60;
                     const quizTimers = settings.quizTimers || {};
                     
                     // Store in localStorage for immediate effect on quizzes
@@ -1300,7 +1297,7 @@ export class APIService {
                     
                     return {
                         success: true,
-                        message: 'Timer settings loaded from API',
+                        message: 'Timer settings loaded from admin API',
                         data: {
                             defaultSeconds: defaultSeconds,
                             quizTimers: quizTimers,
@@ -1309,7 +1306,7 @@ export class APIService {
                     };
                 }
             } catch (apiError) {
-                console.warn('Failed to fetch quiz timer settings from API:', apiError);
+                console.warn('Failed to fetch quiz timer settings from admin API:', apiError);
             }
             
             // Try user API as fallback (uses 'quizTimerSettings' key in database)
@@ -1471,7 +1468,7 @@ export class APIService {
         try {
             // Get all timer settings
             const response = await this.getQuizTimerSettings();
-            console.log('Retrieved timer settings:', response);
+            console.log(`[Timer] Retrieved timer settings for ${quizName}:`, response);
             
             if (response.success && response.data) {
                 const { defaultSeconds, quizTimers } = response.data;
@@ -1479,13 +1476,13 @@ export class APIService {
                 // Check if this quiz has a specific timer setting
                 if (quizTimers && quizName && quizTimers[quizName] !== undefined) {
                     const quizSpecificTimer = Number(quizTimers[quizName]);
-                    console.log(`Using specific timer for ${quizName}: ${quizSpecificTimer} seconds`);
+                    console.log(`[Timer] Using SPECIFIC timer for ${quizName}: ${quizSpecificTimer} seconds (overriding default ${defaultSeconds})`);
                     return quizSpecificTimer;
                 }
                 
                 // Otherwise return the default
                 const defaultTimer = Number(defaultSeconds);
-                console.log(`Using default timer for ${quizName}: ${defaultTimer} seconds`);
+                console.log(`[Timer] Using DEFAULT timer for ${quizName}: ${defaultTimer} seconds (no specific override)`);
                 return defaultTimer;
             }
             
