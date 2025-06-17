@@ -1037,7 +1037,14 @@ export class Admin2Dashboard {
                 this.showInfo('Please select a quiz', 'error');
                 return;
             }
-            const seconds = parseInt(quizTimerInput.value, 10);
+            
+            const inputValue = quizTimerInput.value.trim();
+            if (!inputValue) {
+                this.showInfo('Please enter a timer value', 'error');
+                return;
+            }
+            
+            const seconds = parseInt(inputValue, 10);
             if (isNaN(seconds) || seconds < 0 || seconds > 300) {
                 this.showInfo('Please enter a valid number between 0 and 300', 'error');
                 return;
@@ -1074,8 +1081,9 @@ export class Admin2Dashboard {
                     // Update local data
                     this.timerSettings = response.data;
                     
-                    // Update input field to show default
-                    quizTimerInput.value = this.timerSettings.defaultSeconds;
+                    // Clear input field (since it's now using default)
+                    quizTimerInput.value = '';
+                    quizTimerInput.placeholder = `Leave empty for default (${this.timerSettings.defaultSeconds}s)`;
                     
                     // Show success message
                     this.showInfo(`Timer for ${selectedQuiz} reset to default (${this.timerSettings.defaultSeconds} seconds)`);
@@ -3935,39 +3943,7 @@ export class Admin2Dashboard {
         this.showInfo(message, 'error');
     }
 
-    async updateQuizTimerSettings(quizName, seconds) {
-        try {
-            console.log(`Updating timer for ${quizName} to ${seconds} seconds`);
-            
-            // Validate the timer value
-            const parsedSeconds = parseInt(seconds, 10);
-            if (isNaN(parsedSeconds) || parsedSeconds < 0 || parsedSeconds > 300) {
-                throw new Error('Timer value must be between 0 and 300 seconds');
-            }
-            
-            // Use the updateSingleQuizTimer method of apiService instead of raw fetch
-            const response = await this.apiService.updateSingleQuizTimer(quizName, parsedSeconds);
-            
-            if (response.success) {
-                // Update local cache
-                this.quizTimerSettings = response.data;
-                localStorage.setItem('quizTimerSettings', JSON.stringify(response.data));
-                
-                // Refresh the display
-                this.displayTimerSettings();
-                
-                // Show success message
-                this.showInfo(`Timer for ${quizName} updated to ${parsedSeconds} seconds`);
-                return true;
-            } else {
-                throw new Error(response.message || 'Failed to update timer settings');
-            }
-        } catch (error) {
-            console.error('Error updating quiz timer:', error);
-            this.showInfo(`Failed to update timer: ${error.message}`, 'error');
-            return false;
-        }
-    }
+    // Removed duplicate updateQuizTimerSettings method - using apiService methods directly instead
 
     async loadGuideSettings() {
         try {
