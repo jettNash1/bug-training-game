@@ -64,16 +64,20 @@ export class QuizList {
             // Get quiz progress using the same service as index.js
             const progressResult = await this.quizProgressService.getAllQuizProgress();
             const quizProgress = progressResult.success ? progressResult.data : {};
-            const isInterviewAccount = userType === 'interview_candidate';
-
-            // Debug logging
+            
+            // All accounts now use hiddenQuizzes logic
             console.log('Quiz visibility debug:', {
                 userType,
-                isInterviewAccount,
-                allowedQuizzes,
                 hiddenQuizzes,
                 totalQuizTypes: this.quizTypes.length,
                 quizProgress
+            });
+
+            // Filter quizzes based on visibility
+            const visibleQuizTypes = this.quizTypes.filter(quizType => {
+                const quizLower = quizType.toLowerCase();
+                // Quiz is visible if not in hiddenQuizzes
+                return !hiddenQuizzes.includes(quizLower);
             });
 
             // Create categories HTML
@@ -81,11 +85,10 @@ export class QuizList {
                 // Filter visible quizzes for this category
                 const visibleQuizzes = quizzes.filter(quiz => {
                     const quizLower = quiz.toLowerCase();
-                    if (isInterviewAccount) {
-                        return allowedQuizzes.includes(quizLower);
-                    } else {
-                        return !hiddenQuizzes.includes(quizLower);
+                    if (hiddenQuizzes.includes(quizLower)) {
+                        return false;
                     }
+                    return true;
                 });
 
                 if (visibleQuizzes.length === 0) {

@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
     },
     userType: {
         type: String,
-        enum: ['standard', 'interview_candidate', 'admin'],
+        enum: ['standard', 'admin'],
         default: 'standard'
     },
     allowedQuizzes: {

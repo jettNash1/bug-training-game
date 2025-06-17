@@ -1291,9 +1291,7 @@ export class APIService {
                     const defaultSeconds = typeof settings.defaultSeconds === 'number' ? settings.defaultSeconds : 60;
                     const quizTimers = settings.quizTimers || {};
                     
-                    // Store in localStorage for immediate effect on quizzes
-                    localStorage.setItem('quizTimerValue', defaultSeconds.toString());
-                    localStorage.setItem('perQuizTimerSettings', JSON.stringify(quizTimers));
+                    // DO NOT store in localStorage to prevent pollution
                     
                     return {
                         success: true,
@@ -1309,25 +1307,8 @@ export class APIService {
                 console.warn('Failed to fetch quiz timer settings from admin API:', apiError);
             }
             
-            // Try user API as fallback (uses 'quizTimerSettings' key in database)
-            try {
-                const userResponse = await this.fetchWithAuth(`${this.baseUrl}/users/settings/quiz-timer`);
-                console.log('User API timer settings response:', userResponse);
-                
-                if (userResponse.success && userResponse.data) {
-                    const settings = userResponse.data;
-                    
-                    // DO NOT store in localStorage to prevent pollution
-                    
-                    return {
-                        success: true,
-                        message: 'Timer settings loaded from user API',
-                        data: settings
-                    };
-                }
-            } catch (userApiError) {
-                console.warn('Failed to fetch quiz timer settings from user API:', userApiError);
-            }
+            // NO FALLBACK TO USER API - Admin API only for admin functions
+            console.log('Admin API failed, not falling back to user API to prevent stale data');
             
             // NO FALLBACK TO LOCALSTORAGE - Use clean defaults only
             console.log('API calls failed, using clean defaults (no localStorage fallback)');

@@ -2255,11 +2255,12 @@ export class Admin2Dashboard {
                 throw new Error('User not found');
             }
 
-            // Only use hiddenQuizzes for visibility - remove interview account logic
+            // All accounts are now regular accounts using hiddenQuizzes logic
             const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
 
             console.log('User details:', {
                 username,
+                userType: user.userType,
                 hiddenQuizzes
             });
 
@@ -2305,7 +2306,7 @@ export class Admin2Dashboard {
                         </div>
                         <div class="info-row">
                             <div class="info-label">Account Type:</div>
-                            <div class="info-value">Regular Account</div>
+                            <div class="info-value">${user.userType === 'admin' ? 'Admin Account' : 'Regular Account'}</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Overall Progress:</div>
@@ -2334,17 +2335,14 @@ export class Admin2Dashboard {
                 .forEach(quizType => {
                     const quizLower = quizType.toLowerCase();
                     
-                    // Determine visibility - quiz is visible if not in hiddenQuizzes
+                    // All accounts now use hiddenQuizzes logic - visible if not hidden
                     const isVisible = !hiddenQuizzes.includes(quizLower);
                     
                     console.log('Quiz visibility details:', {
                         quizName: quizType,
                         quizLower,
                         hiddenQuizzes,
-                        hiddenQuizzesType: typeof hiddenQuizzes,
-                        hiddenQuizzesLength: hiddenQuizzes?.length,
-                        includesOriginal: hiddenQuizzes.includes(quizType),
-                        includesLowercase: hiddenQuizzes.includes(quizLower),
+                        inHiddenQuizzes: hiddenQuizzes.includes(quizLower),
                         isVisible
                     });
                 
@@ -2561,45 +2559,48 @@ export class Admin2Dashboard {
                     try {
                         await this.apiService.updateQuizVisibility(username, quizName, isVisible);
                         
-                        // Create success message overlay
+                        // Create success message overlay that doesn't interfere with current view
                         const messageOverlay = document.createElement('div');
-                        messageOverlay.className = 'message-overlay';
+                        messageOverlay.className = 'message-overlay success-message';
                         messageOverlay.style.cssText = `
                             position: fixed;
-                            top: 50%;
-                            left: 50%;
-                            transform: translate(-50%, -50%);
-                            background: white;
-                            padding: 20px;
+                            top: 20px;
+                            right: 20px;
+                            background: #d4edda;
+                            color: #155724;
+                            border: 1px solid #c3e6cb;
+                            padding: 15px 20px;
                             border-radius: 8px;
                             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                             z-index: 2000;
-                            text-align: center;
+                            max-width: 300px;
+                            opacity: 0;
+                            transform: translateX(100%);
+                            transition: all 0.3s ease-in-out;
                         `;
                         messageOverlay.innerHTML = `
-                            <div style="color: #28a745; margin-bottom: 10px;">
-                                <i class="fas fa-check-circle" style="font-size: 24px;"></i>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-check-circle" style="font-size: 18px;"></i>
+                                <span>Updated visibility for ${this.formatQuizName(quizName)}</span>
                             </div>
-                            <p style="margin: 0;">Updated visibility for ${this.formatQuizName(quizName)}</p>
                         `;
                         document.body.appendChild(messageOverlay);
                         
-                        // Remove the message after 2 seconds and refresh user data
-                        setTimeout(async () => {
-                            messageOverlay.remove();
-                            // Close the current modal first to prevent multiple overlays
-                            overlay.remove();
-                            // Refresh the user data to see the updated visibility
-                            console.log('Refreshing user data after visibility change...');
-                            // Add a small delay to ensure backend has processed the change
-                            await new Promise(resolve => setTimeout(resolve, 500));
-                            await this.loadUsers();
-                            // Re-open the user details to see the updated visibility
-                            console.log('Re-opening user details to show updated visibility...');
-                            setTimeout(() => {
-                                this.showUserDetails(username);
-                            }, 100);
-                        }, 2000);
+                        // Animate in
+                        setTimeout(() => {
+                            messageOverlay.style.opacity = '1';
+                            messageOverlay.style.transform = 'translateX(0)';
+                        }, 10);
+                        
+                        // Update local data without closing overlay
+                        await this.loadUsers();
+                        
+                        // Remove the message after 3 seconds
+                        setTimeout(() => {
+                            messageOverlay.style.opacity = '0';
+                            messageOverlay.style.transform = 'translateX(100%)';
+                            setTimeout(() => messageOverlay.remove(), 300);
+                        }, 3000);
                     } catch (error) {
                         console.error('Failed to update quiz visibility:', error);
                         
@@ -3391,8 +3392,7 @@ export class Admin2Dashboard {
             const requestBody = {
                 username,
                 password,
-                userType: 'interview_candidate',
-                allowedQuizzes,
+                userType: 'regular',
                 hiddenQuizzes
             };
             console.log('Request body:', requestBody);

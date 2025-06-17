@@ -642,39 +642,20 @@ router.post('/users/:username/quiz-visibility/:quizName', auth, async (req, res)
         }
 
         const normalizedQuizName = quizName.toLowerCase();
-        const isInterviewAccount = user.userType === 'interview_candidate';
+        // All accounts now use hiddenQuizzes logic
+        // Initialize hiddenQuizzes array if it doesn't exist
+        if (!user.hiddenQuizzes) {
+            user.hiddenQuizzes = [];
+        }
 
-        if (isInterviewAccount) {
-            // Initialize allowedQuizzes array if it doesn't exist
-            if (!user.allowedQuizzes) {
-                user.allowedQuizzes = [];
-            }
+        const quizIndex = user.hiddenQuizzes.indexOf(normalizedQuizName);
 
-            const quizIndex = user.allowedQuizzes.indexOf(normalizedQuizName);
-
-            if (isVisible && quizIndex === -1) {
-                // Add to allowed quizzes if visible and not already allowed
-                user.allowedQuizzes.push(normalizedQuizName);
-            } else if (!isVisible && quizIndex !== -1) {
-                // Remove from allowed quizzes if not visible and currently allowed
-                user.allowedQuizzes.splice(quizIndex, 1);
-            }
-        } else {
-            // Regular account - use hiddenQuizzes
-            // Initialize hiddenQuizzes array if it doesn't exist
-            if (!user.hiddenQuizzes) {
-                user.hiddenQuizzes = [];
-            }
-
-            const quizIndex = user.hiddenQuizzes.indexOf(normalizedQuizName);
-
-            if (!isVisible && quizIndex === -1) {
-                // Add to hidden quizzes if not visible and not already hidden
-                user.hiddenQuizzes.push(normalizedQuizName);
-            } else if (isVisible && quizIndex !== -1) {
-                // Remove from hidden quizzes if visible and currently hidden
-                user.hiddenQuizzes.splice(quizIndex, 1);
-            }
+        if (!isVisible && quizIndex === -1) {
+            // Add to hidden quizzes if not visible and not already hidden
+            user.hiddenQuizzes.push(normalizedQuizName);
+        } else if (isVisible && quizIndex !== -1) {
+            // Remove from hidden quizzes if visible and currently hidden
+            user.hiddenQuizzes.splice(quizIndex, 1);
         }
 
         await user.save();
@@ -695,95 +676,7 @@ router.post('/users/:username/quiz-visibility/:quizName', auth, async (req, res)
     }
 });
 
-// Create interview account
-router.post('/create-interview-account', auth, async (req, res) => {
-    try {
-        // Verify admin status
-        if (!req.user.isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin access required'
-            });
-        }
-
-        const { username, password, allowedQuizzes, hiddenQuizzes } = req.body;
-
-        if (!username || !password || !allowedQuizzes) {
-            return res.status(400).json({
-                success: false,
-                message: 'Username, password, and allowed quizzes are required'
-            });
-        }
-
-        // Check if user already exists
-        let existingUser = await User.findOne({ username });
-        if (existingUser) {
-            return res.status(409).json({
-                success: false,
-                message: 'Username already exists'
-            });
-        }
-
-        // Get all available quiz names
-        const allQuizzes = [
-            'communication', 'initiative', 'time-management', 'tester-mindset',
-            'risk-analysis', 'risk-management', 'non-functional', 'test-support',
-            'issue-verification', 'build-verification', 'issue-tracking-tools',
-            'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
-            'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
-            'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
-            'sanity-smoke', 'functional-interview'
-        ].map(quiz => quiz.toLowerCase());
-
-        // Normalize allowed quizzes to lowercase
-        const normalizedAllowedQuizzes = allowedQuizzes.map(quiz => quiz.toLowerCase());
-
-        // If hiddenQuizzes is not provided, create it from allowedQuizzes
-        const normalizedHiddenQuizzes = hiddenQuizzes ? 
-            hiddenQuizzes.map(quiz => quiz.toLowerCase()) :
-            allQuizzes.filter(quiz => !normalizedAllowedQuizzes.includes(quiz));
-
-        // Validate that all quizzes are valid
-        const invalidAllowedQuizzes = normalizedAllowedQuizzes.filter(quiz => !allQuizzes.includes(quiz));
-        const invalidHiddenQuizzes = normalizedHiddenQuizzes.filter(quiz => !allQuizzes.includes(quiz));
-
-        if (invalidAllowedQuizzes.length > 0 || invalidHiddenQuizzes.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid quiz names provided'
-            });
-        }
-
-        // Create new interview user
-        const user = new User({
-            username,
-            password,
-            userType: 'interview_candidate',
-            allowedQuizzes: normalizedAllowedQuizzes,
-            hiddenQuizzes: normalizedHiddenQuizzes
-        });
-
-        await user.save();
-
-        res.json({
-            success: true,
-            message: 'Interview account created successfully',
-            user: {
-                username: user.username,
-                userType: user.userType,
-                allowedQuizzes: user.allowedQuizzes,
-                hiddenQuizzes: user.hiddenQuizzes
-            }
-        });
-    } catch (error) {
-        console.error('Error creating interview account:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create interview account',
-            error: error.message
-        });
-    }
-});
+// Create interview account endpoint removed - all accounts are now regular accounts
 
 // Register a user (admin only)
 router.post('/register-user', auth, async (req, res) => {

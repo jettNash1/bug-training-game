@@ -19,15 +19,7 @@ export class QuizUser {
                 this.allowedQuizzes = data.data.allowedQuizzes || [];
                 this.quizResults = data.data.quizResults || [];
 
-                // If this is an interview account, only show allowed quizzes
-                if (this.userType === 'interview_candidate') {
-                    document.querySelectorAll('.quiz-item').forEach(quizItem => {
-                        const quizName = quizItem.dataset.quiz;
-                        if (!this.allowedQuizzes.includes(quizName.toLowerCase())) {
-                            quizItem.style.display = 'none';
-                        }
-                    });
-                }
+                // All accounts now use hiddenQuizzes logic - handled by main quiz display logic
 
                 return true;
             }
@@ -538,7 +530,6 @@ export class QuizUser {
     }
 
     startQuizTimer() {
-        if (this.userType !== 'interview_candidate') return;
 
         const TIMER_DURATION = 180; // 3 minutes in seconds
         let timeLeft = TIMER_DURATION;
@@ -591,24 +582,26 @@ export class QuizUser {
     clearQuizTimer() {
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
-            const timerDisplay = document.querySelector('.quiz-timer');
-            if (timerDisplay) {
-                timerDisplay.remove();
-            }
+            this.timerInterval = null;
         }
+        
+        const timerDisplay = document.querySelector('.quiz-timer');
+        if (timerDisplay) {
+            timerDisplay.remove();
+        }
+    }
+
+    handleTimeUp() {
+        // Timer functionality removed
+        return;
     }
 
     async startQuiz(quizName) {
         try {
-            // Clear any existing timer
+            // Clear any existing timer (no longer needed)
             this.clearQuizTimer();
 
-            // Start timer if user is an interview candidate
-            if (this.userType === 'interview_candidate') {
-                this.startQuizTimer();
-            }
-
-            // Rest of the quiz initialization code...
+            // All accounts are now regular accounts - no special timer logic needed
             const response = await this.api.getQuizProgress(quizName);
             if (!response || !response.success) {
                 throw new Error('Failed to start quiz');

@@ -53,7 +53,20 @@ const userSchema = new mongoose.Schema({
         type: Map,
         of: mongoose.Schema.Types.Mixed,
         default: () => ({})
-    }
+    },
+    userType: {
+        type: String,
+        enum: ['regular', 'admin'],
+        default: 'regular'
+    },
+    allowedQuizzes: [{
+        type: String,
+        lowercase: true
+    }],
+    hiddenQuizzes: [{
+        type: String,
+        lowercase: true
+    }]
 }, {
     timestamps: true
 });
