@@ -21,8 +21,98 @@ export class BaseQuiz {
         this.maxXP = 100;
         this.isLoading = false;
         
+        // Initialize timer settings - default to 60 seconds
+        this.timePerQuestion = 60;
+        this.timerDisabled = false;
+        
         // Initialize components
         this.initializeComponents();
+        
+        // Initialize timer settings from API
+        this.initializeTimerSettings();
+    }
+    
+    /**
+     * Initialize timer settings by fetching from API
+     */
+    async initializeTimerSettings() {
+        try {
+            console.log(`[BaseQuiz] Initializing timer settings for: ${this.quizName}`);
+            
+            // Get timer settings from API
+            const timerValue = await this.apiService.getQuizTimerValue(this.quizName);
+            
+            if (typeof timerValue === 'number') {
+                this.timePerQuestion = timerValue;
+                this.timerDisabled = (timerValue === 0);
+                
+                console.log(`[BaseQuiz] Timer settings loaded: ${this.timePerQuestion}s for ${this.quizName}${this.timerDisabled ? ' (disabled)' : ''}`);
+            } else {
+                console.warn(`[BaseQuiz] Invalid timer value received: ${timerValue}, using default 60s`);
+                this.timePerQuestion = 60;
+                this.timerDisabled = false;
+            }
+        } catch (error) {
+            console.error(`[BaseQuiz] Error loading timer settings:`, error);
+            // Keep default values on error
+            this.timePerQuestion = 60;
+            this.timerDisabled = false;
+        }
+    }
+    
+    /**
+     * Initialize timer for the current question
+     * This method can be called by quiz implementations to start the question timer
+     */
+    initializeTimer() {
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+        
+        // Reset timer display
+        const timerContainer = document.getElementById('timer-container');
+        const timerDisplay = document.getElementById('timer-display');
+        
+        if (!timerContainer || !timerDisplay) {
+            console.error(`[${this.quizName}] Timer elements not found`);
+            return;
+        }
+        
+        // Check if timer is disabled (0 seconds) or timer functionality is disabled
+        if (this.timerDisabled || this.timePerQuestion === 0) {
+            console.log(`[${this.quizName}] Timer is disabled, hiding timer display`);
+            timerContainer.classList.add('hidden');
+            return;
+        }
+        
+        // Show the timer
+        timerContainer.classList.remove('hidden');
+        timerContainer.classList.remove('visually-hidden');
+        
+        // Use the timer value from BaseQuiz
+        const timeLimit = this.timePerQuestion;
+        let timeLeft = timeLimit;
+        timerDisplay.textContent = `${timeLeft}s`;
+        
+        console.log(`[${this.quizName}] Starting timer with ${timeLimit} seconds`);
+        
+        this.questionStartTime = Date.now();
+        this.questionTimer = setInterval(() => {
+            timeLeft--;
+            timerDisplay.textContent = `${timeLeft}s`;
+            if (timeLeft <= 0) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+                // Call the quiz-specific timeout handler if it exists
+                if (typeof this.handleTimedOut === 'function') {
+                    this.handleTimedOut();
+                } else {
+                    console.warn(`[${this.quizName}] No handleTimedOut method found`);
+                }
+            }
+        }, 1000);
     }
     
     /**

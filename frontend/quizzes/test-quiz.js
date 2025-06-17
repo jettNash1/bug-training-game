@@ -214,42 +214,7 @@ class TestQuiz extends BaseQuiz {
     }
     
     // Initialize the timer for the current question
-    initializeTimer() {
-        // Clear any existing timer
-        if (this.questionTimer) {
-            clearInterval(this.questionTimer);
-            this.questionTimer = null;
-        }
-        
-        // Reset timer display
-        const timerContainer = document.getElementById('timer-container');
-        const timerDisplay = document.getElementById('timer-display');
-        
-        if (!timerContainer || !timerDisplay) {
-            console.error('[TestQuiz] Timer elements not found');
-            return;
-        }
-        
-        // Show the timer
-        timerContainer.classList.remove('hidden');
-        timerContainer.classList.remove('visually-hidden');
-        
-        // Use the timer value from BaseQuiz
-        const timeLimit = this.timePerQuestion;
-        let timeLeft = timeLimit;
-        timerDisplay.textContent = `${timeLeft}s`;
-        
-        this.questionStartTime = Date.now();
-        this.questionTimer = setInterval(() => {
-            timeLeft--;
-            timerDisplay.textContent = `${timeLeft}s`;
-            if (timeLeft <= 0) {
-                clearInterval(this.questionTimer);
-                this.questionTimer = null;
-                this.handleTimedOut();
-            }
-        }, 1000);
-    }
+    // Note: initializeTimer() is now inherited from BaseQuiz
     
     // Handle when time runs out for a question
     handleTimedOut() {
