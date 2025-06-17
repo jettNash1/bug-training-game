@@ -4,59 +4,55 @@ export const reportsScenarios = {
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Verification Priority',
-                description: 'You have limited time for issue verification. How do you prioritize tickets?',
+                title: 'Report Timing',
+                description: 'When should you start writing a daily report?',
                 options: [
                     {
-                        text: 'Start with highest priority and severity issues, ensuring critical fixes are verified first',
-                        outcome: 'Perfect! This ensures most important issues are verified.',
+                        text: 'Start at 16:45 for standard reports, 16:30 if peer review needed, deliver by 17:00',
+                        outcome: 'Perfect! This ensures timely delivery with review time.',
                         experience: 15,
-                        isCorrect: true,
                     },
                     {
-                        text: 'Verify tickets in chronological order to address the most current issues first',
-                        outcome: 'Priority and severity should guide verification order.',
-                        experience: -10,
-                        isCorrect: false
+                        text: 'Start writing the report at end of the working day',
+                        outcome: 'Reports need time for review from the project manager and any revisions needed.',
+                        experience: -10
                     },
                     {
-                        text: 'Start with easiest tickets to gain the most coverage of open tickets',
-                        outcome: 'Critical issues need verification first.',
-                        experience: -5,
-                        isCorrect: false
+                        text: 'Write the report throughout day and submit what has been observed at the time of documenting',
+                        outcome: 'A final report requires the latest updated information at the point of submitting.',
+                        experience: -5
                     },
                     {
-                        text: 'Verify issues based on your familiarity with specific tickets',
-                        outcome: 'Structured prioritisation is required to address the most critical issues first.',
-                        experience: 0,
-                        isCorrect: false
+                        text: 'Start after 17:00',
+                        outcome: 'Reports must be delivered before the end of day and starting too late may potentially not leave enough time for reviews and revisions.',
+                        experience: 0
                     }
                 ]
             },
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Environment Matching',
-                description: 'You need to verify a device-specific issue. What\'s the correct approach?',
+                title: 'Writing Style',
+                description: 'How should you write the report summary?',
                 options: [
                     {
-                        text: 'Verify on the original environment where possible, or clearly document any environment differences',
-                        outcome: 'Excellent! This maintains testing consistency.',
+                        text: 'Use third person, present tense, objective language without technical jargon',
+                        outcome: 'Excellent! This maintains a professional tone.',
                         experience: 15,
                     },
                     {
-                        text: 'Test on any available device to verify the issue has been resolved',
-                        outcome: 'The original environment should be prioritised as this is where the issue was raised and has been addressed.',
+                        text: 'Use a first person approach to keep the report to a personal level',
+                        outcome: 'Reports require a third person approach to keep to keep the tone objective.',
                         experience: -10
                     },
                     {
-                        text: 'Verify on an older device before moving onto the specified device',
-                        outcome: 'Device-specific issues require verification as users will operate many different devices.',
+                        text: 'Include technical references so developers can identify issues quickly',
+                        outcome: 'The language used should be accessible to all stakeholders and technical references should not be included unless absolutely required.',
                         experience: -5
                     },
                     {
-                        text: 'This can be marked as verified without testing as long as functionality on the primary environment behaves as intended',
-                        outcome: 'Verification is required on specific devices the issue was raised on.',
+                        text: 'Use a past tense approach when writing the summary section',
+                        outcome: 'Present tense writing should be used as it shows the current state of a project.',
                         experience: 0
                     }
                 ]
@@ -64,27 +60,27 @@ export const reportsScenarios = {
             {
                 id: 3,
                 level: 'Basic',
-                title: 'Verification Comments',
-                description: 'How should you document your verification findings?',
+                title: 'Summary Structure',
+                description: 'What are the four main sections of a report summary?',
                 options: [
                     {
-                        text: 'Use template format with status, date, observations, version, environments, and evidence',
-                        outcome: 'Perfect! This provides comprehensive verification documentation.',
+                        text: 'Introduction, what went well, what could be better, conclusion',
+                        outcome: 'Perfect! This covers all key aspects.',
                         experience: 15,
                     },
                     {
-                        text: 'Update the ticket status, as this ensures proper traceability of the issue',
-                        outcome: 'More details are required for traceability.',
+                        text: 'Issues found, blocking issues, resolved issues and queries',
+                        outcome: 'This approach only refers to issues and balanced coverage of all aspects is required.',
                         experience: -10
                     },
                     {
-                        text: 'Update the ticket by stating "fixed" or "not fixed" as further details are not required',
-                        outcome: 'More detailed documentation is required for developer and stakeholder information.',
+                        text: 'Introduction, technical details, what went well, conclusion',
+                        outcome: 'Technical details should not be included in the summary as it should be accessible to all stakeholders.',
                         experience: -5
                     },
                     {
-                        text: 'Add screenshots as visual representation of issues is vital for developers to debug issues',
-                        outcome: 'Written documentation is also required to accompany evidence.',
+                        text: 'Sections related to observations from the days testing activities based on the testers preference', 
+                        outcome: 'A structured approach is required to maintain consistency across all reports.',
                         experience: 0
                     }
                 ]
@@ -92,27 +88,27 @@ export const reportsScenarios = {
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Evidence Capture',
-                description: 'What\'s the best practice for capturing verification evidence?',
+                title: 'Metrics Inclusion',
+                description: 'What metrics should be included in the report?',
                 options: [
                     {
-                        text: 'Use appropriate tools, highlight issues clearly, repeat demonstrations in videos',
-                        outcome: 'Excellent! This provides clear verification evidence.',
+                        text: 'New issues, closed issues, outstanding issues, and relevant progress tables',
+                        outcome: 'Excellent! This provides comprehensive metrics.',
                         experience: 15,
                     },
                     {
-                        text: 'Included screenshots don\'t need labelling as attachment should provide enough detail',
-                        outcome: 'Any submitted evidence requires clear highlighting.',
+                        text: 'New issue metrics, as this is the current relevant information for the client',
+                        outcome: 'All relevant metrics including progress, closed and outstanding issues are required for traceability purposes.',
                         experience: -10
                     },
                     {
-                        text: 'Evidence capture is generally not needed as steps and description should provide enough detail',
-                        outcome: 'Visual evidence is essential for verification.',
+                        text: 'Project progress as this is crucial for the project manger to gauge resources for the agreed test time frame',
+                        outcome: 'Whilst this is an important metric, other metrics are also required for full project understanding.',
                         experience: -5
                     },
                     {
-                        text: 'A video capture in low resolution should be sufficient evidence',
-                        outcome: 'While a video capture is good evidence, the resolution should be up to a legible standard.',
+                        text: 'Closed ticket metrics as this informs the client on developer performance',
+                        outcome: 'All metrics are crucial for reports, including new, closed, outstanding issues, and relevant progress.',
                         experience: 0
                     }
                 ]
@@ -120,188 +116,28 @@ export const reportsScenarios = {
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Status Updates',
-                description: 'An issue is partially fixed. How do you update its status?',
+                title: 'Graph Presentation',
+                description: 'How should graphs be presented in the report?',
                 options: [
                     {
-                        text: 'Mark as partially fixed with a detailed explanation of the remaining issues',
-                        outcome: 'Perfect! This accurately reflects partial fixes.',
+                        text: 'Consistent width, visible labels, appropriate legends, and alt text',
+                        outcome: 'Perfect! This ensures accessible presentation.',
                         experience: 15,
                     },
                     {
-                        text: 'Change the status to fixed, adding a note to re-open once fully fixed',
-                        outcome: 'Partial fixes should not be closed unless instructed by the client.',
+                        text: 'With emphasis focused on each specific data element related to the graph and sized to fit the data',
+                        outcome: 'Consistency is required in size throughout the report.',
                         experience: -10
                     },
                     {
-                        text: 'Update the status to not fixed without adding a comment, as the status itself indicates the ticket requires a revisit',
-                        outcome: 'Partial fix tickets require a partial fix status with full details included.',
+                        text: 'Without labels as the graphs themselves provide enough data and information',
+                        outcome: 'Labels for graphs and data are required for clarity.',
                         experience: -5
                     },
                     {
-                        text: 'Keep the status unchanged, as the open ticket reflects the current situation',
-                        outcome: 'This type of ticket requires the correct status update with the relevant verification details.',
+                        text: 'With placement preference based on experience of the tester',
+                        outcome: 'Organized and structured presentation is required for all reports for consistency throughout.',
                         experience: 0
-                    }
-                ]
-            },
-            {
-                id: 16,
-                level: 'Basic',
-                title: 'Issue Status',
-                description: 'What term describes an issue that shows some improvements but still has unresolved aspects?',
-                options: [
-                    {
-                        text: 'Partially Fixed',
-                        outcome: 'Correct! This is an issue that has been noted as partly showing expected behaviour or improvements, but part of the issue remains unresolved.',
-                        experience: 15,
-                        isCorrect: true,
-                    },
-                    {
-                        text: 'Won\'t Fix',
-                        outcome: 'Won\'t Fix means the client has decided not to address the issue.',
-                        experience: -5,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'Not Reproducible',
-                        outcome: 'Not Reproducible means the issue cannot be recreated during testing.',
-                        experience: -10,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'Out of Scope',
-                        outcome: 'Out of Scope indicates the issue is beyond the project requirements.',
-                        experience: 0,
-                        isCorrect: false
-                    }
-                ]
-            },
-            {
-                id: 17,
-                level: 'Basic',
-                title: 'Issue Verification & Additional Testing',
-                description: 'What is a crucial component of issue verification that should be performed alongside retesting specific issues?',
-                options: [
-                    {
-                        text: 'Creating detailed test cases for future test cycles',
-                        outcome: 'Creating test cases is part of planning activities and not generally part of issue verification',
-                        experience: -5,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'Interviewing developers about their implementation methods',
-                        outcome: 'Whilst comments can be added to tickets about findings and queries. Interviewing developers is not part of issue verification.',
-                        experience: -10,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'Regression testing in areas where fixes have been made',
-                        outcome: 'Correct! It is critical you ensure time for regression testing to identify new issues that may have been introduced as a result of fixes.',
-                        experience: 15,
-                        isCorrect: true,
-                    },
-                    {
-                        text: 'Redesigning the user interface to prevent future issues',
-                        outcome: 'User Interface redesign is not part of the tester\'s responsibility during issue verification',
-                        experience: 0,
-                        isCorrect: false
-                    }
-                ]
-            },
-            {
-                id: 18,
-                level: 'Basic',
-                title: 'Issue Verification Characteristics',
-                description: 'What is a key characteristic of issue verification compared to exploratory testing?',
-                options: [
-                    {
-                        text: 'Issue verification requires less attention to detail than exploratory testing',
-                        outcome: 'Issue verification requires being Observant, Detail oriented and aware of change, so it doesn\'t require less attention to detail.',
-                        experience: -5,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'Issue verification is always performed by a different tester than the original test execution',
-                        outcome: 'The same tester that performed the original test execution on the system can perform the regression tests as well as different testers.', 
-                        experience: -10,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'Issue verification focuses more on reporting than on detailing destructive test methods',
-                        outcome: 'Correct! The reporting process differs from, exploratory testing which is focused on detailing destructive/edge case methods and reporting the issues found. Instead, it is centred around verifying and building a picture of product quality.',
-                        experience: 15,
-                        isCorrect: true,
-                    },
-                    {
-                        text: 'Issue verification allows for more creative test approaches than exploratory testing',
-                        outcome: 'Issue verification generally relies on following a set of steps for each ticket raised rather than a more creative approach that exploratory testing employs.',
-                        experience: 0,
-                        isCorrect: false
-                    }
-                ]
-            },
-            {
-                id: 19,
-                level: 'Basic',
-                title: 'Issue Verification Terms',
-                description: 'What does the term "Global" mean in the context of issue verification?',
-                options: [
-                    {
-                        text: 'The issue is present on all environments and all operating systems based on tested samples',
-                        outcome: 'Correct! Stating global is making a calculated assumption based on observations that the issue is present on all environments and all operating systems.',
-                        experience: 15,
-                        isCorrect: true,
-                    },
-                    {
-                        text: 'The issue affects all users in all countries worldwide',
-                        outcome: 'While this might seem logical, global is defined in terms of environments and operating systems, not geographic regions.',
-                        experience: -10,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'The issue requires approval from global management.',
-                        outcome: 'This is incorrect, and management should not be involved in ticket raising criteria.',
-                        experience: -5,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'The issue can only be verified by international teams.',
-                        outcome: 'This is incorrect as global issues should require the testers experience and knowledge',
-                        experience: 0,
-                        isCorrect: false
-                    }
-                ]
-            },
-            {
-                id: 20,
-                level: 'Basic',
-                title: 'Unresolved Issues',
-                description: 'What should a tester do if they discover that clients have not addressed issues in time for the issue verification session?',
-                options: [
-                    {
-                        text: 'Identify unresolved issues as lower priority for retesting',
-                        outcome: 'Correct! Where possible, confirm with the project manager which & how many issues the client has been able to work on ahead of the issue verification session. If there are known unresolved issues, identify them as lower priority for retest.',
-                        experience: 15,
-                        isCorrect: true,
-                    },
-                    {
-                        text: 'Cancel the session and reschedule for a later date',
-                        outcome: 'This should not be the process. Any unresolved issues should be identified as low priority for re-test.',
-                        experience: -10,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'Test only the fixed issues and ignore all others',
-                        outcome: 'Prioritising of all issues should be the process, rather than ignoring any tickets that have any other status.',
-                        experience: -5,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'Automatically mark all untested issues as \'Not Fixed\'',
-                        outcome: 'Automatically marking issues as Not Fixed without testing would be inaccurate and contradicts the purpose of verification.',
-                        experience: 0,
-                        isCorrect: false
                     }
                 ]
             }
@@ -312,27 +148,28 @@ export const reportsScenarios = {
             {
                 id: 6,
                 level: 'Intermediate',
-                title: 'Regression Testing',
-                description: 'After verifying fixes, how do you approach regression testing?',
+                title: 'Peer Review Process',
+                description: 'How should you handle peer review feedback?',
                 options: [
                     {
-                        text: 'Focus on areas where fixes were implemented, while also checking surrounding functionality',
-                        outcome: 'Perfect! This ensures thorough regression coverage.',
-                        experience: 20, 
+                        text: 'Review all comments, address each point, resolve comments after fixing and discuss if clarification needed',
+                        outcome: 'Perfect! This ensures thorough review process.',
+                        experience: 20,
+                        tool: 'Peer Review'
                     },
                     {
-                        text: 'Check all of the fixed issues as confirmed by the client',
-                        outcome: 'Regression testing should cover areas that have been recently modified. This may include new features or bug fixes.',
+                        text: 'Respond to feedback that is considered an improvement on what is currently stated',
+                        outcome: 'All feedback requires consideration and a response stating the authors views.',
                         experience: -15
                     },
                     {
-                        text: 'Stick to minimal regression testing as previous issues have been fixed and tested during the current release',
-                        outcome: 'Regression testing reduces the risk of introducing new bugs into the system, which can be costly and time-consuming to fix later.',
+                        text: 'Delete any comments without fixing potential changes if they are not deemed to improve the report',
+                        outcome: 'Comments correct resolution with feedback and documented information.',
                         experience: -10
                     },
                     {
-                        text: 'Focus regression testing on tester preference using experience gained during initial testing',
-                        outcome: 'Regression tests should focus on high risk areas, recent changes and core functionality.',
+                        text: 'Update any areas suggested from the review without marking comments as resolved',
+                        outcome: 'Comment resolution is required for tracking purposes.',
                         experience: 0
                     }
                 ]
@@ -340,27 +177,28 @@ export const reportsScenarios = {
             {
                 id: 7,
                 level: 'Intermediate',
-                title: 'Time Management',
-                description: 'How do you manage time during a verification session?',
+                title: 'Environment Documentation',
+                description: 'How do you document test environments in the report?',
                 options: [
                     {
-                        text: 'Set goals for ticket verification numbers and allocate specific time for regression',
-                        outcome: 'Excellent! This ensures balanced coverage.',
-                        experience: 20, 
+                        text: 'Include a matrix with accurate versions, consistent formatting, and relevant environment details',
+                        outcome: 'Excellent! This provides clear environment context.',
+                        experience: 20,
+                        tool: 'Environment Documentation'
                     },
                     {
-                        text: 'Work through verification of all tickets to completion',
-                        outcome: 'Time needs to be allocated for both issue verification and regression testing on a priority basis.',
+                        text: 'Incorporate a matrix with device names listed for each environment',
+                        outcome: 'Other information is required for an environment matrix such as version details.',
                         experience: -15
                     },
                     {
-                        text: 'Focus time management on regression testing',
-                        outcome: 'Issue verification requires time allocation for both ticket verification and regression testing.',
+                        text: 'Include a matrix with primary environment details stated',
+                        outcome: 'Environment documentation for all environments tested are required for traceability.',
                         experience: -10
                     },
                     {
-                        text: 'Focus time management and planning on issue verification',
-                        outcome: 'Issue verification requires time allocation for both ticket verification and regression testing.',
+                        text: 'Use the summary to outline environment coverage',
+                        outcome: 'Whilst some environment coverage can be stated in the summary, a more detailed approach is required in the form of an environment matrix for full traceability.',
                         experience: 0
                     }
                 ]
@@ -368,27 +206,28 @@ export const reportsScenarios = {
             {
                 id: 8,
                 level: 'Intermediate',
-                title: 'New Issues Discovery',
-                description: 'You find new issues during verification. How do you handle them?',
+                title: 'Issue Summary Presentation',
+                description: 'How should you present the top issues in the report?',
                 options: [
                     {
-                        text: 'Raise new tickets and note if they\'re related to recent fixes',
-                        outcome: 'Perfect! This tracks new issues properly.',
-                        experience: 20, 
+                        text: 'List most functionally impactive issues, include blocking issues separately, hyperlink all references',
+                        outcome: 'Perfect! This provides organised issue overview.',
+                        experience: 20,
+                        tool: 'Issue Documentation'
                     },
                     {
-                        text: 'Add any new issues to existing tickets within the project',
-                        outcome: 'Any new issues found require separate tickets.',
+                        text: 'List issues by tester preference based on experience of the project',
+                        outcome: 'Issue need to be prioritised by impact on the system under test.',
                         experience: -15
                     },
                     {
-                        text: 'Leave new issues for a further round of testing as issue verification should focus on current tickets',
-                        outcome: 'All issues require documentation as and when they are found.',
+                        text: 'List issues in standard text format in priority order',
+                        outcome: 'Tickets in the top issues section require hyperlinks that direct to the correct bug tracker.',
                         experience: -10
                     },
                     {
-                        text: 'Raise any new issue found during issue verification in the report summary',
-                        outcome: 'While new issue can be stated in a report summary, they also require tickets to be raised.',
+                        text: 'State the top issues in priority order with any blockers stated first',
+                        outcome: 'Blocking issues should be kept separate and documented in their own section in the report.',
                         experience: 0
                     }
                 ]
@@ -396,27 +235,28 @@ export const reportsScenarios = {
             {
                 id: 9,
                 level: 'Intermediate',
-                title: 'Device Availability',
-                description: 'An original test device isn\'t available. How do you proceed?',
+                title: 'Weekly Report Management',
+                description: 'How do you manage content for a weekly report?',
                 options: [
                     {
-                        text: 'Contact the device owner early, check device lists and consider BrowserStack with PM approval',
-                        outcome: 'Excellent! This shows correct device management.',
-                        experience: 20, 
+                        text: 'Set up template first day, add draft notes daily, compile and refine at week end',
+                        outcome: 'Excellent! This ensures comprehensive coverage.',
+                        experience: 20,
+                        tool: 'Report Management'
                     },
                     {
-                        text: 'Test on any available device to verify the issue has been resolved',
-                        outcome: 'The original environment should be prioritised, even if this is tested on BrowserStack as this is where the issue was raised and has been addressed.',
+                        text: 'Document everything from the week on the last working day',
+                        outcome: 'Progressive documentation is the best approach as its difficult to retain all information from the weeks testing activities.',
                         experience: -15
                     },
                     {
-                        text: 'Test on a similar device and document test outcome',
-                        outcome: 'Using a different device for verification should be confirmed by the project manager and all environment differences require documentation.',
+                        text: 'Use daily reports collated from weekly testing activities and include them into the weekly report',
+                        outcome: 'A dedicated weekly report is required for consistency and ease of use for the client.',
                         experience: -10
                     },
                     {
-                        text: 'Mark the ticket as cannot test due to lack of device resources',
-                        outcome: 'Alternative testing options must be explored including a similar device and BrowserStack.',
+                        text: 'Include information from later in the week to keep in line with more current activities',
+                        outcome: 'A full week approach is required to specify all coverage attained from testing.',
                         experience: 0
                     }
                 ]
@@ -424,28 +264,30 @@ export const reportsScenarios = {
             {
                 id: 10,
                 level: 'Intermediate',
-                title: 'Client Communication',
-                description: 'The client hasn\'t updated ticket statuses. How do you proceed?',
+                title: 'Stakeholder Communication',
+                description: 'How do you adapt report content for different stakeholders?',
                 options: [
                     {
-                        text: 'Contact the Project Manager to confirm which issues have been worked on and prioritise known fixed issues',
-                        outcome: 'Perfect! This ensures efficient verification.',
-                        experience: 20, 
+                        text: 'Use clear language, avoid jargon, focus on business impact, maintain professional tone',
+                        outcome: 'Perfect! This ensures wide accessibility.',
+                        experience: 20,
+                        tool: 'Stakeholder Management'
                     },
                     {
-                        text: 'Test all tickets that have previously been raised within the project',
-                        outcome: 'Prioritisation is required as some tickets may not have been worked on by the client.',
+                        text: 'Use technical terms so developers can pinpoint and debug root causes',
+                        outcome: 'Language used in reports needs to be accessible and understandable for all stakeholders involved in a project.',
                         experience: -15
                     },
                     {
-                        text: 'Continue with issue verification whilst awaiting updates to tickets from the client',
-                        outcome: 'Proactive communication with the Project Manager and client is required in this instance as they may not intend to work on specific tickets.',
+                        text: 'Use language that focuses on Quality Assurance terminology',
+                        outcome: 'All stakeholders must be considered, and language must be simple and fully inclusive.',
                         experience: -10
                     },
                     {
-                        text: 'Leave the tickets that don\'t have any status update and include the information in the summary report.',
-                        outcome: 'It is best practice to confirm with the client which that has tickets are intended for verification.',
+                        text: 'Use informal language to keep a friendly tone and maintain a good personal relationship',
+                        outcome: 'A professional tone must be used throughout reports to keep a level of consistency and good business standard.',
                         experience: 0
+
                     }
                 ]
             }
@@ -456,27 +298,28 @@ export const reportsScenarios = {
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Complex Issue Verification',
-                description: 'A complex issue involves multiple interconnected features. How do you verify it?',
+                title: 'Report Format Adaptation',
+                description: 'The client requests a different report format mid-project. How do you handle it?',
                 options: [
                     {
-                        text: 'Test all connected features, document dependencies, verify full workflow',
-                        outcome: 'Perfect! This ensures thorough verification.',
-                        experience: 25, 
+                        text: 'Discuss the change with the Project Manager, adapt templates while maintaining key information and ensure consistent transition',
+                        outcome: 'Perfect! This ensures proper format adaptation.',
+                        experience: 25,
+                        tool: 'Format Management'
                     },
                     {
-                        text: 'Test the main feature and document the outcome',
-                        outcome: 'All connected features require verification and regression testing.',
+                        text: 'Use both the current format and the new requested format on data you see fit for purpose',
+                        outcome: 'The client requirements require consideration, clarification with the project manager and consistency.',
                         experience: -15
                     },
                     {
-                        text: 'Test the features that are connected to the main feature as this ensures all issues have been addressed',
-                        outcome: 'Complex issues need thorough testing and all affected features require attention.',
+                        text: 'Create the new report format straight away and submit this at the usual time to the Project Manager',
+                        outcome: 'Project Manager coordination required before making any changes to report formats to ensure consistency and clarity.',
                         experience: -10
                     },
                     {
-                        text: 'Test the specific issues that have been addressed by the client without the full feature workflow',
-                        outcome: 'All issues require verification as well as the full workflow of interconnected features.',
+                        text: 'Inform the client that the business use a structured guideline that needs to be followed for consistency',
+                        outcome: 'While consistency is important, the client can essentially request how they receive the data they require and the way they want the data to be reported.',
                         experience: -5
                     }
                 ]
@@ -484,27 +327,28 @@ export const reportsScenarios = {
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Multiple Environment Issues',
-                description: 'An issue affects multiple environments differently. How do you verify it?',
+                title: 'Complex Metrics Analysis',
+                description: 'How do you handle conflicting metrics in the report?',
                 options: [
                     {
-                        text: 'Test each environment, document specific behaviours, note any variations',
-                        outcome: 'Excellent! This provides complete environment coverage.',
-                        experience: 25, 
+                        text: 'Verify source data, cross-reference scripts, document discrepancies, consult the project manager if needed',
+                        outcome: 'Excellent! This ensures accurate reporting.',
+                        experience: 25,
+                        tool: 'Data Analysis'
                     },
                     {
-                        text: 'Test any of the affected environments to verify the issue has been addressed by the client',
-                        outcome: 'All affected environments require testing as behaviour has been stated as environment specific.',
+                        text: 'Adjust the formulas within the script to fit the numbers stated in the report',
+                        outcome: 'Formulas should not be updated as this can return inconsistent results.',
                         experience: -15
                     },
                     {
-                        text: 'Test the majority of environments, ascertain an average outcome and document results',
-                        outcome: 'All stated environment variations are required for verification.',
+                        text: 'Conflicting metrics should be reported to the project manager straight away',
+                        outcome: 'In this instance other avenues should be visited first, such as source data and troubleshooting guides. Project managers have multiple reports to review at the end of the working day.',
                         experience: -10
                     },
                     {
-                        text: 'Test all stated environments and document the outcome of the primary device',
-                        outcome: 'Environment differences require full documentation for traceability.',
+                        text: 'Take an average of the numbers stated in the test script and which have been stated in the report',
+                        outcome: 'Accurate data is required for reporting and verifying source data should be performed first.',
                         experience: -5
                     }
                 ]
@@ -512,27 +356,28 @@ export const reportsScenarios = {
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Regression Impact Analysis',
-                description: 'Multiple fixes have been implemented. How do you assess regression impact?',
+                title: 'Multi-Environment Reporting',
+                description: 'How do you report on testing across multiple complex environments?',
                 options: [
                     {
-                        text: 'Research fix relationships, test impacted areas, document any cascading effects',
-                        outcome: 'Perfect! This ensures comprehensive regression analysis.',
-                        experience: 25, 
+                        text: 'Create clear environment matrix, document specific behaviours, highlight key differences',
+                        outcome: 'Perfect! This provides comprehensive environment coverage.',
+                        experience: 25,
+                        tool: 'Environment Analysis'
                     },
                     {
-                        text: 'Verify any client stated fixes specifically',
-                        outcome: 'Potential related impacts from specific bug fixes also require assessment.',
+                        text: 'Group all environment data together and report as one metric',
+                        outcome: 'Specific details required per environment for traceability.',
                         experience: -15
                     },
                     {
-                        text: 'Use a basic regression process to ascertain focus feature fixes',
-                        outcome: 'Thorough impact analysis is required for regression testing to explore any other areas that might be affected by a specific bug fix.',
+                        text: 'Ensure the report includes primary environment testing data',
+                        outcome: 'Data for testing activities across all environments are required for coverage reporting.',
                         experience: -10
                     },
                     {
-                        text: 'Impact analysis can be left until all specific fixes have been verified',
-                        outcome: 'Fix impacts require assessment systematically throughout verification as blocking issues could be direct impact of a current fix.',
+                        text: 'Specify the hardware used for each environment that has been tested',
+                        outcome: 'Full environment documentation including, device, operating system and browser version details is essential.',
                         experience: -5
                     }
                 ]
@@ -540,27 +385,28 @@ export const reportsScenarios = {
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Verification Report Creation',
-                description: 'How do you create a comprehensive verification report?',
+                title: 'Critical Issue Reporting',
+                description: 'How do you report different multiple critical issues found late in the day?',
                 options: [
                     {
-                        text: 'Document verified issues, regression findings, new issues, and quality assessment',
-                        outcome: 'Excellent! This provides complete verification coverage.',
-                        experience: 25, 
+                        text: 'Immediately notify project manager, document thoroughly in report, highlight business impact',
+                        outcome: 'Excellent! This ensures proper critical issue handling.',
+                        experience: 25,
+                        tool: 'Critical Issue Management'
                     },
                     {
-                        text: 'List all issues fixed by the client within the application release',
-                        outcome: 'All aspects need reporting not just fixed issues.',
+                        text: 'Include the issues within the report and submit this at the agreed time',
+                        outcome: 'Immediate notification to the project manager is the best approach in this instance so clients are aware of any alternative planning that may be required.',
                         experience: -15
                     },
                     {
-                        text: 'Document a basic status update of each existing issue within the release',
-                        outcome: 'Comprehensive reporting needed is required including new issues and regression details.',
+                        text: 'Collate all critical issues into one ticket for ease and speed of client delegation',
+                        outcome: 'If issues are not related they require individual tickets raising regardless of time of working day.',
                         experience: -10
                     },
                     {
-                        text: 'Document all details surrounding regression testing of the new release',
-                        outcome: 'Verification needs full documentation not just regression test reporting.',
+                        text: 'Leave the detail out of the report and communicate the issues with the project manager',
+                        outcome: 'Thorough documentation as well as communication with the project manager on these critical issues required.',
                         experience: -5
                     }
                 ]
@@ -568,28 +414,30 @@ export const reportsScenarios = {
             {
                 id: 15,
                 level: 'Advanced',
-                title: 'Quality Assessment',
-                description: 'How do you assess if additional testing is needed after verification?',
+                title: 'Report Quality Assurance',
+                description: 'How do you ensure report quality before submission?',
                 options: [
                     {
-                        text: 'Analyse fix impact, regression findings, and new issues to recommend next steps',
-                        outcome: 'Perfect! This provides informed testing recommendations.',
-                        experience: 25, 
+                        text: 'Review content, verify metrics, check formatting, validate links, run spell check, read aloud',
+                        outcome: 'Perfect! This ensures comprehensive quality check.',
+                        experience: 25,
+                        tool: 'Quality Assurance'
                     },
                     {
-                        text: 'Check that all open issues within the release have been fixed',
-                        outcome: 'Other factors also need to be taken into consideration like regression findings and new issues raised.',
+                        text: 'Run the report through a spellchecker to make sure a professional standard is maintained',
+                        outcome: 'Whilst good grammar is important, a thorough review of all data and formatting is required.',
                         experience: -15
                     },
                     {
-                        text: 'Rely on client feedback so they can make a decision on additional testing',
-                        outcome: 'Proactive assessment required and additional testing can be judged on regression findings and new issues raised.',
+                        text: 'Once all information has been collated a review is only required by the project manager',
+                        outcome: 'A quality check is crucial before submitting to the project manager as they should not have to change anything or only make minimal changes.',
                         experience: -10
                     },
                     {
-                        text: 'Await feedback from the project manager on issue verification findings to decide on additional testing',
-                        outcome: 'Quality assessment is crucial and initiative should be taken on additional testing as well as informing the project manager of the outcome.',
+                        text: 'Thoroughly check all metrics data adds up correctly and is representative of testing activities carried out',
+                        outcome: 'While metrics data is important, all aspects of reporting need thorough review.',
                         experience: -5
+
                     }
                 ]
             }
