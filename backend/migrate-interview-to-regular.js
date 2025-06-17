@@ -1,14 +1,52 @@
 const mongoose = require('mongoose');
 const User = require('./models/User');
 
-// Database connection
+// Load environment variables from parent directory if needed
+require('dotenv').config({ path: '../.env' });
+require('dotenv').config(); // Also try current directory
+
+// Database connection using same logic as main app
 const connectDB = async () => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bug-training-game');
-        console.log('MongoDB connected for migration');
+        console.log('🔌 Attempting to connect to MongoDB...');
+        
+        // Check if MONGODB_URI is set
+        if (!process.env.MONGODB_URI) {
+            console.error('❌ MONGODB_URI environment variable is not set!');
+            console.log('💡 Available environment variables:');
+            Object.keys(process.env).filter(key => key.includes('MONGO')).forEach(key => {
+                console.log(`   ${key}: ${process.env[key]}`);
+            });
+            throw new Error('MONGODB_URI environment variable is required');
+        }
+        
+        console.log(`🌐 Connecting to: ${process.env.MONGODB_URI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')}`);
+        
+        await mongoose.connect(process.env.MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+        console.log('✅ MongoDB connected successfully for migration');
     } catch (error) {
-        console.error('Database connection failed:', error);
-        process.exit(1);
+        console.error('❌ Database connection failed:', error.message);
+        
+        // Provide helpful debugging info
+        console.log('\n🔍 Debugging Information:');
+        console.log('- Current working directory:', process.cwd());
+        console.log('- Node environment:', process.env.NODE_ENV || 'not set');
+        console.log('- Available .env files:');
+        const fs = require('fs');
+        const path = require('path');
+        
+        // Check for .env files in current and parent directories
+        const envPaths = ['.env', '../.env', '../../.env'];
+        envPaths.forEach(envPath => {
+            const fullPath = path.resolve(envPath);
+            const exists = fs.existsSync(fullPath);
+            console.log(`  ${fullPath}: ${exists ? '✅ exists' : '❌ not found'}`);
+        });
+        
+        throw error;
     }
 };
 
@@ -83,7 +121,12 @@ async function runMigration() {
         await migrateInterviewAccounts();
         console.log('\n✅ Migration completed successfully!');
     } catch (error) {
-        console.error('\n❌ Migration failed:', error);
+        console.error('\n❌ Migration failed:', error.message);
+        console.log('\n💡 Troubleshooting tips:');
+        console.log('1. Make sure your MongoDB connection string is correct');
+        console.log('2. Check that your .env file exists and contains MONGODB_URI');
+        console.log('3. Verify your MongoDB server is running and accessible');
+        console.log('4. Try running the main application first to test the connection');
     } finally {
         await mongoose.connection.close();
         console.log('📤 Database connection closed');
