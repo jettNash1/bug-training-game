@@ -1050,11 +1050,19 @@ export class Admin2Dashboard {
                 return;
             }
             try {
+                console.log(`[Timer Debug] Setting timer for quiz: "${selectedQuiz}" to ${seconds} seconds`);
                 const response = await this.apiService.updateSingleQuizTimer(selectedQuiz, seconds);
+                console.log(`[Timer Debug] Response from updateSingleQuizTimer:`, response);
+                
                 if (response.success) {
-                    // Always re-fetch the latest timer settings and re-render UI
+                    // Update local timer settings
                     this.timerSettings = response.data;
-                    await this.loadTimerSettings();
+                    console.log(`[Timer Debug] Updated timerSettings:`, this.timerSettings);
+                    console.log(`[Timer Debug] Quiz timers object:`, this.timerSettings.quizTimers);
+                    
+                    // Refresh the entire timer settings display
+                    this.displayTimerSettings();
+                    
                     this.showInfo(`Timer for ${this.formatQuizName(selectedQuiz)} set to ${seconds} seconds`);
                 } else {
                     throw new Error(response.message || 'Failed to set quiz timer');
@@ -1233,14 +1241,19 @@ export class Admin2Dashboard {
     
     // Helper method to generate HTML for the list of quiz-specific timer settings
     generateQuizTimersList(quizTimers) {
+        console.log(`[Timer Debug] generateQuizTimersList called with:`, quizTimers);
         const quizTimerEntries = Object.entries(quizTimers || {});
+        console.log(`[Timer Debug] Quiz timer entries:`, quizTimerEntries);
         
         if (quizTimerEntries.length === 0) {
+            console.log(`[Timer Debug] No quiz timer entries found, returning no-settings message`);
             return '<p class="no-custom-timers">No quiz-specific settings configured yet.</p>';
         }
         
         // Sort entries by quiz name
         quizTimerEntries.sort((a, b) => this.formatQuizName(a[0]).localeCompare(this.formatQuizName(b[0])));
+        
+        console.log(`[Timer Debug] Sorted quiz timer entries:`, quizTimerEntries);
         
         return `
             <table class="timer-table">
@@ -1252,7 +1265,9 @@ export class Admin2Dashboard {
                     </tr>
                 </thead>
                 <tbody>
-                    ${quizTimerEntries.map(([quizName, seconds]) => `
+                    ${quizTimerEntries.map(([quizName, seconds]) => {
+                        console.log(`[Timer Debug] Generating row for quiz: "${quizName}" with ${seconds} seconds`);
+                        return `
                         <tr>
                             <td>
                                 <input type="checkbox" class="timer-checkbox" data-quiz="${quizName}">
@@ -1260,7 +1275,8 @@ export class Admin2Dashboard {
                             <td>${this.formatQuizName(quizName)}</td>
                             <td>${seconds === 0 ? 'Disabled' : `${seconds} seconds`}</td>
                         </tr>
-                    `).join('')}
+                    `;
+                    }).join('')}
                 </tbody>
             </table>
         `;

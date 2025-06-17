@@ -1520,7 +1520,12 @@ export class APIService {
                 throw new Error('Timer value must be between 0 and 300 seconds');
             }
             
-            console.log(`Setting timer for ${quizName} to ${value} seconds`);
+            console.log(`[DEBUG] Setting timer for quiz: "${quizName}" to ${value} seconds`);
+            console.log(`[DEBUG] Original quiz name: "${quizName}"`);
+            
+            // Normalize the quiz name for consistency
+            const normalizedQuizName = this.normalizeQuizName(quizName);
+            console.log(`[DEBUG] Normalized quiz name: "${normalizedQuizName}"`);
             
             // Get current settings first
             const settings = await this.getQuizTimerSettings();
@@ -1528,9 +1533,13 @@ export class APIService {
                 throw new Error('Failed to load current timer settings');
             }
             
-            // Update the quizTimers object with new value
+            console.log(`[DEBUG] Current settings:`, settings.data);
+            
+            // Update the quizTimers object with new value - use normalized name
             const quizTimers = {...(settings.data.quizTimers || {})};
-                quizTimers[quizName] = value;
+            quizTimers[normalizedQuizName] = value;
+            
+            console.log(`[DEBUG] Updated quizTimers object:`, quizTimers);
             
             // Update localStorage immediately for faster UI response
             localStorage.setItem('perQuizTimerSettings', JSON.stringify(quizTimers));
