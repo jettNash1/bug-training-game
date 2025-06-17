@@ -722,6 +722,100 @@ router.post('/users/:username/quiz-visibility/:quizName', auth, async (req, res)
 
 // Create interview account endpoint removed - all accounts are now regular accounts
 
+// Create standard account with hiddenQuizzes support
+router.post('/create-standard-account', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username, password, hiddenQuizzes } = req.body;
+
+        console.log('[Create Account] Request received:', {
+            username,
+            hasPassword: !!password,
+            hiddenQuizzesCount: hiddenQuizzes?.length || 0,
+            hiddenQuizzes
+        });
+
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username and password are required'
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                message: 'Username already exists'
+            });
+        }
+
+        // Get all available quiz names for validation
+        const allQuizzes = [
+            'communication', 'initiative', 'time-management', 'tester-mindset',
+            'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+            'issue-verification', 'build-verification', 'issue-tracking-tools',
+            'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+            'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
+            'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
+            'sanity-smoke', 'functional-interview'
+        ].map(quiz => quiz.toLowerCase());
+
+        // Validate hiddenQuizzes if provided
+        const normalizedHiddenQuizzes = hiddenQuizzes ? 
+            hiddenQuizzes.map(quiz => quiz.toLowerCase()) : [];
+
+        const invalidHiddenQuizzes = normalizedHiddenQuizzes.filter(quiz => !allQuizzes.includes(quiz));
+        if (invalidHiddenQuizzes.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid quiz names: ${invalidHiddenQuizzes.join(', ')}`
+            });
+        }
+
+        // Create new standard user
+        const user = new User({
+            username,
+            password,
+            userType: 'standard',
+            hiddenQuizzes: normalizedHiddenQuizzes
+        });
+
+        await user.save();
+
+        console.log('[Create Account] User created successfully:', {
+            username: user.username,
+            userType: user.userType,
+            hiddenQuizzesCount: user.hiddenQuizzes?.length || 0
+        });
+
+        res.json({
+            success: true,
+            message: 'Standard account created successfully',
+            user: {
+                username: user.username,
+                userType: user.userType,
+                hiddenQuizzes: user.hiddenQuizzes
+            }
+        });
+    } catch (error) {
+        console.error('[Create Account] Error creating standard account:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create standard account',
+            error: error.message
+        });
+    }
+});
+
 // Register a user (admin only)
 router.post('/register-user', auth, async (req, res) => {
     try {

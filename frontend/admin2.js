@@ -998,9 +998,10 @@ export class Admin2Dashboard {
             try {
                 const response = await this.apiService.updateQuizTimerSettings(seconds);
                 if (response.success) {
-                    // Always re-fetch the latest timer settings and re-render UI
+                    // Update local timer settings with the response data
                     this.timerSettings = response.data;
-                    await this.loadTimerSettings();
+                    // Re-display the timer settings to reflect the change
+                    this.displayTimerSettings();
                     this.showInfo(`Default timer set to ${seconds} seconds`);
                 } else {
                     throw new Error(response.message || 'Failed to save default timer');
@@ -3392,12 +3393,12 @@ export class Admin2Dashboard {
             const requestBody = {
                 username,
                 password,
-                userType: 'regular',
+                userType: 'standard',
                 hiddenQuizzes
             };
             console.log('Request body:', requestBody);
 
-            const response = await this.apiService.fetchWithAdminAuth('/api/admin/create-interview-account', {
+            const response = await this.apiService.fetchWithAdminAuth('/api/admin/create-standard-account', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
