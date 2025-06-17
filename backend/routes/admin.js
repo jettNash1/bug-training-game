@@ -1313,6 +1313,10 @@ router.get('/settings/quiz-timer', auth, async (req, res) => {
 
         // Retrieve timer settings from database
         const timerSetting = await Setting.findOne({ key: 'quizTimerSettings' });
+        console.log('[TIMER DEBUG] GET request - Found setting:', !!timerSetting);
+        if (timerSetting) {
+            console.log('[TIMER DEBUG] GET request - Current value:', timerSetting.value);
+        }
         
         // Default settings if not found
         const defaultSettings = {
@@ -1323,6 +1327,7 @@ router.get('/settings/quiz-timer', auth, async (req, res) => {
         
         // Use stored settings or defaults
         const settings = timerSetting ? timerSetting.value : defaultSettings;
+        console.log('[TIMER DEBUG] GET request - Returning settings:', settings);
         
         return res.json({
             success: true,
@@ -1333,7 +1338,7 @@ router.get('/settings/quiz-timer', auth, async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error retrieving quiz timer settings:', error);
+        console.error('[TIMER DEBUG] Error retrieving quiz timer settings:', error);
         return res.status(500).json({
             success: false,
             message: 'Failed to retrieve quiz timer settings'
@@ -1353,9 +1358,11 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
         }
 
         const { defaultSeconds, quizTimers } = req.body;
+        console.log('[TIMER DEBUG] Received update request:', { defaultSeconds, quizTimers });
 
         // Validate defaultSeconds
         if (defaultSeconds !== undefined && (typeof defaultSeconds !== 'number' || defaultSeconds < 0 || defaultSeconds > 300)) {
+            console.log('[TIMER DEBUG] Validation failed for defaultSeconds:', defaultSeconds);
             return res.status(400).json({
                 success: false,
                 message: 'Default seconds must be a number between 0 and 300'
@@ -1364,6 +1371,7 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
 
         // Validate quizTimers object
         if (quizTimers && typeof quizTimers !== 'object') {
+            console.log('[TIMER DEBUG] Validation failed for quizTimers:', quizTimers);
             return res.status(400).json({
                 success: false,
                 message: 'Quiz timers must be an object'
@@ -1374,6 +1382,7 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
         if (quizTimers) {
             for (const [quizName, seconds] of Object.entries(quizTimers)) {
                 if (typeof seconds !== 'number' || seconds < 0 || seconds > 300) {
+                    console.log('[TIMER DEBUG] Validation failed for quiz timer:', { quizName, seconds });
                     return res.status(400).json({
                         success: false,
                         message: `Timer for ${quizName} must be a number between 0 and 300`
@@ -1384,9 +1393,14 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
 
         // Get existing settings or create new ones
         let timerSetting = await Setting.findOne({ key: 'quizTimerSettings' });
+        console.log('[TIMER DEBUG] Existing setting found:', !!timerSetting);
+        if (timerSetting) {
+            console.log('[TIMER DEBUG] Current value before update:', timerSetting.value);
+        }
         
         if (!timerSetting) {
             // Create new settings
+            console.log('[TIMER DEBUG] Creating new timer setting');
             timerSetting = new Setting({
                 key: 'quizTimerSettings',
                 value: {
@@ -1397,28 +1411,38 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
             });
         } else {
             // Update existing settings
+            console.log('[TIMER DEBUG] Updating existing timer setting');
             if (defaultSeconds !== undefined) {
+                console.log('[TIMER DEBUG] Setting defaultSeconds from', timerSetting.value.defaultSeconds, 'to', defaultSeconds);
                 timerSetting.value.defaultSeconds = defaultSeconds;
             }
             if (quizTimers !== undefined) {
+                console.log('[TIMER DEBUG] Setting quizTimers to:', quizTimers);
                 timerSetting.value.quizTimers = quizTimers;
             }
             timerSetting.value.updatedAt = new Date();
+            timerSetting.markModified('value'); // Ensure mongoose knows the nested object changed
         }
 
-        await timerSetting.save();
+        console.log('[TIMER DEBUG] About to save:', timerSetting.value);
+        const savedSetting = await timerSetting.save();
+        console.log('[TIMER DEBUG] Successfully saved:', savedSetting.value);
+
+        // Verify the save by reading it back
+        const verifyRead = await Setting.findOne({ key: 'quizTimerSettings' });
+        console.log('[TIMER DEBUG] Verification read after save:', verifyRead.value);
 
         return res.json({
             success: true,
             message: 'Quiz timer settings updated successfully',
             data: {
-                defaultSeconds: timerSetting.value.defaultSeconds,
-                quizTimers: timerSetting.value.quizTimers || {},
-                updatedAt: timerSetting.value.updatedAt
+                defaultSeconds: savedSetting.value.defaultSeconds,
+                quizTimers: savedSetting.value.quizTimers || {},
+                updatedAt: savedSetting.value.updatedAt
             }
         });
     } catch (error) {
-        console.error('Error updating quiz timer settings:', error);
+        console.error('[TIMER DEBUG] Error updating quiz timer settings:', error);
         return res.status(500).json({
             success: false,
             message: 'Failed to update quiz timer settings',
