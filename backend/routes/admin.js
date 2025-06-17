@@ -1269,4 +1269,131 @@ router.get('/completed-users/:quizName', auth, async (req, res) => {
     }
 });
 
+// Get quiz timer settings for admin
+router.get('/settings/quiz-timer', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        // Retrieve timer settings from database
+        const timerSetting = await Setting.findOne({ key: 'quizTimerSettings' });
+        
+        // Default settings if not found
+        const defaultSettings = {
+            defaultSeconds: 60,
+            quizTimers: {},
+            updatedAt: new Date()
+        };
+        
+        // Use stored settings or defaults
+        const settings = timerSetting ? timerSetting.value : defaultSettings;
+        
+        return res.json({
+            success: true,
+            data: {
+                defaultSeconds: settings.defaultSeconds,
+                quizTimers: settings.quizTimers || {},
+                updatedAt: timerSetting ? timerSetting.updatedAt : new Date()
+            }
+        });
+    } catch (error) {
+        console.error('Error retrieving quiz timer settings:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve quiz timer settings'
+        });
+    }
+});
+
+// Update quiz timer settings for admin
+router.post('/settings/quiz-timer', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { defaultSeconds, quizTimers } = req.body;
+
+        // Validate defaultSeconds
+        if (defaultSeconds !== undefined && (typeof defaultSeconds !== 'number' || defaultSeconds < 0 || defaultSeconds > 300)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Default seconds must be a number between 0 and 300'
+            });
+        }
+
+        // Validate quizTimers object
+        if (quizTimers && typeof quizTimers !== 'object') {
+            return res.status(400).json({
+                success: false,
+                message: 'Quiz timers must be an object'
+            });
+        }
+
+        // Validate individual quiz timer values
+        if (quizTimers) {
+            for (const [quizName, seconds] of Object.entries(quizTimers)) {
+                if (typeof seconds !== 'number' || seconds < 0 || seconds > 300) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Timer for ${quizName} must be a number between 0 and 300`
+                    });
+                }
+            }
+        }
+
+        // Get existing settings or create new ones
+        let timerSetting = await Setting.findOne({ key: 'quizTimerSettings' });
+        
+        if (!timerSetting) {
+            // Create new settings
+            timerSetting = new Setting({
+                key: 'quizTimerSettings',
+                value: {
+                    defaultSeconds: defaultSeconds !== undefined ? defaultSeconds : 60,
+                    quizTimers: quizTimers || {},
+                    updatedAt: new Date()
+                }
+            });
+        } else {
+            // Update existing settings
+            if (defaultSeconds !== undefined) {
+                timerSetting.value.defaultSeconds = defaultSeconds;
+            }
+            if (quizTimers !== undefined) {
+                timerSetting.value.quizTimers = quizTimers;
+            }
+            timerSetting.value.updatedAt = new Date();
+        }
+
+        await timerSetting.save();
+
+        return res.json({
+            success: true,
+            message: 'Quiz timer settings updated successfully',
+            data: {
+                defaultSeconds: timerSetting.value.defaultSeconds,
+                quizTimers: timerSetting.value.quizTimers || {},
+                updatedAt: timerSetting.value.updatedAt
+            }
+        });
+    } catch (error) {
+        console.error('Error updating quiz timer settings:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to update quiz timer settings',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router; 
