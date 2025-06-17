@@ -623,51 +623,95 @@ router.post('/users/:username/quiz-visibility/:quizName', auth, async (req, res)
         const { username, quizName } = req.params;
         const { isVisible } = req.body;
 
+        console.log(`[Visibility] Request received:`, {
+            username,
+            quizName,
+            isVisible,
+            bodyType: typeof isVisible,
+            fullBody: req.body
+        });
+
         if (typeof isVisible !== 'boolean') {
+            console.error(`[Visibility] Invalid isVisible type: ${typeof isVisible}, value: ${isVisible}`);
             return res.status(400).json({
                 success: false,
                 message: 'isVisible must be a boolean value'
             });
         }
 
-        console.log(`Updating visibility for ${username}'s quiz ${quizName}: isVisible=${isVisible}`);
+        console.log(`[Visibility] Updating visibility for ${username}'s quiz ${quizName}: isVisible=${isVisible}`);
 
         // Find the user
         const user = await User.findOne({ username });
         if (!user) {
+            console.error(`[Visibility] User not found: ${username}`);
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
         }
 
+        console.log(`[Visibility] User found:`, {
+            username: user.username,
+            userType: user.userType,
+            hasHiddenQuizzes: !!user.hiddenQuizzes,
+            hiddenQuizzesLength: user.hiddenQuizzes?.length || 0,
+            hasAllowedQuizzes: !!user.allowedQuizzes,
+            allowedQuizzesLength: user.allowedQuizzes?.length || 0
+        });
+
         const normalizedQuizName = quizName.toLowerCase();
+        
         // All accounts now use hiddenQuizzes logic
         // Initialize hiddenQuizzes array if it doesn't exist
         if (!user.hiddenQuizzes) {
+            console.log(`[Visibility] Initializing hiddenQuizzes array for ${username}`);
             user.hiddenQuizzes = [];
         }
 
         const quizIndex = user.hiddenQuizzes.indexOf(normalizedQuizName);
+        console.log(`[Visibility] Quiz "${normalizedQuizName}" index in hiddenQuizzes: ${quizIndex}`);
 
         if (!isVisible && quizIndex === -1) {
             // Add to hidden quizzes if not visible and not already hidden
+            console.log(`[Visibility] Adding "${normalizedQuizName}" to hiddenQuizzes`);
             user.hiddenQuizzes.push(normalizedQuizName);
         } else if (isVisible && quizIndex !== -1) {
             // Remove from hidden quizzes if visible and currently hidden
+            console.log(`[Visibility] Removing "${normalizedQuizName}" from hiddenQuizzes`);
             user.hiddenQuizzes.splice(quizIndex, 1);
+        } else {
+            console.log(`[Visibility] No change needed for "${normalizedQuizName}": isVisible=${isVisible}, quizIndex=${quizIndex}`);
         }
+
+        console.log(`[Visibility] About to save user with hiddenQuizzes:`, user.hiddenQuizzes);
 
         await user.save();
 
-        res.json({
+        console.log(`[Visibility] User saved successfully`);
+
+        const response = {
             success: true,
             message: `Quiz visibility updated for ${username}`,
-            allowedQuizzes: user.allowedQuizzes,
             hiddenQuizzes: user.hiddenQuizzes
-        });
+        };
+
+        // Only include allowedQuizzes if it exists (for backward compatibility)
+        if (user.allowedQuizzes) {
+            response.allowedQuizzes = user.allowedQuizzes;
+        }
+
+        console.log(`[Visibility] Sending response:`, response);
+
+        res.json(response);
     } catch (error) {
-        console.error('Error updating quiz visibility:', error);
+        console.error('[Visibility] Error updating quiz visibility:', {
+            error: error.message,
+            stack: error.stack,
+            username: req.params.username,
+            quizName: req.params.quizName,
+            isVisible: req.body.isVisible
+        });
         res.status(500).json({
             success: false,
             message: 'Failed to update quiz visibility',

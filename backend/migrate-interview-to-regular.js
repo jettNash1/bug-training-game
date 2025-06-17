@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const User = require('./models/User');
+const User = require('./models/user.model');
 
 // Load environment variables from parent directory if needed
 require('dotenv').config({ path: '../.env' });
@@ -94,7 +94,7 @@ async function migrateInterviewAccounts() {
             console.log(`  - Will hide quizzes (${hiddenQuizzes.length}): ${hiddenQuizzes.join(', ')}`);
             
             // Update the user
-            user.userType = 'regular';
+            user.userType = 'standard';
             user.hiddenQuizzes = hiddenQuizzes;
             // Keep allowedQuizzes for reference but it won't be used
             

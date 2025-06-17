@@ -534,7 +534,7 @@ export class Admin2Dashboard {
         }
 
         // Calculate Active Today
-        const today = new Date();
+            const today = new Date();
         const totalUsers = usersForStats.length;
         let activeToday = 0;
         let totalCompletion = 0;
@@ -1019,7 +1019,7 @@ export class Admin2Dashboard {
                 if (quizTimers[selectedQuiz] !== undefined) {
                     quizTimerInput.value = quizTimers[selectedQuiz];
                     quizTimerInput.placeholder = `Current: ${quizTimers[selectedQuiz]}s (overriding default)`;
-                } else {
+            } else {
                     quizTimerInput.value = '';
                     quizTimerInput.placeholder = `Leave empty for default (${defaultSeconds}s)`;
                 }
@@ -2306,7 +2306,7 @@ export class Admin2Dashboard {
                         </div>
                         <div class="info-row">
                             <div class="info-label">Account Type:</div>
-                            <div class="info-value">${user.userType === 'admin' ? 'Admin Account' : 'Regular Account'}</div>
+                            <div class="info-value">${user.userType === 'admin' ? 'Admin Account' : 'Standard Account'}</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Overall Progress:</div>

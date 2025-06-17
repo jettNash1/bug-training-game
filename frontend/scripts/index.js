@@ -348,8 +348,8 @@ class IndexPage {
                 const userData = await this.apiService.getUserData();
                 if (userData.success && userData.data) {
                     if (userData.data.quizResults) {
-                        quizResults = userData.data.quizResults;
-                        console.log('[Index] Loaded', quizResults.length, 'quiz results');
+                    quizResults = userData.data.quizResults;
+                    console.log('[Index] Loaded', quizResults.length, 'quiz results');
                     }
                     if (userData.data.hiddenQuizzes) {
                         hiddenQuizzes = userData.data.hiddenQuizzes;
