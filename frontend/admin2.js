@@ -941,7 +941,7 @@ export class Admin2Dashboard {
                         <div class="input-button-group">
                             <input type="number" 
                                 id="quiz-timer" 
-                                value="${defaultSeconds}"
+                                placeholder="Leave empty for default (${defaultSeconds}s)"
                                 min="0" 
                                 max="300"
                                 class="timer-seconds-input settings-input">
@@ -1015,12 +1015,18 @@ export class Admin2Dashboard {
         quizSelect.addEventListener('change', () => {
             const selectedQuiz = quizSelect.value;
             if (selectedQuiz) {
-                // Use the quiz-specific timer setting if available, otherwise use the default
-                const currentSetting = quizTimers[selectedQuiz] !== undefined ? quizTimers[selectedQuiz] : defaultSeconds;
-                quizTimerInput.value = currentSetting;
+                // Only populate if this quiz has a specific timer setting
+                if (quizTimers[selectedQuiz] !== undefined) {
+                    quizTimerInput.value = quizTimers[selectedQuiz];
+                    quizTimerInput.placeholder = `Current: ${quizTimers[selectedQuiz]}s (overriding default)`;
+                } else {
+                    quizTimerInput.value = '';
+                    quizTimerInput.placeholder = `Leave empty for default (${defaultSeconds}s)`;
+                }
             } else {
-                // Reset to default when no quiz is selected
-                quizTimerInput.value = defaultSeconds;
+                // Clear input when no quiz is selected
+                quizTimerInput.value = '';
+                quizTimerInput.placeholder = `Leave empty for default (${defaultSeconds}s)`;
             }
         });
 
@@ -1037,7 +1043,7 @@ export class Admin2Dashboard {
                 return;
             }
             try {
-                const response = await this.apiService.updateQuizTimerSettings(undefined, selectedQuiz, seconds);
+                const response = await this.apiService.updateSingleQuizTimer(selectedQuiz, seconds);
                 if (response.success) {
                     // Always re-fetch the latest timer settings and re-render UI
                     this.timerSettings = response.data;
