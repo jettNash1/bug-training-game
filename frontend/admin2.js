@@ -1743,13 +1743,35 @@ export class Admin2Dashboard {
         try {
             // Try to load the scenarios from the JS file directly
             const module = await import(`./data/${fileName}-scenarios.js`);
-            const scenarios = module.scenarios || module.default;
+            
+            // Try different possible export names based on the file naming pattern
+            const possibleExportNames = [
+                `${fileName}Scenarios`,
+                'scenarios', 
+                'default',
+                // Handle special cases for file naming
+                fileName === 'cms-testing' ? 'cmsTestingScenarios' : null,
+                fileName === 'test' ? 'testScenarios' : null,
+                // Try camelCase variations
+                fileName.replace(/-([a-z])/g, (g) => g[1].toUpperCase()) + 'Scenarios',
+                // Try without hyphens
+                fileName.replace(/-/g, '') + 'Scenarios',
+            ].filter(Boolean);
+            
+            let scenarios = null;
+            for (const exportName of possibleExportNames) {
+                if (module[exportName]) {
+                    scenarios = module[exportName];
+                    break;
+                }
+            }
             
             if (scenarios && (scenarios.basic || scenarios.intermediate || scenarios.advanced)) {
                 // console.log(`Successfully loaded scenarios for ${quizName} from ${fileName}-scenarios.js`);
                 return scenarios;
             } else {
-                throw new Error(`Invalid scenarios format in ${fileName}-scenarios.js`);
+                console.error(`Available exports in ${fileName}-scenarios.js:`, Object.keys(module));
+                throw new Error(`Invalid scenarios format in ${fileName}-scenarios.js. Found exports: ${Object.keys(module).join(', ')}`);
             }
         } catch (importError) {
             console.error(`Failed to load scenarios from JS file for ${quizName}:`, importError);

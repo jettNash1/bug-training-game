@@ -76,13 +76,33 @@ class TestQuiz extends BaseQuiz {
         // Initialize event listeners
         this.initializeEventListeners();
         
-        // Start the quiz
-        this.startGame();
+        // Start the quiz (wait for timer settings to be loaded)
+        this.startGameWhenReady();
     }
     
     // Override the shouldEndGame method for our 9-question quiz
     shouldEndGame() {
         return this.player.questionHistory.length >= 9;
+    }
+
+    // Wait for timer settings to be loaded before starting the game
+    async startGameWhenReady() {
+        console.log('[TestQuiz] Waiting for timer settings to be loaded...');
+        
+        try {
+            // Ensure timer settings are loaded by calling initializeTimerSettings again
+            // This will either complete the initialization or use already loaded values
+            await this.initializeTimerSettings();
+            
+            console.log(`[TestQuiz] Timer settings ready: ${this.timePerQuestion}s (disabled: ${this.timerDisabled})`);
+            
+            // Now start the game with correct timer settings
+            this.startGame();
+        } catch (error) {
+            console.error('[TestQuiz] Error loading timer settings:', error);
+            // Start game anyway with defaults
+            this.startGame();
+        }
     }
     
     // Initialize event listeners
@@ -796,18 +816,27 @@ class TestQuiz extends BaseQuiz {
      * Restore timer state from localStorage
      */
     restoreTimerState() {
-        if (this.timerDisabled || this.timePerQuestion <= 0) return null;
+        console.log(`[TestQuiz] restoreTimerState called - timerDisabled: ${this.timerDisabled}, timePerQuestion: ${this.timePerQuestion}`);
+        
+        if (this.timerDisabled || this.timePerQuestion <= 0) {
+            console.log(`[TestQuiz] Timer is disabled or invalid, not restoring state`);
+            return null;
+        }
         
         try {
             const key = this.getTimerStorageKey();
             const storedState = localStorage.getItem(key);
             
+            console.log(`[TestQuiz] Checking for stored timer state with key: ${key}, found: ${storedState ? 'yes' : 'no'}`);
+            
             if (!storedState) return null;
             
             const timerState = JSON.parse(storedState);
+            console.log(`[TestQuiz] Parsed timer state:`, timerState);
             
             // Verify this is for the correct question
             if (timerState.questionIndex !== this.player.questionHistory.length) {
+                console.log(`[TestQuiz] Question index mismatch - stored: ${timerState.questionIndex}, current: ${this.player.questionHistory.length}`);
                 // Wrong question, clear the stored state
                 this.clearCurrentTimerState();
                 return null;
@@ -815,11 +844,16 @@ class TestQuiz extends BaseQuiz {
             
             // Check if the stored time is still valid (not too old)
             const timeSinceStore = Date.now() - timerState.timestamp;
-            if (timeSinceStore > (this.timePerQuestion * 1000 * 2)) { // Allow double the question time as max
+            const maxAge = this.timePerQuestion * 1000 * 2; // Allow double the question time as max
+            console.log(`[TestQuiz] Time since store: ${timeSinceStore}ms, max age: ${maxAge}ms`);
+            
+            if (timeSinceStore > maxAge) {
+                console.log(`[TestQuiz] Timer state too old, clearing`);
                 this.clearCurrentTimerState();
                 return null;
             }
             
+            console.log(`[TestQuiz] Restoring timer with ${timerState.timeRemaining} seconds remaining`);
             return timerState.timeRemaining;
             
         } catch (error) {
@@ -919,13 +953,15 @@ class TestQuiz extends BaseQuiz {
         const restoredTime = this.restoreTimerState();
         let timeLeft;
         
+        console.log(`[${this.quizName}] Timer initialization - timePerQuestion: ${this.timePerQuestion}, restoredTime: ${restoredTime}, timerDisabled: ${this.timerDisabled}`);
+        
         if (restoredTime !== null && restoredTime > 0) {
             timeLeft = restoredTime;
             console.log(`[${this.quizName}] Restored timer with ${timeLeft} seconds remaining`);
         } else {
             // Use full timer value for new question
             timeLeft = this.timePerQuestion;
-            console.log(`[${this.quizName}] Starting new timer with ${timeLeft} seconds`);
+            console.log(`[${this.quizName}] Starting new timer with ${timeLeft} seconds (restored time was: ${restoredTime})`);
         }
         
         timerDisplay.textContent = `${timeLeft}s`;
