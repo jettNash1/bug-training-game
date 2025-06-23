@@ -1,4 +1,4 @@
-export const issueVerificationScenarios = {
+export const nonFunctionalScenarios = {
     // Basic Scenarios (IDs 1-5)
     basic: [
         {

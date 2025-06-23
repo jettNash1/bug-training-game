@@ -1277,12 +1277,12 @@ export class APIService {
     // Quiz timer settings methods
     async getQuizTimerSettings() {
         try {
+            // Try admin API first (for admin users)
             try {
-                // Try to get from admin API first
                 const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`);
                 console.log('Raw admin timer settings response:', response);
                 
-                // If response is successful, update localStorage and return the value
+                // If response is successful, return the admin data
                 if (response && response.success && response.data) {
                     const settings = response.data;
                     console.log('Timer settings loaded from admin API:', settings);
@@ -1290,8 +1290,6 @@ export class APIService {
                     // Use defaultSeconds directly from admin API response
                     const defaultSeconds = typeof settings.defaultSeconds === 'number' ? settings.defaultSeconds : 60;
                     const quizTimers = settings.quizTimers || {};
-                    
-                    // DO NOT store in localStorage to prevent pollution
                     
                     return {
                         success: true,
@@ -1303,22 +1301,45 @@ export class APIService {
                         }
                     };
                 }
-            } catch (apiError) {
-                console.warn('Failed to fetch quiz timer settings from admin API:', apiError);
+            } catch (adminApiError) {
+                console.warn('Admin API failed, trying user API:', adminApiError.message);
+                
+                // Fall back to user API for regular users
+                try {
+                    const userResponse = await this.fetchWithAuth(`${this.baseUrl}/users/settings/quiz-timer`);
+                    console.log('Raw user timer settings response:', userResponse);
+                    
+                    if (userResponse && userResponse.success && userResponse.data) {
+                        const settings = userResponse.data;
+                        console.log('Timer settings loaded from user API:', settings);
+                        
+                        const defaultSeconds = typeof settings.defaultSeconds === 'number' ? settings.defaultSeconds : 60;
+                        const quizTimers = settings.quizTimers || {};
+                        
+                        return {
+                            success: true,
+                            message: 'Timer settings loaded from user API',
+                            data: {
+                                defaultSeconds: defaultSeconds,
+                                quizTimers: quizTimers,
+                                updatedAt: settings.updatedAt || new Date().toISOString()
+                            }
+                        };
+                    }
+                } catch (userApiError) {
+                    console.warn('User API also failed:', userApiError.message);
+                }
             }
             
-            // NO FALLBACK TO USER API - Admin API only for admin functions
-            console.log('Admin API failed, not falling back to user API to prevent stale data');
-            
-            // NO FALLBACK TO LOCALSTORAGE - Use clean defaults only
-            console.log('API calls failed, using clean defaults (no localStorage fallback)');
+            // If both APIs fail, return clean defaults with success=true to prevent 30s fallback
+            console.log('Both admin and user APIs failed, using clean defaults');
             
             const defaultSeconds = 60;
             const quizTimers = {};
             
             return {
-                success: false,
-                message: 'Failed to load timer settings from API - using clean defaults',
+                success: true, // This prevents the 30s fallback!
+                message: 'Using default timer settings - API unavailable',
                 data: {
                     defaultSeconds: defaultSeconds,
                     quizTimers: quizTimers,
@@ -1327,8 +1348,11 @@ export class APIService {
             };
         } catch (error) {
             console.error('Failed to fetch quiz timer settings:', error);
+            
+            // Return safe defaults with success=true
             return {
                 success: true,
+                message: 'Using default timer settings - error occurred',
                 data: {
                     defaultSeconds: 60,
                     quizTimers: {},
