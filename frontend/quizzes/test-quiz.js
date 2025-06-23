@@ -68,6 +68,8 @@ class TestQuiz extends BaseQuiz {
         // Timer-related properties
         this.questionTimer = null;
         this.questionStartTime = null;
+        this.timerStartTime = null; // When timer was started for persistence
+        this.persistedTimeRemaining = null; // Restored time from localStorage
         
         this.isLoading = false;
         
@@ -101,6 +103,18 @@ class TestQuiz extends BaseQuiz {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.type === 'radio') {
                 this.handleAnswer();
+            }
+        });
+
+        // Save timer state when user leaves the page
+        window.addEventListener('beforeunload', () => {
+            this.saveCurrentTimerState();
+        });
+
+        // Save timer state when page becomes hidden (mobile/tab switching)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.saveCurrentTimerState();
             }
         });
     }
@@ -219,6 +233,9 @@ class TestQuiz extends BaseQuiz {
     // Handle when time runs out for a question
     handleTimedOut() {
         console.log('[TestQuiz] Question timed out');
+        
+        // Clear timer state since time is up
+        this.clearCurrentTimerState();
         
         // Select a random option if none selected
         const selectedOption = document.querySelector('input[name="option"]:checked');
@@ -379,6 +396,9 @@ class TestQuiz extends BaseQuiz {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
             }
+            
+            // Clear timer state for this question since it's being completed
+            this.clearCurrentTimerState();
             
             const submitButton = document.querySelector('.submit-button');
             if (submitButton) {
@@ -659,6 +679,9 @@ class TestQuiz extends BaseQuiz {
             // Save final progress
             await this.saveProgress(passed ? 'passed' : 'failed');
             
+            // Clear all timer states since quiz is complete
+            this.clearAllTimerStates();
+            
         } catch (error) {
             console.error('[TestQuiz] Error ending game:', error);
             this.showError('Failed to complete the quiz. Please refresh the page.');
@@ -674,6 +697,9 @@ class TestQuiz extends BaseQuiz {
             clearInterval(this.questionTimer);
             this.questionTimer = null;
         }
+        
+        // Clear all timer states since quiz is restarting
+        this.clearAllTimerStates();
         
         // Reset player state
         this.player = {
@@ -734,6 +760,208 @@ class TestQuiz extends BaseQuiz {
             // Fallback to alert if error display fails
             alert(message);
         }
+    }
+
+    /**
+     * Get the localStorage key for timer persistence for current question
+     */
+    getTimerStorageKey() {
+        const username = localStorage.getItem('username');
+        const questionIndex = this.player.questionHistory.length;
+        return `${this.quizName}_timer_${username}_q${questionIndex}`;
+    }
+
+    /**
+     * Save current timer state to localStorage
+     */
+    saveTimerState(timeRemaining) {
+        if (this.timerDisabled || this.timePerQuestion <= 0) return;
+        
+        try {
+            const timerState = {
+                timeRemaining: timeRemaining,
+                questionIndex: this.player.questionHistory.length,
+                timestamp: Date.now()
+            };
+            
+            const key = this.getTimerStorageKey();
+            localStorage.setItem(key, JSON.stringify(timerState));
+            
+        } catch (error) {
+            console.error('[TestQuiz] Error saving timer state:', error);
+        }
+    }
+
+    /**
+     * Restore timer state from localStorage
+     */
+    restoreTimerState() {
+        if (this.timerDisabled || this.timePerQuestion <= 0) return null;
+        
+        try {
+            const key = this.getTimerStorageKey();
+            const storedState = localStorage.getItem(key);
+            
+            if (!storedState) return null;
+            
+            const timerState = JSON.parse(storedState);
+            
+            // Verify this is for the correct question
+            if (timerState.questionIndex !== this.player.questionHistory.length) {
+                // Wrong question, clear the stored state
+                this.clearCurrentTimerState();
+                return null;
+            }
+            
+            // Check if the stored time is still valid (not too old)
+            const timeSinceStore = Date.now() - timerState.timestamp;
+            if (timeSinceStore > (this.timePerQuestion * 1000 * 2)) { // Allow double the question time as max
+                this.clearCurrentTimerState();
+                return null;
+            }
+            
+            return timerState.timeRemaining;
+            
+        } catch (error) {
+            console.error('[TestQuiz] Error restoring timer state:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Clear timer state for current question
+     */
+    clearCurrentTimerState() {
+        try {
+            const key = this.getTimerStorageKey();
+            localStorage.removeItem(key);
+        } catch (error) {
+            console.error('[TestQuiz] Error clearing timer state:', error);
+        }
+    }
+
+    /**
+     * Clear all timer states for this quiz (used when quiz completes or restarts)
+     */
+    clearAllTimerStates() {
+        try {
+            const username = localStorage.getItem('username');
+            const keyPrefix = `${this.quizName}_timer_${username}_`;
+            
+            // Find and remove all timer-related keys for this quiz
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(keyPrefix)) {
+                    localStorage.removeItem(key);
+                    i--; // Adjust index since we removed an item
+                }
+            }
+        } catch (error) {
+            console.error('[TestQuiz] Error clearing all timer states:', error);
+        }
+    }
+
+    /**
+     * Save current timer state immediately (used when page is being unloaded)
+     */
+    saveCurrentTimerState() {
+        if (!this.questionTimer || this.timerDisabled || this.timePerQuestion <= 0) return;
+        
+        try {
+            // Calculate current time remaining based on timer display
+            const timerDisplay = document.getElementById('timer-display');
+            if (timerDisplay && timerDisplay.textContent) {
+                const timeText = timerDisplay.textContent.replace('s', '');
+                const timeRemaining = parseInt(timeText, 10);
+                
+                if (!isNaN(timeRemaining) && timeRemaining > 0) {
+                    this.saveTimerState(timeRemaining);
+                    console.log(`[TestQuiz] Saved timer state on page unload: ${timeRemaining}s remaining`);
+                }
+            }
+        } catch (error) {
+            console.error('[TestQuiz] Error saving current timer state:', error);
+        }
+    }
+
+    /**
+     * Enhanced timer initialization with persistence support
+     */
+    initializeTimer() {
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+        
+        // Reset timer display
+        const timerContainer = document.getElementById('timer-container');
+        const timerDisplay = document.getElementById('timer-display');
+        
+        if (!timerContainer || !timerDisplay) {
+            console.error(`[${this.quizName}] Timer elements not found`);
+            return;
+        }
+        
+        // Check if timer is disabled (0 seconds) or timer functionality is disabled
+        if (this.timerDisabled || this.timePerQuestion === 0) {
+            console.log(`[${this.quizName}] Timer is disabled, hiding timer display`);
+            timerContainer.classList.add('hidden');
+            return;
+        }
+        
+        // Show the timer
+        timerContainer.classList.remove('hidden');
+        timerContainer.classList.remove('visually-hidden');
+        timerContainer.classList.remove('timer-warning');
+        
+        // Try to restore persisted timer state first
+        const restoredTime = this.restoreTimerState();
+        let timeLeft;
+        
+        if (restoredTime !== null && restoredTime > 0) {
+            timeLeft = restoredTime;
+            console.log(`[${this.quizName}] Restored timer with ${timeLeft} seconds remaining`);
+        } else {
+            // Use full timer value for new question
+            timeLeft = this.timePerQuestion;
+            console.log(`[${this.quizName}] Starting new timer with ${timeLeft} seconds`);
+        }
+        
+        timerDisplay.textContent = `${timeLeft}s`;
+        
+        this.timerStartTime = Date.now();
+        this.questionStartTime = this.timerStartTime;
+        
+        this.questionTimer = setInterval(() => {
+            timeLeft--;
+            timerDisplay.textContent = `${timeLeft}s`;
+            
+            // Save current timer state every few seconds for persistence
+            if (timeLeft % 3 === 0) { // Save every 3 seconds to balance performance and persistence
+                this.saveTimerState(timeLeft);
+            }
+            
+            // Add warning class when less than 10 seconds remain
+            if (timeLeft <= 10 && !timerContainer.classList.contains('timer-warning')) {
+                timerContainer.classList.add('timer-warning');
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+                
+                // Clear the timer state since question is complete
+                this.clearCurrentTimerState();
+                
+                // Call the quiz-specific timeout handler if it exists
+                if (typeof this.handleTimedOut === 'function') {
+                    this.handleTimedOut();
+                } else {
+                    console.warn(`[${this.quizName}] No handleTimedOut method found`);
+                }
+            }
+        }, 1000);
     }
 }
 

@@ -124,7 +124,7 @@ export const automationInterviewScenarios = {
                     options: [
                         {
                             text: 'Identify the root cause of the issue',
-                            outcome: 'Sometimes, intermittent failures are just that the website sometimes does not behave correctly. Waits are not a catch all solution for this kind of issue. Identification of a false positive or validating the quality of your results is.',
+                            outcome: 'Intermittent failures often occur simply because the website occasionally behaves unexpectedly or inconsistently. Waits are not a catch all solution for this kind of issue. Identification of a false positive or validating the quality of your results is.',
                             experience: 15,
                         },
                         {
