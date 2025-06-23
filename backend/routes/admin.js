@@ -1500,8 +1500,22 @@ router.post('/schedules', auth, async (req, res) => {
 
         const { username, quizName, resetDateTime, timezoneOffset } = req.body;
 
+        // Add detailed logging for debugging
+        console.log('Received scheduled reset request:', {
+            username,
+            quizName,
+            resetDateTime,
+            timezoneOffset,
+            fullBody: req.body
+        });
+
         // Validate required fields
         if (!username || !quizName || !resetDateTime) {
+            console.log('Validation failed - missing required fields:', {
+                hasUsername: !!username,
+                hasQuizName: !!quizName,
+                hasResetDateTime: !!resetDateTime
+            });
             return res.status(400).json({
                 success: false,
                 message: 'Missing required fields: username, quizName, and resetDateTime are required'
@@ -1511,6 +1525,7 @@ router.post('/schedules', auth, async (req, res) => {
         // Validate that the user exists
         const user = await User.findOne({ username });
         if (!user) {
+            console.log(`User validation failed - user not found: ${username}`);
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
@@ -1519,10 +1534,28 @@ router.post('/schedules', auth, async (req, res) => {
 
         // Validate reset date is in the future
         const resetDate = new Date(resetDateTime);
-        if (resetDate <= new Date()) {
+        const now = new Date();
+        
+        console.log('Date validation:', {
+            resetDateTime: resetDateTime,
+            resetDate: resetDate.toISOString(),
+            now: now.toISOString(),
+            isValid: !isNaN(resetDate.getTime()),
+            isFuture: resetDate > now,
+            timeDiff: resetDate.getTime() - now.getTime()
+        });
+
+        if (isNaN(resetDate.getTime())) {
             return res.status(400).json({
                 success: false,
-                message: 'Reset date must be in the future'
+                message: 'Invalid date format for resetDateTime'
+            });
+        }
+
+        if (resetDate <= now) {
+            return res.status(400).json({
+                success: false,
+                message: `Reset date must be in the future. Received: ${resetDate.toISOString()}, Current: ${now.toISOString()}`
             });
         }
 
