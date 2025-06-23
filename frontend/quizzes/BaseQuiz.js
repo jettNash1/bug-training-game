@@ -21,8 +21,8 @@ export class BaseQuiz {
         this.maxXP = 100;
         this.isLoading = false;
         
-        // Initialize timer settings - default to 60 seconds
-        this.timePerQuestion = 60;
+        // Initialize timer settings - start with reasonable default, will be overridden by admin settings
+        this.timePerQuestion = 30;
         this.timerDisabled = false;
         
         // Initialize components
@@ -48,14 +48,14 @@ export class BaseQuiz {
                 
                 console.log(`[BaseQuiz] Timer settings loaded: ${this.timePerQuestion}s for ${this.quizName}${this.timerDisabled ? ' (disabled)' : ''}`);
             } else {
-                console.warn(`[BaseQuiz] Invalid timer value received: ${timerValue}, using default 60s`);
-                this.timePerQuestion = 60;
+                console.warn(`[BaseQuiz] Invalid timer value received: ${timerValue}, using default 30s`);
+                this.timePerQuestion = 30;
                 this.timerDisabled = false;
             }
         } catch (error) {
             console.error(`[BaseQuiz] Error loading timer settings:`, error);
             // Keep default values on error
-            this.timePerQuestion = 60;
+            this.timePerQuestion = 30;
             this.timerDisabled = false;
         }
     }

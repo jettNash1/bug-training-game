@@ -54,11 +54,11 @@ export class BaseQuiz {
         // Create a global reference immediately for debugging
         window.quizHelper = this;
         
-        // Initialize timer value with a default of 60 seconds
-        // This ensures we have a valid default even before the async API call completes
-        this.timePerQuestion = 60;
-        
         // Try to initialize from localStorage for immediate display
+        // Start with default fallback of 30 seconds instead of 60
+        this.timePerQuestion = 30;
+        this.timerDisabled = false;
+        
         try {
             // Check for quizTimerSettings format first (most current)
             const cachedSettings = localStorage.getItem('quizTimerSettings');
@@ -80,8 +80,7 @@ export class BaseQuiz {
                     } 
                     // FALLBACK: Only use default if no quiz-specific setting exists
                     else if (timerSettings.defaultSeconds !== undefined) {
-                        // Otherwise use the default
-                        // Ensure we treat 0 as a valid value (disabled timer)
+                        // Use the admin-configured default instead of hardcoded value
                         this.timePerQuestion = timerSettings.defaultSeconds;
                         console.log(`[Quiz] Constructor: Using default timer from localStorage: ${this.timePerQuestion}s`);
                         if (this.timePerQuestion === 0) {
@@ -112,6 +111,9 @@ export class BaseQuiz {
         } catch (e) {
             console.warn('[Quiz] Constructor: Error reading timer settings from localStorage:', e);
         }
+        
+        // Store the initial timer value to prevent overriding by quiz constructors
+        this.initialTimerFromSettings = this.timePerQuestion;
         
         this.remainingTime = null;
         this.questionStartTime = null; // Track when each question starts
@@ -210,8 +212,17 @@ export class BaseQuiz {
         try {
             console.log('[Quiz] Initializing timer settings for:', this.quizName);
             
-            // Set an initial default as fallback
-            this.timePerQuestion = 30;
+            // Only set fallback if we don't already have a value from localStorage/constructor
+            // This prevents overriding admin-configured defaults
+            if (!this.initialTimerFromSettings && this.timePerQuestion === 60) {
+                // Only use hardcoded fallback if no settings were found
+                this.timePerQuestion = 30;
+                // console.log('[Quiz] Using hardcoded fallback: 30s (no admin settings found)');
+            } else if (this.initialTimerFromSettings) {
+                // Restore the timer value from localStorage that was loaded in constructor
+                this.timePerQuestion = this.initialTimerFromSettings;
+                // console.log(`[Quiz] Restored timer value from constructor: ${this.timePerQuestion}s`);
+            }
             
             // Try to get timer settings from localStorage first (faster)
             try {

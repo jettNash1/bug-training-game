@@ -62,7 +62,7 @@ export class InitiativeQuiz extends BaseQuiz {
         // Timer-related properties
         this.questionTimer = null;
         this.questionStartTime = null;
-        this.timePerQuestion = 60; // 60 seconds per question
+        // Timer value is set by BaseQuiz constructor from admin settings
         this.timerStartTime = null; // When timer was started for persistence
         this.persistedTimeRemaining = null; // Restored time from localStorage
         
@@ -166,8 +166,8 @@ export class InitiativeQuiz extends BaseQuiz {
             }
             
             if (attempts >= maxAttempts) {
-                console.warn('[InitiativeQuiz] Timer settings not loaded after maximum attempts, using default');
-                this.timePerQuestion = 60; // Fallback to default
+                console.warn('[InitiativeQuiz] Timer settings not loaded after maximum attempts, using BaseQuiz value');
+                // Use timer value already set by BaseQuiz (from admin settings or default)
                 
                 // Add page unload handler for timer persistence
                 this.addPageUnloadHandler();

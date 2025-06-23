@@ -62,7 +62,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         // Timer-related properties
         this.questionTimer = null;
         this.questionStartTime = null;
-        this.timePerQuestion = 60; // 60 seconds per question
+        // Timer value is set by BaseQuiz constructor from admin settings
         this.timerStartTime = null; // When timer was started for persistence
         this.persistedTimeRemaining = null; // Restored time from localStorage
         
