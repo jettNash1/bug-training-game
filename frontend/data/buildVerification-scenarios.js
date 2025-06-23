@@ -3,27 +3,27 @@ export const buildVerificationScenarios = {
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Understanding BVT',
+                title: 'Understanding Build Verification Testing',
                 description: 'What is the primary purpose of Build Verification Testing?',
                 options: [
                     {
                         text: 'To ensure core functionality and stability remain intact in each new build before further testing',
-                        outcome: 'Perfect! BVT validates build stability and readiness.',
+                        outcome: 'Perfect! Build Verification Testing validates build stability and readiness.',
                         experience: 15,
                     },
                     {
                         text: 'To find all possible bugs related to the release',
-                        outcome: 'BVT focuses on core functionality, not exhaustive testing.',
+                        outcome: 'Build Verification Testing focuses on core functionality, not exhaustive testing.',
                         experience: -5
                     },
                     {
                         text: 'To test new features for upcoming sprints',
-                        outcome: 'BVT checks existing core functionality.',
+                        outcome: 'Build Verification Testing checks existing core functionality.',
                         experience: -10
                     },
                     {
                         text: 'To document all issues relating to functionality',
-                        outcome: 'BVT primarily validates build stability.',
+                        outcome: 'Build Verification Testing primarily validates build stability.',
                         experience: 0
                     }
                 ]
@@ -32,7 +32,7 @@ export const buildVerificationScenarios = {
                 id: 2,
                 level: 'Basic',
                 title: 'Test Case Development',
-                description: 'How should you develop BVT test cases?',
+                description: 'How should you develop Build Verification Testing test cases?',
                 options: [
                     {
                         text: 'Create repeatable tests focusing on critical functionality with well-defined expected results',
@@ -41,7 +41,7 @@ export const buildVerificationScenarios = {
                     },
                     {
                         text: 'Test everything possible for each release',
-                        outcome: 'BVT needs focused, critical test cases and exhaustive testing is generally not possible.',
+                        outcome: 'Build Verification Testing needs focused, critical test cases and exhaustive testing is generally not possible.',
                         experience: -5
                     },
                     {
@@ -60,7 +60,7 @@ export const buildVerificationScenarios = {
                 id: 3,
                 level: 'Basic',
                 title: 'Core Functionality',
-                description: 'What should you verify first in BVT?',
+                description: 'What should you verify first in Build Verification Testing?',
                 options: [
                     {
                         text: 'Key areas like installation, login, and main navigation that are critical to basic operation',
@@ -88,7 +88,7 @@ export const buildVerificationScenarios = {
                 id: 4,
                 level: 'Basic',
                 title: 'Environment Setup',
-                description: 'How do you prepare for BVT across different environments?',
+                description: 'How do you prepare for Build Verification Testing across different environments?',
                 options: [
                     {
                         text: 'Include test suites for each environment type with appropriate environment-specific checks',
@@ -116,7 +116,7 @@ export const buildVerificationScenarios = {
                 id: 5,
                 level: 'Basic',
                 title: 'Issue Handling',
-                description: 'How should you handle issues found during BVT?',
+                description: 'How should you handle issues found during Build Verification Testing?',
                 options: [
                     {
                         text: 'Report major functional issues immediately and request a new build for critical failures',
@@ -204,12 +204,12 @@ export const buildVerificationScenarios = {
                 options: [
                     {
                         text: 'Minor visual inconsistencies should be the main focus.',
-                        outcome: 'Minor visual inconsistencies would fall under less severe issues which are not the focus of BVT.',
+                        outcome: 'Minor visual inconsistencies would fall under less severe issues which are not the focus of Build Verification Testing.',
                         experience: -5
                     },
                     {
                         text: 'Documentation errors should be the main focus',
-                        outcome: 'Documentation errors would fall under less severe issues which are not the focus of BVT.', 
+                        outcome: 'Documentation errors would fall under less severe issues which are not the focus of Build Verification Testing.', 
                         experience: -10
                     },
                     {
@@ -219,7 +219,7 @@ export const buildVerificationScenarios = {
                     },
                     {
                         text: 'Performance under heavy load should be the main focus',
-                        outcome: 'While performance could be considered important, the focus of BVT should be on core functionality rather than performance testing specifically.',
+                        outcome: 'While performance could be considered important, the focus of Build Verification Testing should be on core functionality rather than performance testing specifically.',
                         experience: 0
                     }
                 ]
@@ -237,7 +237,7 @@ export const buildVerificationScenarios = {
                     },
                     {
                         text: 'It takes too long to execute compared to other testing methods',
-                        outcome: 'BVT is efficient and can save time by identifying issues early, not that the testing takes too long.',
+                        outcome: 'Build Verification Testing is efficient and can save time by identifying issues early, not that the testing takes too long.',
                         experience: -10
                     },
                     {
@@ -260,7 +260,7 @@ export const buildVerificationScenarios = {
                 options: [
                     {
                         text: 'Eliminating the need for further testing is an advantage of build verification testing',
-                        outcome: 'Correct! BVT does not eliminate the need for further testing. On the contrary, it emphasises that BVT ensures the software is ready for further testing and integration.',
+                        outcome: 'Correct! Build Verification Testing does not eliminate the need for further testing. On the contrary, it emphasises that Build Verification Testing ensures the software is ready for further testing and integration.',
                         experience: 15,
                     },
                     {
@@ -288,7 +288,7 @@ export const buildVerificationScenarios = {
                 id: 6,
                 level: 'Intermediate',
                 title: 'Test Case Maintenance',
-                description: 'How do you maintain BVT test cases over time?',
+                description: 'How do you maintain Build Verification Testing test cases over time?',
                 options: [
                     {
                         text: 'Regularly update test cases to include new core features and maintain accuracy',
@@ -316,7 +316,7 @@ export const buildVerificationScenarios = {
                 id: 7,
                 level: 'Intermediate',
                 title: 'Regression Prevention',
-                description: 'How does BVT help prevent regression issues?',
+                description: 'How does Build Verification Testing help prevent regression issues?',
                 options: [
                     {
                         text: 'It verifies critical functionality in each build to catch issues before they affect other modules',
@@ -344,7 +344,7 @@ export const buildVerificationScenarios = {
                 id: 8,
                 level: 'Intermediate',
                 title: 'Resource Management',
-                description: 'How do you manage resources efficiently during BVT?',
+                description: 'How do you manage resources efficiently during Build Verification Testing?',
                 options: [
                     {
                         text: 'Allocate appropriate time and testers based on build scope and complexity',
@@ -358,7 +358,7 @@ export const buildVerificationScenarios = {
                     },
                     {
                         text: 'Over allocate resources to complete build verification testing under the agreed time frame',
-                        outcome: 'While over allocation can help in complex projects, efficient resource usage is most important for BVT testing.',
+                        outcome: 'While over allocation can help in complex projects, efficient resource usage is most important for Build Verification Testing testing.',
                         experience: -10
                     },
                     {
@@ -400,7 +400,7 @@ export const buildVerificationScenarios = {
                 id: 10,
                 level: 'Intermediate',
                 title: 'Documentation Review',
-                description: 'How should you handle BVT documentation?',
+                description: 'How should you handle Build Verification Testing documentation?',
                 options: [
                     {
                         text: 'Maintain clear test cases, expected results, and execution records for each build',
@@ -409,7 +409,7 @@ export const buildVerificationScenarios = {
                     },
                     {
                         text: 'Minimal documentation is required to be able to focus on test execution',
-                        outcome: 'Documentation is crucial for BVT to maintain consistency and traceability.',
+                        outcome: 'Documentation is crucial for Build Verification Testing to maintain consistency and traceability.',
                         experience: -15
                     },
                     {
@@ -432,11 +432,11 @@ export const buildVerificationScenarios = {
                 id: 11,
                 level: 'Advanced',
                 title: 'Process Improvement',
-                description: 'How do you improve BVT processes over time?',
+                description: 'How do you improve Build Verification Testing processes over time?',
                 options: [
                     {
                         text: 'Analyse effectiveness, gather feedback, and update processes based on project needs',
-                        outcome: 'Perfect! Continuous improvement enhances BVT effectiveness.',
+                        outcome: 'Perfect! Continuous improvement enhances Build Verification Testing effectiveness.',
                         experience: 25,
                     },
                     {
@@ -460,7 +460,7 @@ export const buildVerificationScenarios = {
                 id: 12,
                 level: 'Advanced',
                 title: 'Integration Planning',
-                description: 'How do you plan BVT for module integration?',
+                description: 'How do you plan Build Verification Testing for module integration?',
                 options: [
                     {
                         text: 'Verify individual modules and their interactions with comprehensive integration tests',
@@ -474,7 +474,7 @@ export const buildVerificationScenarios = {
                     },
                     {
                         text: 'Leave integration testing in favour of making up time for functionality testing',
-                        outcome: 'Integration testing is crucial to the BVT process and if missed can cause major issues with compatibility.',
+                        outcome: 'Integration testing is crucial to the Build Verification Testing process and if missed can cause major issues with compatibility.',
                         experience: -10
                     },
                     {
@@ -488,7 +488,7 @@ export const buildVerificationScenarios = {
                 id: 13,
                 level: 'Advanced',
                 title: 'Team Communication',
-                description: 'How do you manage communication during BVT?',
+                description: 'How do you manage communication during Build Verification Testing?',
                 options: [
                     {
                         text: 'Maintain clear channels with your team and the client for quick issue resolution',
@@ -516,11 +516,11 @@ export const buildVerificationScenarios = {
                 id: 14,
                 level: 'Advanced',
                 title: 'Risk Management',
-                description: 'How do you manage risks in BVT?',
+                description: 'How do you manage risks in Build Verification Testing?',
                 options: [
                     {
                         text: 'Identify potential risks, prioritise critical areas, and maintain contingency plans',
-                        outcome: 'Excellent! Risk management ensures BVT effectiveness.',
+                        outcome: 'Excellent! Risk management ensures Build Verification Testing effectiveness.',
                         experience: 25,
                     },
                     {
@@ -544,11 +544,11 @@ export const buildVerificationScenarios = {
                 id: 15,
                 level: 'Advanced',
                 title: 'Quality Metrics',
-                description: 'How do you measure BVT effectiveness?',
+                description: 'How do you measure Build Verification Testing effectiveness?',
                 options: [
                     {
                         text: 'Track pass rates, issue detection, and prevention of critical defects in later testing',
-                        outcome: 'Perfect! Metrics help evaluate and improve BVT.',
+                        outcome: 'Perfect! Metrics help evaluate and improve Build Verification Testing.',
                         experience: 25,
                     },
                     {

@@ -129,8 +129,8 @@ export class Admin2Dashboard {
             // Initialize all components in parallel
             await Promise.all([
                 this.loadUsers(),
-                this.loadGuideSettings().catch(error => {
-                    console.error('Failed to load guide settings, but continuing with other initializations:', error);
+                this.initializeGuideSettingsWithRetry().catch(error => {
+                    console.error('Failed to load guide settings after retry attempts, but continuing with other initializations:', error);
                     return {};
                 }),
                 this.loadAutoResetSettings().catch(error => {
@@ -3801,25 +3801,63 @@ export class Admin2Dashboard {
 
     // Removed duplicate updateQuizTimerSettings method - using apiService methods directly instead
 
+    async initializeGuideSettingsWithRetry() {
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY = 2000; // 2 seconds
+        
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                console.log(`Guide settings initialization attempt ${attempt}/${MAX_RETRIES}`);
+                const result = await this.loadGuideSettings();
+                
+                // If we successfully loaded settings, return them
+                if (result && Object.keys(result).length > 0) {
+                    console.log(`Guide settings loaded successfully on attempt ${attempt}`);
+                    return result;
+                }
+                
+                // If we got an empty result but no error, still try again
+                if (attempt < MAX_RETRIES) {
+                    console.log(`Got empty guide settings on attempt ${attempt}, retrying...`);
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                }
+            } catch (error) {
+                console.warn(`Guide settings loading failed on attempt ${attempt}:`, error);
+                
+                if (attempt < MAX_RETRIES) {
+                    console.log(`Retrying guide settings load in ${RETRY_DELAY}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                } else {
+                    console.error('All retry attempts for guide settings failed, using fallback');
+                }
+            }
+        }
+        
+        // If all retries failed, ensure we have an empty object
+        console.warn('Guide settings could not be loaded after all retry attempts');
+        this.guideSettings = {};
+        return this.guideSettings;
+    }
+
     async loadGuideSettings() {
         try {
             console.log('Loading guide settings from API...');
             
-            // Clear any existing guide settings to avoid stale data
-            this.guideSettings = {};
+            // Don't clear existing guide settings immediately - keep them as backup
+            const backupSettings = this.guideSettings ? { ...this.guideSettings } : {};
             
-            // Attempt to fetch from API
+            // Attempt to fetch from API with improved error handling
             const response = await this.apiService.getGuideSettings();
             console.log('Guide settings API response:', response);
             
-            if (response.success) {
+            if (response.success && response.data) {
                 this.guideSettings = response.data || {};
                 console.log('Guide settings loaded successfully. Number of guides:', Object.keys(this.guideSettings).length);
                 
                 // Debug: log all guide settings for verification
-                for (const [quizName, setting] of Object.entries(this.guideSettings)) {
-                    console.log(`Guide setting for ${quizName}:`, setting);
-                }
+                // for (const [quizName, setting] of Object.entries(this.guideSettings)) {
+                //     console.log(`Guide setting for ${quizName}:`, setting);
+                // }
                 
                 // Store in localStorage as backup
                 try {
@@ -3837,26 +3875,54 @@ export class Admin2Dashboard {
                 
                 return this.guideSettings;
             } else {
-                console.warn('Failed to load guide settings from API:', response.message);
-                throw new Error(response.message || 'Failed to load guide settings');
+                console.warn('API response unsuccessful or empty:', response);
+                throw new Error(response.message || 'API returned unsuccessful response');
             }
         } catch (error) {
-            console.error('Error loading guide settings:', error);
+            console.error('Error loading guide settings from API:', error);
             
-            // Try to load from localStorage as fallback
+            // Enhanced fallback strategy
+            console.log('Attempting fallback methods for guide settings...');
+            
+            // Try localStorage first
             try {
                 const settingsJson = localStorage.getItem('guideSettings');
                 if (settingsJson) {
-                    this.guideSettings = JSON.parse(settingsJson);
-                    console.log('Loaded guide settings from localStorage. Number of guides:', Object.keys(this.guideSettings).length);
-                    return this.guideSettings;
+                    const parsedSettings = JSON.parse(settingsJson);
+                    if (parsedSettings && typeof parsedSettings === 'object' && Object.keys(parsedSettings).length > 0) {
+                        this.guideSettings = parsedSettings;
+                        console.log('Successfully loaded guide settings from localStorage fallback. Number of guides:', Object.keys(this.guideSettings).length);
+                        
+                        // Show user that we're using cached data
+                        if (document.getElementById('guide-settings-container')) {
+                            this.showInfo('Using cached guide settings. Some data may be outdated.', 'warning');
+                            this.refreshGuideSettingsList();
+                        }
+                        
+                        return this.guideSettings;
+                    }
                 }
             } catch (localStorageError) {
                 console.error('Error loading from localStorage:', localStorageError);
             }
             
-            // Initialize empty guide settings if all else fails
+            // Try backup settings from memory
+            if (backupSettings && Object.keys(backupSettings).length > 0) {
+                console.log('Using backup settings from memory');
+                this.guideSettings = backupSettings;
+                this.showInfo('Using backup guide settings. Please refresh to try loading latest data.', 'warning');
+                return this.guideSettings;
+            }
+            
+            // Final fallback: Initialize empty but show clear error
+            console.warn('No guide settings available from any source');
             this.guideSettings = {};
+            
+            // Show clear error message to admin
+            if (document.getElementById('guide-settings-container')) {
+                this.showInfo('Failed to load guide settings. Please check your connection and try refreshing the page.', 'error');
+            }
+            
             return this.guideSettings;
         }
     }
@@ -4254,6 +4320,9 @@ export class Admin2Dashboard {
     }
 
     async saveGuideSettings(quiz, url, enabled) {
+        // Store original state for rollback
+        const originalSettings = this.guideSettings ? { ...this.guideSettings } : {};
+        
         try {
             // Normalize quiz name
             const normalizedQuiz = this.quizProgressService && typeof this.quizProgressService.normalizeQuizName === 'function'
@@ -4261,25 +4330,25 @@ export class Admin2Dashboard {
                 : quiz;
             console.log(`Saving guide setting for ${normalizedQuiz} (normalized from ${quiz}): url=${url}, enabled=${enabled}`);
 
-            // Make the API call first
+            // Update in-memory state optimistically
+            if (!this.guideSettings) {
+                this.guideSettings = {};
+            }
+            this.guideSettings[normalizedQuiz] = { url, enabled };
+            
+            // Update localStorage immediately for persistence
+            try {
+                localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
+                console.log(`Updated guide settings in localStorage (${Object.keys(this.guideSettings).length} guides)`);
+            } catch (e) {
+                console.warn(`Failed to save guide settings to localStorage: ${e.message}`);
+            }
+
+            // Make the API call
             const response = await this.apiService.saveGuideSetting(normalizedQuiz, url, enabled);
 
             if (response.success) {
-                console.log('Guide setting saved successfully:', response);
-                
-                // Update in-memory state
-                if (!this.guideSettings) {
-                    this.guideSettings = {};
-                }
-                this.guideSettings[normalizedQuiz] = { url, enabled };
-                
-                // Update localStorage
-                try {
-                    localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
-                    console.log(`Updated guide settings in localStorage (${Object.keys(this.guideSettings).length} guides)`);
-                } catch (e) {
-                    console.warn(`Failed to save guide settings to localStorage: ${e.message}`);
-                }
+                console.log('Guide setting saved successfully to database:', response);
                 
                 // Refresh the UI
                 this.refreshGuideSettingsList(true);
@@ -4289,11 +4358,28 @@ export class Admin2Dashboard {
                 
                 return true;
             } else {
-                throw new Error(response.message || 'Failed to save guide settings');
+                throw new Error(response.message || 'Failed to save guide settings to database');
             }
         } catch (error) {
-            console.error('Error saving guide settings:', error);
-            this.showInfo('Failed to save guide settings', 'error');
+            console.error('Error saving guide settings to database:', error);
+            
+            // Rollback in-memory state
+            this.guideSettings = originalSettings;
+            
+            // Rollback localStorage
+            try {
+                localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
+                console.log('Rolled back guide settings in localStorage after API failure');
+            } catch (e) {
+                console.warn(`Failed to rollback localStorage: ${e.message}`);
+            }
+            
+            // Refresh UI to show rollback
+            this.refreshGuideSettingsList(true);
+            
+            // Show error with helpful context
+            this.showInfo(`Failed to save guide settings for ${this.formatQuizName(quiz)}. Settings have been restored to previous state. Please check your connection and try again.`, 'error');
+            
             throw error;
         }
     }
