@@ -1372,14 +1372,3 @@ function restoreGuideButtonHrefs() {
         }
     });
 }
-
-// Commented out to prevent auto-refresh or restoration on tab return
-// window.addEventListener('focus', restoreGuideButtonHrefs);
-// document.addEventListener('visibilitychange', () => {
-//     if (document.visibilityState === 'visible') {
-//         restoreGuideButtonHrefs();
-//     }
-// });
-// window.addEventListener('pageshow', () => {
-//     restoreGuideButtonHrefs();
-// }); 

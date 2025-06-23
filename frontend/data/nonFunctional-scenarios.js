@@ -38,12 +38,12 @@ export const issueVerificationScenarios = {
                 {
                     text: 'Performance testing',
                     outcome: 'Performance testing is a key type of non-functional testing that verifies how well the system works based on response time and throughput.',
-                    experience: 15,
+                    experience: -5,
                 },
                 {
                     text: 'Unit testing',
                     outcome: 'Correct! Unit testing is a type of functional testing that focuses on testing individual units or components of code, not the non-functional aspects of a system.',
-                    experience: -5
+                    experience: 15
                 },
                 {
                     text: 'Security testing',
