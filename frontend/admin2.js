@@ -1515,7 +1515,7 @@ export class Admin2Dashboard {
                 return;
             }
             
-            console.log(`Successfully loaded ${quizTypes.length} quiz types for scenarios list`);
+            // console.log(`Successfully loaded ${quizTypes.length} quiz types for scenarios list`);
             
             // Create matching structure to standard admin page
             scenariosList.innerHTML = `
@@ -1527,26 +1527,30 @@ export class Admin2Dashboard {
             
             const categoriesContainer = scenariosList.querySelector('.scenario-categories');
             
-            // Define the same categories as in standard admin page
-            const categories = {
-                'Technical Skills': [],
-                'Soft Skills': [],
-                'QA Processes': [],
-                'Content Testing': [],
-                'Tools & Documentation': [],
-                'Interview Quizzes': [],
-                'Other Quizzes': []
-            };
+            // Use QUIZ_CATEGORIES from quiz-list.js for consistent categorization
+            const categories = { ...QUIZ_CATEGORIES };
             
-            // Categorize quizzes
+            // Initialize categories with empty arrays for any missing quizzes
+            const uncategorizedQuizzes = [];
+            
+            // Check which quizzes are not in any category
             quizTypes.forEach(quiz => {
-                const category = this.categorizeQuiz(quiz);
-                if (categories[category]) {
-                    categories[category].push(quiz);
-                } else {
-                    categories['Other Quizzes'].push(quiz);
+                let found = false;
+                for (const [categoryName, categoryQuizzes] of Object.entries(categories)) {
+                    if (categoryQuizzes.includes(quiz)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    uncategorizedQuizzes.push(quiz);
                 }
             });
+            
+            // Add uncategorized quizzes to an "Other Quizzes" category if they exist
+            if (uncategorizedQuizzes.length > 0) {
+                categories['Other Quizzes'] = uncategorizedQuizzes;
+            }
             
             // Create HTML for each category
             Object.keys(categories).forEach(category => {
@@ -1607,24 +1611,32 @@ export class Admin2Dashboard {
         };
     }
 
-    // Override categorizeQuiz to ensure automation-interview is properly categorized
+    // Legacy categorizeQuiz method - now uses QUIZ_CATEGORIES for consistency
     categorizeQuiz(quizName) {
+        // First check if the quiz exists in QUIZ_CATEGORIES
+        for (const [categoryName, categoryQuizzes] of Object.entries(QUIZ_CATEGORIES)) {
+            if (categoryQuizzes.includes(quizName)) {
+                return categoryName;
+            }
+        }
+        
+        // Fallback logic for quizzes not in QUIZ_CATEGORIES
         if (quizName === 'automation-interview') {
-            return 'Technical Skills';
+            return 'Interview Preparation';
         }
         
         const lowerName = quizName.toLowerCase();
         
         if (['automation', 'api', 'script', 'script-metrics', 'technical', 'accessibility', 'performance', 'security', 'mobile'].includes(lowerName)) {
-            return 'Technical Skills';
+            return 'Technical Testing';
         }
         
         if (['communication', 'soft-skills'].includes(lowerName)) {
-            return 'Soft Skills';
+            return 'Core QA Skills';
         }
         
         if (['general', 'process', 'uat', 'test-process'].includes(lowerName)) {
-            return 'QA Processes';
+            return 'Project Management';
         }
         
         if (['cms', 'cms-testing', 'content', 'email', 'email-testing'].includes(lowerName)) {
@@ -1632,11 +1644,11 @@ export class Admin2Dashboard {
         }
         
         if (['documentation', 'tools'].includes(lowerName)) {
-            return 'Tools & Documentation';
+            return 'Technical Testing';
         }
         
         if (['interview'].includes(lowerName)) {
-            return 'Interview Quizzes';
+            return 'Interview Preparation';
         }
         
         return 'Other Quizzes';
@@ -2161,41 +2173,6 @@ export class Admin2Dashboard {
             </div>
             `;
         }).join('');
-    }
-
-    // Override categorizeQuiz to ensure automation-interview is properly categorized
-    categorizeQuiz(quizName) {
-        if (quizName === 'automation-interview') {
-            return 'Technical Skills';
-        }
-        
-        const lowerName = quizName.toLowerCase();
-        
-        if (['automation', 'api', 'script', 'script-metrics', 'technical', 'accessibility', 'performance', 'security', 'mobile'].includes(lowerName)) {
-            return 'Technical Skills';
-        }
-        
-        if (['communication', 'soft-skills'].includes(lowerName)) {
-            return 'Soft Skills';
-        }
-        
-        if (['general', 'process', 'uat', 'test-process'].includes(lowerName)) {
-            return 'QA Processes';
-        }
-        
-        if (['cms', 'cms-testing', 'content', 'email', 'email-testing'].includes(lowerName)) {
-            return 'Content Testing';
-        }
-        
-        if (['documentation', 'tools'].includes(lowerName)) {
-            return 'Tools & Documentation';
-        }
-        
-        if (['interview'].includes(lowerName)) {
-            return 'Interview Quizzes';
-        }
-        
-        return 'Other Quizzes';
     }
 
     // Override the parent showUserDetails method for a tabbed interface like standard admin
