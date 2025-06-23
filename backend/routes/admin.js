@@ -1451,4 +1451,272 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
     }
 });
 
+// Scheduled Reset Endpoints
+
+// Get all scheduled resets
+router.get('/schedules', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        console.log('Fetching all scheduled resets');
+        
+        // Get all scheduled resets, sorted by reset date
+        const schedules = await ScheduledReset.find({
+            status: 'pending' // Only get pending schedules
+        }).sort({ resetDateTime: 1 });
+
+        console.log(`Found ${schedules.length} scheduled resets`);
+
+        return res.json({
+            success: true,
+            data: schedules
+        });
+    } catch (error) {
+        console.error('Error fetching scheduled resets:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch scheduled resets',
+            error: error.message
+        });
+    }
+});
+
+// Create a new scheduled reset
+router.post('/schedules', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username, quizName, resetDateTime, timezoneOffset } = req.body;
+
+        // Validate required fields
+        if (!username || !quizName || !resetDateTime) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: username, quizName, and resetDateTime are required'
+            });
+        }
+
+        // Validate that the user exists
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Validate reset date is in the future
+        const resetDate = new Date(resetDateTime);
+        if (resetDate <= new Date()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Reset date must be in the future'
+            });
+        }
+
+        console.log(`Creating scheduled reset for ${username}'s ${quizName} quiz at ${resetDate.toISOString()}`);
+
+        // Check if a similar scheduled reset already exists
+        const existingSchedule = await ScheduledReset.findOne({
+            username,
+            quizName,
+            status: 'pending',
+            resetDateTime: {
+                $gte: new Date(resetDate.getTime() - 60000), // 1 minute before
+                $lte: new Date(resetDate.getTime() + 60000)  // 1 minute after
+            }
+        });
+
+        if (existingSchedule) {
+            return res.status(409).json({
+                success: false,
+                message: 'A similar scheduled reset already exists for this user and quiz'
+            });
+        }
+
+        // Create the scheduled reset
+        const scheduledReset = new ScheduledReset({
+            username,
+            quizName,
+            resetDateTime: resetDate,
+            timezoneOffset: timezoneOffset || 0,
+            status: 'pending'
+        });
+
+        const savedSchedule = await scheduledReset.save();
+        console.log('Successfully created scheduled reset:', savedSchedule._id);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Scheduled reset created successfully',
+            data: savedSchedule
+        });
+    } catch (error) {
+        console.error('Error creating scheduled reset:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to create scheduled reset',
+            error: error.message
+        });
+    }
+});
+
+// Cancel/delete a scheduled reset
+router.delete('/schedules/:id', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { id } = req.params;
+
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Schedule ID is required'
+            });
+        }
+
+        console.log(`Cancelling scheduled reset with ID: ${id}`);
+
+        // Find and delete the scheduled reset
+        const deletedSchedule = await ScheduledReset.findByIdAndDelete(id);
+
+        if (!deletedSchedule) {
+            return res.status(404).json({
+                success: false,
+                message: 'Scheduled reset not found'
+            });
+        }
+
+        console.log(`Successfully cancelled scheduled reset for ${deletedSchedule.username}'s ${deletedSchedule.quizName} quiz`);
+
+        return res.json({
+            success: true,
+            message: 'Scheduled reset cancelled successfully',
+            data: deletedSchedule
+        });
+    } catch (error) {
+        console.error('Error cancelling scheduled reset:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to cancel scheduled reset',
+            error: error.message
+        });
+    }
+});
+
+// Process scheduled resets (can be called manually or by cron job)
+router.post('/schedules/process', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        console.log('Processing scheduled resets');
+
+        // Get all pending scheduled resets that are due
+        const now = new Date();
+        const dueSchedules = await ScheduledReset.find({
+            status: 'pending',
+            resetDateTime: { $lte: now }
+        });
+
+        console.log(`Found ${dueSchedules.length} due scheduled resets`);
+
+        const processedSchedules = [];
+        const failedSchedules = [];
+
+        // Process each due schedule
+        for (const schedule of dueSchedules) {
+            try {
+                console.log(`Processing scheduled reset for ${schedule.username}'s ${schedule.quizName} quiz`);
+
+                // Find the user
+                const user = await User.findOne({ username: schedule.username });
+                if (!user) {
+                    console.error(`User ${schedule.username} not found`);
+                    schedule.status = 'failed';
+                    await schedule.save();
+                    failedSchedules.push({
+                        id: schedule._id,
+                        reason: 'User not found'
+                    });
+                    continue;
+                }
+
+                // Reset the quiz progress
+                const quizKey = `quizProgress.${schedule.quizName}`;
+                await User.updateOne(
+                    { username: schedule.username },
+                    { 
+                        $unset: { [quizKey]: "" },
+                        $pull: { 
+                            quizResults: { quizName: schedule.quizName }
+                        }
+                    }
+                );
+
+                // Mark schedule as completed
+                schedule.status = 'completed';
+                await schedule.save();
+
+                processedSchedules.push({
+                    id: schedule._id,
+                    username: schedule.username,
+                    quizName: schedule.quizName,
+                    resetDateTime: schedule.resetDateTime
+                });
+
+                console.log(`Successfully processed scheduled reset for ${schedule.username}'s ${schedule.quizName} quiz`);
+            } catch (error) {
+                console.error(`Error processing schedule ${schedule._id}:`, error);
+                schedule.status = 'failed';
+                await schedule.save();
+                failedSchedules.push({
+                    id: schedule._id,
+                    reason: error.message
+                });
+            }
+        }
+
+        return res.json({
+            success: true,
+            message: `Processed ${processedSchedules.length} scheduled resets`,
+            data: {
+                processed: processedSchedules,
+                failed: failedSchedules,
+                total: dueSchedules.length
+            }
+        });
+    } catch (error) {
+        console.error('Error processing scheduled resets:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to process scheduled resets',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router; 
