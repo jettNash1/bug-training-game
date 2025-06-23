@@ -491,7 +491,7 @@ export const buildVerificationScenarios = {
                 description: 'How do you manage communication during BVT?',
                 options: [
                     {
-                        text: 'Maintain clear channels with development team and stakeholders for quick issue resolution',
+                        text: 'Maintain clear channels with your team and the client for quick issue resolution',
                         outcome: 'Perfect! Effective communication ensures quick resolution.',
                         experience: 25,
                     },

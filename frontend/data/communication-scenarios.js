@@ -91,8 +91,8 @@ export const communicationScenarios = {
                 description: 'You\'ve encountered a delay in your work. How should you communicate this?',
                 options: [
                     {
-                        text: 'Promptly inform stakeholders, explain the cause, and provide an updated timeline',
-                        outcome: 'Excellent! This maintains transparency and builds trust.',
+                        text: 'Promptly inform your team, manager and the client, explain the cause, and provide an updated timeline',
+                        outcome: 'Excellent! This maintains transparency and builds trust. It is important to keep the client informed as they may need to adjust their expectations.',
                         experience: 15,
                     },
                     {

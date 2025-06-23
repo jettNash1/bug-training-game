@@ -344,7 +344,7 @@ export const issueVerificationScenarios = {
                 description: 'How do you manage time during a verification session?',
                 options: [
                     {
-                        text: 'Set goals for ticket verification numbers and allocate specific time for regression',
+                        text: 'Set goals for ticket verification numbers based on priority and severity, then allocate specific time for regression',
                         outcome: 'Excellent! This ensures balanced coverage.',
                         experience: 20,
                     },

@@ -89,7 +89,7 @@ export const exploratoryTestingScenarios = {
                 id: 4,
                 level: 'Basic',
                 title: 'Bug Reporting',
-                description: 'You found a bug during exploratory testing. What information should you include in your report?',
+                description: 'You found a bug during exploratory testing. What information should you include in your bug report?',
                 options: [
                     {
                         text: 'Detailed steps to reproduce, expected vs. actual results, and context of discovery',

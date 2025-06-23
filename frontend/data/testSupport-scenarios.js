@@ -64,7 +64,7 @@ export const testSupportScenarios = {
             description: 'You\'re starting on an ongoing test support project. What\'s the best documentation approach?',
             options: [
                 {
-                    text: 'Create a process document noting important information and project procedures',
+                    text: 'If there is no operations documentation, create an ops document noting important information and project procedures. ',
                     outcome: 'Perfect! This ensures knowledge retention and consistent processes.',
                     experience: 15,
                 },

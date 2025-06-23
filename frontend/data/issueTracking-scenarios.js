@@ -173,7 +173,7 @@ export const issueTrackingScenarios = {
                 id: 12,
                 level: 'Basic',
                 title: 'Issue Tracking Styles',
-                description: 'Which of the following is described as an issue tracking style in the guide?',
+                description: 'Which of the following is an issue tracking style?',
                 options: [
                     {
                         text: 'Recursive is an issue tracking style',

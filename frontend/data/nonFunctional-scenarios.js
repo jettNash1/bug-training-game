@@ -64,7 +64,7 @@ export const issueVerificationScenarios = {
             description: 'What is the main difference between functional and non-functional testing?',
             options: [
                 {
-                    text: 'Functional testing is based on customer requirements while non-functional testing is based on customer expectations',
+                    text: 'Functional testing is based on customer requirements while non-functional testing is based on the software\'s performance based on external factors',
                     outcome: 'Perfect! Functional testing verifies if the system works according to specified requirements, while non-functional testing addresses expectations about how well the system performs.',
                     experience: 15,
                 },

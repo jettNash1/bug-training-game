@@ -36,12 +36,12 @@ export const reportsScenarios = {
                 description: 'How should you write the report summary?',
                 options: [
                     {
-                        text: 'Use third person, present tense, objective language without technical jargon',
+                        text: 'Use first person plural pronouns, written for everyone',
                         outcome: 'Excellent! This maintains a professional tone.',
                         experience: 15,
                     },
                     {
-                        text: 'Use a first person approach to keep the report to a personal level',
+                        text: 'Use third person, present tense, objective language with technical jargon',
                         outcome: 'Reports require a third person approach to keep to keep the tone objective.',
                         experience: -10
                     },
