@@ -3,6 +3,7 @@ import { QuizProgressService } from './services/QuizProgressService.js';
 
 export const QUIZ_CATEGORIES = {
     'Core QA Skills': [
+        'test-quiz',
         'tester-mindset',
         'communication',
         'initiative',
@@ -194,6 +195,7 @@ export class QuizList {
 
     getQuizDescription(quizName) {
         const descriptions = {
+            'test-quiz': 'Practice fundamental testing scenarios and build core skills',
             'communication': 'Develop effective communication skills in testing',
             'initiative': 'Learn to take initiative in testing scenarios',
             'time-management': 'Optimize your testing workflow',

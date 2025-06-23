@@ -100,7 +100,7 @@ export const riskManagementScenarios = {
             description: 'You realise you don\'t have access to one of the scoped devices for testing. What\'s the best risk management approach?',
             options: [
                 {
-                    text: 'Inform your team and your manager then identify who has the device and arrange access',
+                    text: 'Feedback to your Delivery Manager, then determine who holds the relevant device in order to arrange access.',
                     outcome: 'Excellent! Proactive device access management reduces project risks.',
                     experience: 15,
                 },

@@ -1696,6 +1696,7 @@ export class Admin2Dashboard {
     // Helper method to provide hardcoded quiz types
     getHardcodedQuizTypes() {
         return [
+            'test-quiz',
             'cms-testing',
             'web-testing',
             'mobile-testing',
@@ -2723,7 +2724,7 @@ export class Admin2Dashboard {
         if (!quizTypes || !Array.isArray(quizTypes)) {
             console.error('Invalid quizTypes provided to categorizeQuizzesForForm:', quizTypes);
             quizTypes = [
-                'communication', 'initiative', 'time-management', 'tester-mindset',
+                'test-quiz', 'communication', 'initiative', 'time-management', 'tester-mindset',
                 'risk-analysis', 'risk-management', 'non-functional', 'test-support',
                 'issue-verification', 'build-verification', 'issue-tracking-tools',
                 'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
