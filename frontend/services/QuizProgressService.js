@@ -9,7 +9,7 @@ import { APIService } from '../api-service.js';
 
 // List of all known quiz names for strict validation
 const KNOWN_QUIZ_NAMES = [
-    'test-quiz', 'communication', 'initiative', 'time-management', 'tester-mindset',
+    'communication', 'initiative', 'time-management', 'tester-mindset',
     'risk-analysis', 'risk-management', 'non-functional', 'test-support',
     'issue-verification', 'build-verification', 'issue-tracking-tools',
     'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',

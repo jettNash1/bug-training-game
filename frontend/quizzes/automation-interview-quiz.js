@@ -63,19 +63,41 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         this.questionTimer = null;
         this.questionStartTime = null;
         this.timePerQuestion = 60; // 60 seconds per question
+        this.timerStartTime = null; // When timer was started for persistence
+        this.persistedTimeRemaining = null; // Restored time from localStorage
         
         this.isLoading = false;
         
         // Initialize event listeners
         this.initializeEventListeners();
 
-        // Start the quiz
-        this.startGame();
+        // Start the quiz (wait for timer settings to be loaded)
+        this.startGameWhenReady();
     }
     
     // Override the shouldEndGame method for our quiz
     shouldEndGame() {
         return this.player.questionHistory.length >= 15;
+    }
+
+    // Wait for timer settings to be loaded before starting the game
+    async startGameWhenReady() {
+        console.log('[AutomationInterviewQuiz] Waiting for timer settings to be loaded...');
+        
+        try {
+            // Ensure timer settings are loaded by calling initializeTimerSettings again
+            // This will either complete the initialization or use already loaded values
+            await this.initializeTimerSettings();
+            
+            console.log(`[AutomationInterviewQuiz] Timer settings ready: ${this.timePerQuestion}s (disabled: ${this.timerDisabled})`);
+            
+            // Now start the game with correct timer settings
+            this.startGame();
+        } catch (error) {
+            console.error('[AutomationInterviewQuiz] Error loading timer settings:', error);
+            // Start game anyway with defaults
+            this.startGame();
+        }
     }
     
     // Initialize event listeners
@@ -96,6 +118,18 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.type === 'radio') {
                 this.handleAnswer();
+            }
+        });
+
+        // Save timer state when user leaves the page
+        window.addEventListener('beforeunload', () => {
+            this.saveCurrentTimerState();
+        });
+
+        // Save timer state when page becomes hidden (mobile/tab switching)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.saveCurrentTimerState();
             }
         });
     }
@@ -225,32 +259,58 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             return;
         }
         
+        // Check if timer is disabled (0 seconds) or timer functionality is disabled
+        if (this.timerDisabled || this.timePerQuestion === 0) {
+            console.log(`[AutomationInterviewQuiz] Timer is disabled, hiding timer display`);
+            timerContainer.classList.add('hidden');
+            return;
+        }
+        
         // Show the timer
         timerContainer.classList.remove('hidden');
         timerContainer.classList.remove('timer-warning');
         
-        // Set starting time
-        const timeLimit = this.timePerQuestion;
-        timerDisplay.textContent = timeLimit;
+        // Try to restore persisted timer state first
+        const restoredTime = this.restoreTimerState();
+        let timeLeft;
         
-        // Record start time
-        this.questionStartTime = Date.now();
+        console.log(`[AutomationInterviewQuiz] Timer initialization - timePerQuestion: ${this.timePerQuestion}, restoredTime: ${restoredTime}, timerDisabled: ${this.timerDisabled}`);
         
-        // Start timer interval
+        if (restoredTime !== null && restoredTime > 0) {
+            timeLeft = restoredTime;
+            console.log(`[AutomationInterviewQuiz] Restored timer with ${timeLeft} seconds remaining`);
+        } else {
+            // Use full timer value for new question
+            timeLeft = this.timePerQuestion;
+            console.log(`[AutomationInterviewQuiz] Starting new timer with ${timeLeft} seconds (restored time was: ${restoredTime})`);
+        }
+        
+        timerDisplay.textContent = timeLeft;
+        
+        this.timerStartTime = Date.now();
+        this.questionStartTime = this.timerStartTime;
+        
         this.questionTimer = setInterval(() => {
-            const elapsedSeconds = Math.floor((Date.now() - this.questionStartTime) / 1000);
-            const remainingSeconds = Math.max(0, timeLimit - elapsedSeconds);
+            timeLeft--;
+            timerDisplay.textContent = timeLeft;
             
-            timerDisplay.textContent = remainingSeconds;
+            // Save current timer state every few seconds for persistence
+            if (timeLeft % 3 === 0) { // Save every 3 seconds to balance performance and persistence
+                this.saveTimerState(timeLeft);
+            }
             
             // Add warning class when less than 10 seconds remain
-            if (remainingSeconds <= 10 && !timerContainer.classList.contains('timer-warning')) {
+            if (timeLeft <= 10 && !timerContainer.classList.contains('timer-warning')) {
                 timerContainer.classList.add('timer-warning');
             }
             
-            // If time is up, auto-submit answer or select random option
-            if (remainingSeconds <= 0) {
+            if (timeLeft <= 0) {
                 clearInterval(this.questionTimer);
+                this.questionTimer = null;
+                
+                // Clear the timer state since question is complete
+                this.clearCurrentTimerState();
+                
                 this.handleTimedOut();
             }
         }, 1000);
@@ -259,6 +319,9 @@ export class AutomationInterviewQuiz extends BaseQuiz {
     // Handle when time runs out for a question
     handleTimedOut() {
         console.log('[AutomationInterviewQuiz] Question timed out');
+        
+        // Clear timer state since time is up
+        this.clearCurrentTimerState();
         
         // Select a random option if none selected
         const selectedOption = document.querySelector('input[name="option"]:checked');
@@ -419,6 +482,9 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
             }
+            
+            // Clear timer state for this question since it's being completed
+            this.clearCurrentTimerState();
         
         const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
@@ -726,6 +792,9 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             // Save final progress
             await this.saveProgress(passed ? 'passed' : 'failed');
             
+            // Clear all timer states since quiz is complete
+            this.clearAllTimerStates();
+            
         } catch (error) {
             console.error('[AutomationInterviewQuiz] Error ending game:', error);
             this.showError('Failed to complete the quiz. Please refresh the page.');
@@ -741,6 +810,9 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             clearInterval(this.questionTimer);
             this.questionTimer = null;
         }
+        
+        // Clear all timer states since quiz is restarting
+        this.clearAllTimerStates();
         
         // Reset player state
         this.player = {
@@ -800,6 +872,141 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         } catch (e) {
             // Fallback to alert if error display fails
             alert(message);
+        }
+    }
+
+    /**
+     * Get the localStorage key for timer persistence for current question
+     */
+    getTimerStorageKey() {
+        const username = localStorage.getItem('username');
+        const questionIndex = this.player.questionHistory.length;
+        return `${this.quizName}_timer_${username}_q${questionIndex}`;
+    }
+
+    /**
+     * Save current timer state to localStorage
+     */
+    saveTimerState(timeRemaining) {
+        if (this.timerDisabled || this.timePerQuestion <= 0) return;
+        
+        try {
+            const timerState = {
+                timeRemaining: timeRemaining,
+                questionIndex: this.player.questionHistory.length,
+                timestamp: Date.now()
+            };
+            
+            const key = this.getTimerStorageKey();
+            localStorage.setItem(key, JSON.stringify(timerState));
+            
+        } catch (error) {
+            console.error('[AutomationInterviewQuiz] Error saving timer state:', error);
+        }
+    }
+
+    /**
+     * Restore timer state from localStorage
+     */
+    restoreTimerState() {
+        console.log(`[AutomationInterviewQuiz] restoreTimerState called - timerDisabled: ${this.timerDisabled}, timePerQuestion: ${this.timePerQuestion}`);
+        
+        if (this.timerDisabled || this.timePerQuestion <= 0) {
+            console.log(`[AutomationInterviewQuiz] Timer is disabled or invalid, not restoring state`);
+            return null;
+        }
+        
+        try {
+            const key = this.getTimerStorageKey();
+            const storedState = localStorage.getItem(key);
+            
+            console.log(`[AutomationInterviewQuiz] Checking for stored timer state with key: ${key}, found: ${storedState ? 'yes' : 'no'}`);
+            
+            if (!storedState) return null;
+            
+            const timerState = JSON.parse(storedState);
+            console.log(`[AutomationInterviewQuiz] Parsed timer state:`, timerState);
+            
+            // Verify this is for the correct question
+            if (timerState.questionIndex !== this.player.questionHistory.length) {
+                console.log(`[AutomationInterviewQuiz] Question index mismatch - stored: ${timerState.questionIndex}, current: ${this.player.questionHistory.length}`);
+                // Wrong question, clear the stored state
+                this.clearCurrentTimerState();
+                return null;
+            }
+            
+            // Check if the stored time is still valid (not too old)
+            const timeSinceStore = Date.now() - timerState.timestamp;
+            const maxAge = this.timePerQuestion * 1000 * 2; // Allow double the question time as max
+            console.log(`[AutomationInterviewQuiz] Time since store: ${timeSinceStore}ms, max age: ${maxAge}ms`);
+            
+            if (timeSinceStore > maxAge) {
+                console.log(`[AutomationInterviewQuiz] Timer state too old, clearing`);
+                this.clearCurrentTimerState();
+                return null;
+            }
+            
+            console.log(`[AutomationInterviewQuiz] Restoring timer with ${timerState.timeRemaining} seconds remaining`);
+            return timerState.timeRemaining;
+            
+        } catch (error) {
+            console.error('[AutomationInterviewQuiz] Error restoring timer state:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Clear timer state for current question
+     */
+    clearCurrentTimerState() {
+        try {
+            const key = this.getTimerStorageKey();
+            localStorage.removeItem(key);
+        } catch (error) {
+            console.error('[AutomationInterviewQuiz] Error clearing timer state:', error);
+        }
+    }
+
+    /**
+     * Clear all timer states for this quiz (used when quiz completes or restarts)
+     */
+    clearAllTimerStates() {
+        try {
+            const username = localStorage.getItem('username');
+            const keyPrefix = `${this.quizName}_timer_${username}_`;
+            
+            // Find and remove all timer-related keys for this quiz
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(keyPrefix)) {
+                    localStorage.removeItem(key);
+                    i--; // Adjust index since we removed an item
+                }
+            }
+        } catch (error) {
+            console.error('[AutomationInterviewQuiz] Error clearing all timer states:', error);
+        }
+    }
+
+    /**
+     * Save current timer state immediately (used when page is being unloaded)
+     */
+    saveCurrentTimerState() {
+        if (!this.questionTimer || this.timerDisabled || this.timePerQuestion <= 0) return;
+        
+        try {
+            // Calculate current time remaining based on timer display
+            const timerDisplay = document.getElementById('timer-display');
+            if (timerDisplay && timerDisplay.textContent) {
+                const timeRemaining = parseInt(timerDisplay.textContent, 10);
+                
+                if (!isNaN(timeRemaining) && timeRemaining > 0) {
+                    this.saveTimerState(timeRemaining);
+                    console.log(`[AutomationInterviewQuiz] Saved timer state on page unload: ${timeRemaining}s remaining`);
+                }
+            }
+        } catch (error) {
+            console.error('[AutomationInterviewQuiz] Error saving current timer state:', error);
         }
     }
 }
