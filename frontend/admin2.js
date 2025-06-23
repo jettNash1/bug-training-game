@@ -6,7 +6,7 @@ export class Admin2Dashboard {
     constructor() {
         // Initialize APIService directly rather than through super()
         this.apiService = new APIService();
-        this.quizProgressService = new QuizProgressService(); // <-- Add this line
+        this.quizProgressService = new QuizProgressService();
         
         // Copy initialization properties from AdminDashboard
         this.userScores = new Map();

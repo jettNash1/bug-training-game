@@ -123,8 +123,8 @@ export const automationInterviewScenarios = {
                     description: 'Your automated tests are failing intermittently. What should you do?',
                     options: [
                         {
-                            text: 'Implement smart waits and proper synchronization',
-                            outcome: 'Perfect! This helps create stable tests.',
+                            text: 'Identify the root cause of the issue',
+                            outcome: 'Sometimes, intermittent failures are just that the website sometimes does not behave correctly. Waits are not a catch all solution for this kind of issue. Identification of a false positive or validating the quality of your results is.',
                             experience: 15,
                         },
                         {
