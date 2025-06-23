@@ -92,7 +92,7 @@ export const initiativeScenarios = {
                 description: 'You\'re starting a new project and notice the documentation is outdated. What shows the best initiative?',
                 options: [
                     {
-                        text: 'Update the documentation and add missing information',
+                        text: 'Let the TDM know that the documentation is outdated and offer to update it',
                         outcome: 'Perfect! Proactively improving documentation helps everyone.',
                         experience: 15,
                     },

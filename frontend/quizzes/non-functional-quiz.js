@@ -62,14 +62,17 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
         // Timer-related properties
         this.questionTimer = null;
         this.questionStartTime = null;
+        this.timePerQuestion = 60; // 60 seconds per question
+        this.timerStartTime = null; // When timer was started for persistence
+        this.persistedTimeRemaining = null; // Restored time from localStorage
         
         this.isLoading = false;
         
         // Initialize event listeners
         this.initializeEventListeners();
 
-        // Start the quiz
-        this.startGame();
+        // Start the quiz (wait for timer settings to be loaded)
+        this.startGameWhenReady();
     }
     
     // Override the shouldEndGame method for our quiz
@@ -133,11 +136,76 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
         return Math.round((correctAnswers / Math.max(1, this.player.questionHistory.length)) * 100);
     }
 
+    // Wait for timer settings to be loaded before starting the game
+    async startGameWhenReady() {
+        console.log('[NonFunctionalQuiz] Waiting for timer settings to be loaded...');
+        
+        let attempts = 0;
+        const maxAttempts = 50; // 5 seconds max wait
+        
+        const checkTimerSettings = () => {
+            attempts++;
+            console.log(`[NonFunctionalQuiz] Check attempt ${attempts}, timePerQuestion: ${this.timePerQuestion}`);
+            
+            // Check if timer settings have been loaded (either from API or default)
+            if (this.timePerQuestion !== undefined && this.timePerQuestion !== null) {
+                console.log(`[NonFunctionalQuiz] Timer settings loaded: ${this.timePerQuestion}s per question`);
+                
+                // Check for persisted timer state
+                const restoredTime = this.restoreTimerState();
+                if (restoredTime !== null) {
+                    this.persistedTimeRemaining = restoredTime;
+                    console.log(`[NonFunctionalQuiz] Will restore timer to ${restoredTime}s`);
+                }
+                
+                // Add page unload handler for timer persistence
+                this.addPageUnloadHandler();
+                
+                this.startGame();
+                return;
+            }
+            
+            if (attempts >= maxAttempts) {
+                console.warn('[NonFunctionalQuiz] Timer settings not loaded after maximum attempts, using default');
+                this.timePerQuestion = 60; // Fallback to default
+                
+                // Add page unload handler for timer persistence
+                this.addPageUnloadHandler();
+                
+                this.startGame();
+                return;
+            }
+            
+            // Wait and check again
+            setTimeout(checkTimerSettings, 100);
+        };
+        
+        checkTimerSettings();
+    }
+
+    // Add handler to save timer state when user leaves the page
+    addPageUnloadHandler() {
+        const saveTimerOnUnload = () => {
+            if (this.questionTimer && this.timerStartTime) {
+                this.saveCurrentTimerState();
+            }
+        };
+
+        window.addEventListener('beforeunload', saveTimerOnUnload);
+        
+        // Also save on visibility change (when user switches tabs)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.questionTimer && this.timerStartTime) {
+                this.saveCurrentTimerState();
+            }
+        });
+    }
+
     // Start the quiz
     async startGame() {
         if (this.isLoading) return;
         
-        console.log('[Non-Functional Testing Quiz] Starting game...');
+        console.log('[NonFunctionalQuiz] Starting game...');
         
         try {
             this.isLoading = true;
@@ -157,7 +225,7 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
 
             // Try to load previous progress
             const hasProgress = await this.loadProgress();
-            console.log(`[Non-Functional Testing Quiz] Progress loaded: ${hasProgress}`);
+            console.log(`[NonFunctionalQuiz] Progress loaded: ${hasProgress}`);
             
             // Hide loading indicator
             if (loadingIndicator) {
@@ -170,17 +238,17 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
                 this.player.tools = [];
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
-                console.log('[Non-Functional Testing Quiz] No previous progress, starting fresh');
+                console.log('[NonFunctionalQuiz] No previous progress, starting fresh');
             } else {
                 // Verify the loaded progress contains valid question history
                 if (!this.player.questionHistory || !Array.isArray(this.player.questionHistory)) {
-                    console.log('[Non-Functional Testing Quiz] Invalid question history in loaded progress, resetting');
+                    console.log('[NonFunctionalQuiz] Invalid question history in loaded progress, resetting');
                     this.player.questionHistory = [];
                 }
                 
                 // CRITICAL: Ensure currentScenario is set correctly based on question history
                 this.player.currentScenario = this.player.questionHistory.length;
-                console.log('[Non-Functional Testing Quiz] Set currentScenario to match question history:', this.player.currentScenario);
+                console.log('[NonFunctionalQuiz] Set currentScenario to match question history:', this.player.currentScenario);
             }
             
             // Check if the quiz is already completed
@@ -201,7 +269,7 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
             
             this.isLoading = false;
         } catch (error) {
-            console.error('[Non-Functional Testing Quiz] Error starting game:', error);
+            console.error('[NonFunctionalQuiz] Error starting game:', error);
             this.isLoading = false;
             this.showError('Failed to start the quiz. Please refresh the page.');
         }
@@ -228,19 +296,43 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
         timerContainer.classList.remove('hidden');
         timerContainer.classList.remove('timer-warning');
         
+        // Determine time to use - check for restored time first
+        let timeLeft;
+        if (this.persistedTimeRemaining !== null) {
+            timeLeft = this.persistedTimeRemaining;
+            this.persistedTimeRemaining = null; // Clear it after use
+            console.log(`[NonFunctionalQuiz] Resuming timer with ${timeLeft}s remaining`);
+        } else {
+            timeLeft = this.timePerQuestion;
+            console.log(`[NonFunctionalQuiz] Starting new timer with ${timeLeft}s`);
+        }
+        
+        // If timer is 0 or disabled, hide timer and continue without timing
+        if (timeLeft <= 0) {
+            console.log('[NonFunctionalQuiz] Timer disabled (0 seconds)');
+            timerContainer.classList.add('hidden');
+            timerContainer.classList.add('visually-hidden');
+            return;
+        }
+        
         // Set starting time
-        const timeLimit = this.timePerQuestion; // Use BaseQuiz value
-        timerDisplay.textContent = timeLimit;
+        timerDisplay.textContent = timeLeft;
         
         // Record start time
         this.questionStartTime = Date.now();
+        this.timerStartTime = Date.now(); // For persistence calculations
         
         // Start timer interval
         this.questionTimer = setInterval(() => {
             const elapsedSeconds = Math.floor((Date.now() - this.questionStartTime) / 1000);
-            const remainingSeconds = Math.max(0, timeLimit - elapsedSeconds);
+            const remainingSeconds = Math.max(0, timeLeft - elapsedSeconds);
             
             timerDisplay.textContent = remainingSeconds;
+            
+            // Save timer state every few seconds (not every second to avoid performance issues)
+            if (remainingSeconds % 3 === 0) {
+                this.saveTimerState(remainingSeconds);
+            }
             
             // Add warning class when less than 10 seconds remain
             if (remainingSeconds <= 10 && !timerContainer.classList.contains('timer-warning')) {
@@ -253,6 +345,9 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
                 this.handleTimedOut();
             }
         }, 1000);
+        
+        // Save initial timer state
+        this.saveTimerState(timeLeft);
     }
     
     // Handle when time runs out for a question
@@ -401,7 +496,7 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
         if (this.player.questionHistory.length > 0) {
             // Only save if we have actual progress to avoid recursive saves
             this.saveProgress('in-progress').catch(err => {
-                console.warn('[Non-Functional Testing Quiz] Save after display failed:', err);
+                console.warn('[NonFunctionalQuiz] Save after display failed:', err);
             });
         }
     }
@@ -418,6 +513,9 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
             }
+            
+            // Clear timer persistence state since question is being completed
+            this.clearCurrentTimerState();
         
         const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
@@ -447,7 +545,7 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
             // Get the selected answer
             const selectedAnswer = scenario.options[optionIndex];
             
-            console.log('[Non-Functional Testing Quiz] Selected answer:', {
+            console.log('[NonFunctionalQuiz] Selected answer:', {
                 text: selectedAnswer.text,
                 experience: selectedAnswer.experience,
                 timedOut: timedOut
@@ -530,7 +628,7 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
             this.updateProgress();
             
         } catch (error) {
-            console.error('[Non-Functional Testing Quiz] Error handling answer:', error);
+            console.error('[NonFunctionalQuiz] Error handling answer:', error);
             this.showError('Failed to process your answer. Please try again.');
         } finally {
             this.isLoading = false;
@@ -749,34 +847,128 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
     
     // Helper for showing errors
     showError(message) {
-        console.error('[Non-Functional Testing Quiz] Error:', message);
+        console.error('[NonFunctionalQuiz] Error:', message);
         
-        try {
-            const errorElement = document.createElement('div');
-            errorElement.className = 'error-message';
-            errorElement.textContent = message;
-            errorElement.style.color = 'red';
-            errorElement.style.padding = '20px';
-            errorElement.style.textAlign = 'center';
-            errorElement.style.fontWeight = 'bold';
-            
-            // Find a good place to show the error
-            const container = document.getElementById('game-screen') || 
-                            document.getElementById('quiz-container') || 
-                            document.body;
-            
-            if (container) {
-                // Clear container if not body
-                if (container !== document.body) {
-                    container.innerHTML = '';
-                }
-                
-                container.appendChild(errorElement);
-                console.error('[Non-Functional Testing Quiz] Displayed error to user:', message);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.textContent = message;
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1000;
+            font-weight: bold;
+        `;
+        
+        document.body.appendChild(errorDiv);
+        
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.parentNode.removeChild(errorDiv);
             }
-        } catch (e) {
-            // Fallback to alert if error display fails
-            alert(message);
+        }, 5000);
+    }
+    
+    // Timer persistence methods
+    getTimerStorageKey() {
+        const questionIndex = this.player.questionHistory.length;
+        return `non-functional_timer_${this.player.username}_q${questionIndex}`;
+    }
+    
+    saveTimerState(timeRemaining) {
+        try {
+            const timerData = {
+                timeRemaining: timeRemaining,
+                questionIndex: this.player.questionHistory.length,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(this.getTimerStorageKey(), JSON.stringify(timerData));
+        } catch (error) {
+            console.warn('[NonFunctionalQuiz] Failed to save timer state:', error);
+        }
+    }
+    
+    restoreTimerState() {
+        try {
+            const storageKey = this.getTimerStorageKey();
+            const savedData = localStorage.getItem(storageKey);
+            
+            if (!savedData) {
+                return null;
+            }
+            
+            const timerData = JSON.parse(savedData);
+            const currentQuestionIndex = this.player.questionHistory.length;
+            
+            // Validate that this timer data is for the current question
+            if (timerData.questionIndex !== currentQuestionIndex) {
+                console.log('[NonFunctionalQuiz] Timer data is for different question, ignoring');
+                localStorage.removeItem(storageKey);
+                return null;
+            }
+            
+            // Check if the data is not too old (10 minutes max)
+            const maxAge = 10 * 60 * 1000; // 10 minutes
+            if (Date.now() - timerData.timestamp > maxAge) {
+                console.log('[NonFunctionalQuiz] Timer data is too old, ignoring');
+                localStorage.removeItem(storageKey);
+                return null;
+            }
+            
+            // Validate time remaining
+            if (timerData.timeRemaining <= 0) {
+                localStorage.removeItem(storageKey);
+                return null;
+            }
+            
+            console.log(`[NonFunctionalQuiz] Restored timer state: ${timerData.timeRemaining}s remaining`);
+            return timerData.timeRemaining;
+            
+        } catch (error) {
+            console.warn('[NonFunctionalQuiz] Failed to restore timer state:', error);
+            return null;
+        }
+    }
+    
+    clearCurrentTimerState() {
+        try {
+            const storageKey = this.getTimerStorageKey();
+            localStorage.removeItem(storageKey);
+            console.log('[NonFunctionalQuiz] Cleared current timer state');
+        } catch (error) {
+            console.warn('[NonFunctionalQuiz] Failed to clear timer state:', error);
+        }
+    }
+    
+    clearAllTimerStates() {
+        try {
+            const keys = Object.keys(localStorage);
+            const prefix = `non-functional_timer_${this.player.username}_`;
+            
+            keys.forEach(key => {
+                if (key.startsWith(prefix)) {
+                    localStorage.removeItem(key);
+                }
+            });
+            
+            console.log('[NonFunctionalQuiz] Cleared all timer states');
+        } catch (error) {
+            console.warn('[NonFunctionalQuiz] Failed to clear timer states:', error);
+        }
+    }
+    
+    saveCurrentTimerState() {
+        if (this.questionTimer && this.timerStartTime) {
+            const elapsedTime = Math.floor((Date.now() - this.timerStartTime) / 1000);
+            const timeRemaining = Math.max(0, this.timePerQuestion - elapsedTime);
+            if (timeRemaining > 0) {
+                this.saveTimerState(timeRemaining);
+            }
         }
     }
 }

@@ -774,7 +774,7 @@ export const communicationScenarios = {
                 description: 'You need to present a complex technical solution to a diverse audience. How do you prepare?',
                 options: [
                     {
-                        text: 'Create multiple versions of the presentation with appropriate technical depth for different audiences',
+                        text: 'Create a version of the presentation with appropriate technical depth for the intended audience',
                         outcome: 'Perfect! This ensures understanding at all levels.',
                         experience: 25,
                     },
@@ -784,8 +784,8 @@ export const communicationScenarios = {
                         experience: -15
                     },
                     {
-                        text: 'Keep it very high-level for everyone involved in the presentation',
-                        outcome: 'Balanced technical depth is a preferred approach for different audiences.',
+                        text: 'Keep it very basic so it can be understood by all audiences',
+                        outcome: 'It\'s best to cater the presentation to the intended audience. Making it too basic could reflect badly on our work.',
                         experience: -10
                     },
                     {

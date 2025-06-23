@@ -62,14 +62,17 @@ export class CMSTestingQuiz extends BaseQuiz {
         // Timer-related properties
         this.questionTimer = null;
         this.questionStartTime = null;
+        this.timePerQuestion = 60; // 60 seconds per question
+        this.timerStartTime = null; // When timer was started for persistence
+        this.persistedTimeRemaining = null; // Restored time from localStorage
         
         this.isLoading = false;
         
         // Initialize event listeners
         this.initializeEventListeners();
 
-        // Start the quiz
-        this.startGame();
+        // Start the quiz (wait for timer settings to be loaded)
+        this.startGameWhenReady();
     }
     
     // Override the shouldEndGame method for our quiz
@@ -131,6 +134,52 @@ export class CMSTestingQuiz extends BaseQuiz {
             q.selectedAnswer && q.isCorrect
         ).length;
         return Math.round((correctAnswers / Math.max(1, this.player.questionHistory.length)) * 100);
+    }
+
+    // Wait for timer settings to be loaded before starting the game
+    async startGameWhenReady() {
+        console.log('[CMSTestingQuiz] Waiting for timer settings to be loaded...');
+        
+        // Wait for timer settings to be available
+        let attempts = 0;
+        const maxAttempts = 50; // 5 seconds max wait
+        
+        while (attempts < maxAttempts) {
+            if (this.timePerQuestion !== undefined && this.timePerQuestion !== null) {
+                console.log('[CMSTestingQuiz] Timer settings ready, starting game...');
+                break;
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (attempts >= maxAttempts) {
+            console.warn('[CMSTestingQuiz] Timeout waiting for timer settings, proceeding with defaults');
+        }
+        
+        // Add page unload handler for timer persistence
+        this.addPageUnloadHandler();
+        
+        this.startGame();
+    }
+
+    // Add handler to save timer state when user leaves the page
+    addPageUnloadHandler() {
+        const saveTimerOnUnload = () => {
+            if (this.questionTimer && this.timerStartTime) {
+                this.saveCurrentTimerState();
+            }
+        };
+
+        window.addEventListener('beforeunload', saveTimerOnUnload);
+        
+        // Also save on visibility change (when user switches tabs)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.questionTimer && this.timerStartTime) {
+                this.saveCurrentTimerState();
+            }
+        });
     }
 
     // Start the quiz
@@ -209,6 +258,8 @@ export class CMSTestingQuiz extends BaseQuiz {
     
     // Initialize the timer for the current question
     initializeTimer() {
+        console.log(`[CMSTestingQuiz] Initializing timer for question ${this.player.questionHistory.length}`);
+        
         // Clear any existing timer
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
@@ -224,14 +275,40 @@ export class CMSTestingQuiz extends BaseQuiz {
             return;
         }
         
+        // Check if timer is disabled (0 seconds) or timer functionality is disabled
+        if (this.timerDisabled || this.timePerQuestion === 0) {
+            console.log(`[CMSTestingQuiz] Timer is disabled, hiding timer display`);
+            timerContainer.classList.add('hidden');
+            return;
+        }
+        
         // Show the timer
         timerContainer.classList.remove('hidden');
         timerContainer.classList.remove('visually-hidden');
         
-        // Use the timer value from BaseQuiz
-        const timeLimit = this.timePerQuestion;
-        let timeLeft = timeLimit;
+        // Check for restored timer state first
+        const restoredTime = this.restoreTimerState();
+        let timeLeft;
+        
+        if (restoredTime !== null) {
+            timeLeft = restoredTime;
+            console.log(`[CMSTestingQuiz] Restored timer with ${timeLeft} seconds remaining`);
+        } else {
+            timeLeft = this.timePerQuestion;
+            console.log(`[CMSTestingQuiz] Starting new timer with ${timeLeft} seconds`);
+        }
+        
         timerDisplay.textContent = `${timeLeft}s`;
+        this.timerStartTime = Date.now();
+        
+        // Save timer state periodically
+        const saveInterval = setInterval(() => {
+            if (this.questionTimer && this.timerStartTime) {
+                this.saveCurrentTimerState();
+            } else {
+                clearInterval(saveInterval);
+            }
+        }, 3000); // Save every 3 seconds
         
         this.questionStartTime = Date.now();
         this.questionTimer = setInterval(() => {
@@ -239,6 +316,7 @@ export class CMSTestingQuiz extends BaseQuiz {
             timerDisplay.textContent = `${timeLeft}s`;
             if (timeLeft <= 0) {
                 clearInterval(this.questionTimer);
+                clearInterval(saveInterval);
                 this.questionTimer = null;
                 this.handleTimedOut();
             }
@@ -741,6 +819,9 @@ export class CMSTestingQuiz extends BaseQuiz {
             this.questionTimer = null;
         }
         
+        // Clear timer persistence state for current question
+        this.clearCurrentTimerState();
+        
         // Reset player state
         this.player = {
             name: localStorage.getItem('username'),
@@ -799,6 +880,129 @@ export class CMSTestingQuiz extends BaseQuiz {
         } catch (e) {
             // Fallback to alert if error display fails
             alert(message);
+        }
+    }
+
+    // Timer persistence methods
+    getTimerStorageKey() {
+        const username = localStorage.getItem('username') || 'anonymous';
+        return `cms-testing_timer_${username}_q${this.player.questionHistory.length}`;
+    }
+
+    saveTimerState(timeRemaining) {
+        try {
+            const timerData = {
+                timeRemaining: timeRemaining,
+                questionIndex: this.player.questionHistory.length,
+                timestamp: Date.now()
+            };
+            
+            const storageKey = this.getTimerStorageKey();
+            localStorage.setItem(storageKey, JSON.stringify(timerData));
+            // console.log(`[CMSTestingQuiz] Timer state saved: ${timeRemaining}s remaining for question ${this.player.questionHistory.length}`);
+        } catch (error) {
+            console.error('[CMSTestingQuiz] Error saving timer state:', error);
+        }
+    }
+
+    restoreTimerState() {
+        try {
+            const storageKey = this.getTimerStorageKey();
+            const timerDataStr = localStorage.getItem(storageKey);
+            
+            if (!timerDataStr) {
+                console.log('[CMSTestingQuiz] No timer state found to restore');
+                return null;
+            }
+            
+            const timerData = JSON.parse(timerDataStr);
+            
+            // Validate the stored data
+            if (!timerData || 
+                typeof timerData.timeRemaining !== 'number' || 
+                typeof timerData.questionIndex !== 'number' || 
+                typeof timerData.timestamp !== 'number') {
+                console.warn('[CMSTestingQuiz] Invalid timer state data, removing');
+                localStorage.removeItem(storageKey);
+                return null;
+            }
+            
+            // Check if the question index matches (timer state is for current question)
+            if (timerData.questionIndex !== this.player.questionHistory.length) {
+                console.log(`[CMSTestingQuiz] Timer state is for question ${timerData.questionIndex}, but current is ${this.player.questionHistory.length}. Clearing old state.`);
+                localStorage.removeItem(storageKey);
+                return null;
+            }
+            
+            // Check if the timer state is too old (more than 10 minutes)
+            const timeDiff = Date.now() - timerData.timestamp;
+            if (timeDiff > 10 * 60 * 1000) { // 10 minutes
+                console.log('[CMSTestingQuiz] Timer state is too old, removing');
+                localStorage.removeItem(storageKey);
+                return null;
+            }
+            
+            // Ensure the time remaining is valid
+            if (timerData.timeRemaining <= 0 || timerData.timeRemaining > this.timePerQuestion) {
+                console.log('[CMSTestingQuiz] Invalid time remaining in stored state, removing');
+                localStorage.removeItem(storageKey);
+                return null;
+            }
+            
+            console.log(`[CMSTestingQuiz] Restored timer state: ${timerData.timeRemaining}s remaining for question ${timerData.questionIndex}`);
+            return timerData.timeRemaining;
+        } catch (error) {
+            console.error('[CMSTestingQuiz] Error restoring timer state:', error);
+            return null;
+        }
+    }
+
+    clearCurrentTimerState() {
+        try {
+            const storageKey = this.getTimerStorageKey();
+            localStorage.removeItem(storageKey);
+            console.log(`[CMSTestingQuiz] Cleared timer state for question ${this.player.questionHistory.length}`);
+        } catch (error) {
+            console.error('[CMSTestingQuiz] Error clearing timer state:', error);
+        }
+    }
+
+    clearAllTimerStates() {
+        try {
+            const username = localStorage.getItem('username') || 'anonymous';
+            const prefix = `cms-testing_timer_${username}_`;
+            
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(prefix)) {
+                    keysToRemove.push(key);
+                }
+            }
+            
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            console.log(`[CMSTestingQuiz] Cleared ${keysToRemove.length} timer states`);
+        } catch (error) {
+            console.error('[CMSTestingQuiz] Error clearing all timer states:', error);
+        }
+    }
+
+    saveCurrentTimerState() {
+        if (!this.questionTimer || !this.timerStartTime) {
+            return;
+        }
+        
+        try {
+            // Calculate remaining time
+            const timerDisplay = document.getElementById('timer-display');
+            if (timerDisplay) {
+                const displayedTime = parseInt(timerDisplay.textContent);
+                if (!isNaN(displayedTime) && displayedTime > 0) {
+                    this.saveTimerState(displayedTime);
+                }
+            }
+        } catch (error) {
+            console.error('[CMSTestingQuiz] Error saving current timer state:', error);
         }
     }
 }
