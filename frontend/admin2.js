@@ -6216,89 +6216,66 @@ export class Admin2Dashboard {
     setupCustomExportEventListeners() {
         console.log('Setting up custom export event listeners...');
         
-        // Remove any existing listeners to prevent duplicates
-        const selectAllUsers = document.getElementById('selectAllUsers');
-        const deselectAllUsers = document.getElementById('deselectAllUsers');
-        const selectAllQuizzes = document.getElementById('selectAllQuizzes');
-        const deselectAllQuizzes = document.getElementById('deselectAllQuizzes');
-
-        // Clone and replace elements to remove old event listeners
-        if (selectAllUsers) {
-            const newSelectAllUsers = selectAllUsers.cloneNode(true);
-            selectAllUsers.parentNode.replaceChild(newSelectAllUsers, selectAllUsers);
+        // Use event delegation for more reliable event handling
+        const exportContainer = document.getElementById('export-container') || document.body;
+        
+        // Remove existing delegated listeners if any
+        if (this.customExportHandler) {
+            exportContainer.removeEventListener('click', this.customExportHandler);
         }
-        if (deselectAllUsers) {
-            const newDeselectAllUsers = deselectAllUsers.cloneNode(true);
-            deselectAllUsers.parentNode.replaceChild(newDeselectAllUsers, deselectAllUsers);
+        
+        // Create a single delegated event handler
+        this.customExportHandler = (e) => {
+            if (e.target.id === 'selectAllUsers') {
+                console.log('Select All Users clicked');
+                const checkboxes = document.querySelectorAll('#usersCheckboxList .user-checkbox');
+                console.log(`Found ${checkboxes.length} user checkboxes`);
+                checkboxes.forEach(cb => cb.checked = true);
+                this.updateCustomExportCounts();
+            } else if (e.target.id === 'deselectAllUsers') {
+                console.log('Deselect All Users clicked');
+                const checkboxes = document.querySelectorAll('#usersCheckboxList .user-checkbox');
+                console.log(`Found ${checkboxes.length} user checkboxes`);
+                checkboxes.forEach(cb => cb.checked = false);
+                this.updateCustomExportCounts();
+            } else if (e.target.id === 'selectAllQuizzes') {
+                console.log('Select All Quizzes clicked');
+                const checkboxes = document.querySelectorAll('#quizzesCheckboxList .quiz-checkbox');
+                console.log(`Found ${checkboxes.length} quiz checkboxes to select`);
+                checkboxes.forEach(cb => cb.checked = true);
+                this.updateCustomExportCounts();
+            } else if (e.target.id === 'deselectAllQuizzes') {
+                console.log('Deselect All Quizzes clicked');
+                const checkboxes = document.querySelectorAll('#quizzesCheckboxList .quiz-checkbox');
+                console.log(`Found ${checkboxes.length} quiz checkboxes to deselect`);
+                checkboxes.forEach(cb => cb.checked = false);
+                this.updateCustomExportCounts();
+            } else if (e.target.classList.contains('category-select-all')) {
+                const category = e.target.dataset.category;
+                console.log(`Category select all clicked for: ${category}`);
+                const checkboxes = document.querySelectorAll(`.quiz-checkbox[data-category="${category}"]`);
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                console.log(`Found ${checkboxes.length} checkboxes in category ${category}, allChecked: ${allChecked}`);
+                checkboxes.forEach(cb => cb.checked = !allChecked);
+                this.updateCustomExportCounts();
+            }
+        };
+        
+        // Add the delegated event listener
+        exportContainer.addEventListener('click', this.customExportHandler);
+
+        // Individual checkbox change listeners - use delegation as well
+        if (this.customExportChangeHandler) {
+            exportContainer.removeEventListener('change', this.customExportChangeHandler);
         }
-        if (selectAllQuizzes) {
-            const newSelectAllQuizzes = selectAllQuizzes.cloneNode(true);
-            selectAllQuizzes.parentNode.replaceChild(newSelectAllQuizzes, selectAllQuizzes);
-        }
-        if (deselectAllQuizzes) {
-            const newDeselectAllQuizzes = deselectAllQuizzes.cloneNode(true);
-            deselectAllQuizzes.parentNode.replaceChild(newDeselectAllQuizzes, deselectAllQuizzes);
-        }
-
-        // Select/Deselect All Users
-        document.getElementById('selectAllUsers')?.addEventListener('click', () => {
-            // console.log('Select All Users clicked');
-            const checkboxes = document.querySelectorAll('.user-checkbox');
-            // console.log(`Found ${checkboxes.length} user checkboxes`);
-            checkboxes.forEach(cb => cb.checked = true);
-            this.updateCustomExportCounts();
-        });
-
-        document.getElementById('deselectAllUsers')?.addEventListener('click', () => {
-            // console.log('Deselect All Users clicked');
-            const checkboxes = document.querySelectorAll('.user-checkbox');
-            // console.log(`Found ${checkboxes.length} user checkboxes`);
-            checkboxes.forEach(cb => cb.checked = false);
-            this.updateCustomExportCounts();
-        });
-
-        // Select/Deselect All Quizzes
-        document.getElementById('selectAllQuizzes')?.addEventListener('click', () => {
-            console.log('Select All Quizzes clicked - this should work now!');
-            const checkboxes = document.querySelectorAll('.quiz-checkbox');
-            console.log(`Found ${checkboxes.length} quiz checkboxes to select`);
-            checkboxes.forEach(cb => {
-                cb.checked = true;
-            });
-            this.updateCustomExportCounts();
-        });
-
-        document.getElementById('deselectAllQuizzes')?.addEventListener('click', () => {
-            // console.log('Deselect All Quizzes clicked');
-            const checkboxes = document.querySelectorAll('.quiz-checkbox');
-            // console.log(`Found ${checkboxes.length} quiz checkboxes`);
-            checkboxes.forEach(cb => cb.checked = false);
-            this.updateCustomExportCounts();
-        });
-
-        // Category select all buttons - these need to be set up after HTML is populated
-        setTimeout(() => {
-            const categoryButtons = document.querySelectorAll('.category-select-all');
-            // console.log(`Setting up ${categoryButtons.length} category select all buttons`);
-            categoryButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const category = e.target.dataset.category;
-                    // console.log(`Category select all clicked for: ${category}`);
-                    const checkboxes = document.querySelectorAll(`.quiz-checkbox[data-category="${category}"]`);
-                    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-                    // console.log(`Found ${checkboxes.length} checkboxes in category ${category}, allChecked: ${allChecked}`);
-                    checkboxes.forEach(cb => cb.checked = !allChecked);
-                    this.updateCustomExportCounts();
-                });
-            });
-        }, 100);
-
-        // Individual checkbox change listeners
-        document.addEventListener('change', (e) => {
+        
+        this.customExportChangeHandler = (e) => {
             if (e.target.classList.contains('user-checkbox') || e.target.classList.contains('quiz-checkbox')) {
                 this.updateCustomExportCounts();
             }
-        });
+        };
+        
+        exportContainer.addEventListener('change', this.customExportChangeHandler);
 
         // Initial count update
         this.updateCustomExportCounts();
