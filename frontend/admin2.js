@@ -6843,11 +6843,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        // Verify the admin token is valid
-        const tempDashboard = new Admin2Dashboard();
-        const isValidToken = await tempDashboard.verifyAdminToken(adminToken);
+        // Verify the admin token is valid using APIService directly
+        const apiService = new APIService();
+        const tokenVerification = await apiService.verifyAdminToken();
         
-        if (!isValidToken) {
+        if (!tokenVerification.success) {
             console.log('[Admin] Invalid admin token, redirecting to admin login');
             localStorage.removeItem('adminToken');
             window.location.replace('/pages/admin-login.html');
