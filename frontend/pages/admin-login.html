@@ -60,10 +60,10 @@
 
     <!-- Load only required scripts -->
     <script type="module">
-        import { Admin2Dashboard } from '../admin2.js';
+        import { APIService } from '../api-service.js';
         
         document.addEventListener('DOMContentLoaded', () => {
-            const dashboard = new Admin2Dashboard();
+            const apiService = new APIService();
             
             // Add password visibility toggle functionality
             const passwordToggle = document.querySelector('.password-toggle');
@@ -102,7 +102,21 @@
 
                 try {
                     const formData = new FormData(e.target);
-                    await dashboard.handleAdminLogin(formData);
+                    const username = formData.get('username');
+                    const password = formData.get('password');
+                    
+                    if (!username || !password) {
+                        throw new Error('Username and password are required');
+                    }
+
+                    const data = await apiService.adminLogin(username, password);
+
+                    if (!data.token) {
+                        throw new Error('No token received from server');
+                    }
+
+                    // Token is already stored by adminLogin method
+                    window.location.replace('./admin2.html');
                 } catch (error) {
                     console.error('Login failed:', error);
                     
