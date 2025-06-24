@@ -54,66 +54,9 @@ export class BaseQuiz {
         // Create a global reference immediately for debugging
         window.quizHelper = this;
         
-        // Try to initialize from localStorage for immediate display
-        // Start with default fallback of 60 seconds (matches admin defaults)
-        this.timePerQuestion = 60;
+        // Initialize timer with default value - will be properly loaded in initializeSettings()
+        this.timePerQuestion = 30; // Default value (matches admin defaults)
         this.timerDisabled = false;
-        
-        try {
-            // Check for quizTimerSettings format first (most current)
-            const cachedSettings = localStorage.getItem('quizTimerSettings');
-            if (cachedSettings) {
-                const timerSettings = JSON.parse(cachedSettings);
-                if (timerSettings && typeof timerSettings === 'object') {
-                    // PRIORITY: First check for quiz-specific timer settings
-                    if (this.quizName && timerSettings.quizTimers && 
-                        timerSettings.quizTimers[this.quizName] !== undefined) {
-                        // Ensure we treat 0 as a valid value (disabled timer)
-                        this.timePerQuestion = timerSettings.quizTimers[this.quizName];
-                        console.log(`[Quiz] Constructor: Using quiz-specific timer from localStorage: ${this.timePerQuestion}s`);
-                        if (this.timePerQuestion === 0) {
-                            console.log('[Quiz] Constructor: Timer is disabled for this quiz');
-                            this.timerDisabled = true;
-                        } else {
-                            this.timerDisabled = false;
-                        }
-                    } 
-                    // FALLBACK: Only use default if no quiz-specific setting exists
-                    else if (timerSettings.defaultSeconds !== undefined) {
-                        // Use the admin-configured default instead of hardcoded value
-                        this.timePerQuestion = timerSettings.defaultSeconds;
-                        console.log(`[Quiz] Constructor: Using default timer from localStorage: ${this.timePerQuestion}s`);
-                        if (this.timePerQuestion === 0) {
-                            console.log('[Quiz] Constructor: Timer is disabled by default');
-                            this.timerDisabled = true;
-                        } else {
-                            this.timerDisabled = false;
-                        }
-                    }
-                }
-            } else {
-                // Fall back to older storage keys
-                const quizTimerValue = localStorage.getItem('quizTimerValue');
-                if (quizTimerValue !== null) {
-                    const defaultSeconds = parseInt(quizTimerValue, 10);
-                    if (!isNaN(defaultSeconds)) {
-                        this.timePerQuestion = defaultSeconds;
-                        console.log(`[Quiz] Constructor: Using legacy timer value from localStorage: ${this.timePerQuestion}s`);
-                        if (this.timePerQuestion === 0) {
-                            console.log('[Quiz] Constructor: Timer is disabled by legacy setting');
-                            this.timerDisabled = true;
-                        } else {
-                            this.timerDisabled = false;
-                        }
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn('[Quiz] Constructor: Error reading timer settings from localStorage:', e);
-        }
-        
-        // Store the initial timer value to prevent overriding by quiz constructors
-        this.initialTimerFromSettings = this.timePerQuestion;
         
         this.remainingTime = null;
         this.questionStartTime = null; // Track when each question starts
@@ -212,17 +155,6 @@ export class BaseQuiz {
         try {
             console.log('[Quiz] Initializing timer settings for:', this.quizName);
             
-            // Only set fallback if we don't already have a value from localStorage/constructor
-            // This prevents overriding admin-configured defaults
-            if (!this.initialTimerFromSettings && this.timePerQuestion === 60) {
-                // Keep the 60s default if no settings were found (consistent with admin defaults)
-                // console.log('[Quiz] Using fallback default: 60s (no admin settings found)');
-            } else if (this.initialTimerFromSettings) {
-                // Restore the timer value from localStorage that was loaded in constructor
-                this.timePerQuestion = this.initialTimerFromSettings;
-                // console.log(`[Quiz] Restored timer value from constructor: ${this.timePerQuestion}s`);
-            }
-            
             // Try to get timer settings from localStorage first (faster)
             try {
                 const cachedSettings = localStorage.getItem('quizTimerSettings');
@@ -236,26 +168,25 @@ export class BaseQuiz {
                         if (this.quizName && timerSettings.quizTimers && 
                             timerSettings.quizTimers[this.quizName] !== undefined) {
                             this.timePerQuestion = timerSettings.quizTimers[this.quizName];
-                            console.log(`[Quiz] Using quiz-specific timer from localStorage: ${this.timePerQuestion}s for ${this.quizName}`);
-                            // Check if timer is disabled
-                            if (this.timePerQuestion === 0) {
-                                console.log('[Quiz] Timer is disabled for this quiz');
-                                this.timerDisabled = true;
-                            } else {
-                                this.timerDisabled = false;
-                            }
+                            console.log(`[Quiz] Using quiz-specific timer: ${this.timePerQuestion}s for ${this.quizName}`);
+                            this.timerDisabled = (this.timePerQuestion === 0);
                         } 
                         // FALLBACK: Only use default if no quiz-specific setting exists
                         else if (timerSettings.defaultSeconds !== undefined) {
                             this.timePerQuestion = timerSettings.defaultSeconds;
-                            console.log(`[Quiz] Using default timer from localStorage: ${this.timePerQuestion}s for ${this.quizName}`);
-                            // Check if timer is disabled
-                            if (this.timePerQuestion === 0) {
-                                console.log('[Quiz] Timer is disabled by default');
-                                this.timerDisabled = true;
-                            } else {
-                                this.timerDisabled = false;
-                            }
+                            console.log(`[Quiz] Using default timer: ${this.timePerQuestion}s for ${this.quizName}`);
+                            this.timerDisabled = (this.timePerQuestion === 0);
+                        }
+                    }
+                } else {
+                    // Fall back to older storage keys
+                    const quizTimerValue = localStorage.getItem('quizTimerValue');
+                    if (quizTimerValue !== null) {
+                        const defaultSeconds = parseInt(quizTimerValue, 10);
+                        if (!isNaN(defaultSeconds)) {
+                            this.timePerQuestion = defaultSeconds;
+                            console.log(`[Quiz] Using legacy timer value: ${this.timePerQuestion}s`);
+                            this.timerDisabled = (this.timePerQuestion === 0);
                         }
                     }
                 }
@@ -281,25 +212,13 @@ export class BaseQuiz {
                         freshSettings.quizTimers[this.quizName] !== undefined) {
                         this.timePerQuestion = freshSettings.quizTimers[this.quizName];
                         console.log(`[Quiz] Updated from API: Using quiz-specific timer: ${this.timePerQuestion}s`);
-                        // Check if timer is disabled
-                        if (this.timePerQuestion === 0) {
-                            console.log('[Quiz] Timer is disabled for this quiz');
-                            this.timerDisabled = true;
-                        } else {
-                            this.timerDisabled = false;
-                        }
+                        this.timerDisabled = (this.timePerQuestion === 0);
                     } 
                     // FALLBACK: Only use default if no quiz-specific setting exists
                     else if (freshSettings.defaultSeconds !== undefined) {
                         this.timePerQuestion = freshSettings.defaultSeconds;
                         console.log(`[Quiz] Updated from API: Using default timer: ${this.timePerQuestion}s`);
-                        // Check if timer is disabled
-                        if (this.timePerQuestion === 0) {
-                            console.log('[Quiz] Timer is disabled by default');
-                            this.timerDisabled = true;
-                        } else {
-                            this.timerDisabled = false;
-                        }
+                        this.timerDisabled = (this.timePerQuestion === 0);
                     }
                     
                     // If timer is already running, update it with new values
@@ -325,8 +244,10 @@ export class BaseQuiz {
         } catch (error) {
             console.error('[Quiz] Error initializing timer settings:', error);
             // Fallback to reasonable default if something goes wrong (consistent with admin defaults)
-            this.timePerQuestion = 60;
-            this.timerDisabled = false;
+            if (this.timePerQuestion === undefined || this.timePerQuestion === null) {
+                this.timePerQuestion = 30;
+                this.timerDisabled = false;
+            }
             return this.timePerQuestion;
         }
     }

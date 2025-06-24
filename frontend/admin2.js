@@ -486,10 +486,7 @@ export class Admin2Dashboard {
             });
         }
 
-        // Initialize custom export section when Export menu is accessed
-        document.querySelector('[data-section="export-section"]')?.addEventListener('click', () => {
-            setTimeout(() => this.initializeCustomExport(), 300);
-        });
+        // Note: Export section initialization is handled in the main switch case above
 
         // Badges section
         document.getElementById('badgesUserDropdown')?.addEventListener('change', (e) => {
@@ -960,14 +957,14 @@ export class Admin2Dashboard {
                 <div class="current-settings">
                     <div class="settings-header">
                         <h5>Quiz-Specific Settings:</h5>
-                        <div class="settings-actions">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="select-all-timers">
-                                <span>Select All</span>
-                            </label>
-                            <button id="clear-selected" class="action-button danger-btn">Clear Selected</button>
-                            <button id="clear-all" class="action-button danger-btn">Clear All</button>
-                        </div>
+                                            <div class="settings-actions">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="select-all-timers">
+                            <span>Select All</span>
+                        </label>
+                        <button id="clear-selected" class="action-button danger-btn">Clear Selected</button>
+                        <button id="clear-all" class="action-button danger-btn">Clear All</button>
+                    </div>
                     </div>
                     <div id="quiz-timers-list">
                         ${this.generateQuizTimersList(quizTimers)}
@@ -4494,24 +4491,17 @@ export class Admin2Dashboard {
 
     // Clear timer-related localStorage to prevent interference
     clearTimerLocalStorage() {
-        console.log('[CLEANUP] Clearing timer-related localStorage...');
-        const timerKeys = [
-            'quizTimerSettings',
-            'quizTimerValue', 
-            'perQuizTimerSettings',
-            'timerSettings',
-            'defaultTimerValue'
-        ];
-        
-        timerKeys.forEach(key => {
+        const keysToRemove = ['quizTimerValue', 'quizTimerSettings'];
+        keysToRemove.forEach(key => {
             if (localStorage.getItem(key)) {
-                console.log(`[CLEANUP] Removing localStorage key: ${key}`);
                 localStorage.removeItem(key);
+                console.log(`Removed ${key} from localStorage`);
             }
         });
-        
-        console.log('[CLEANUP] Timer localStorage cleared');
+        console.log('Timer localStorage cleared');
     }
+
+
 
     // Helper method to generate HTML for the list of guide settings
     generateGuideSettingsList(guideSettings) {
@@ -6224,42 +6214,84 @@ export class Admin2Dashboard {
 
     // Setup custom export event listeners
     setupCustomExportEventListeners() {
+        console.log('Setting up custom export event listeners...');
+        
+        // Remove any existing listeners to prevent duplicates
+        const selectAllUsers = document.getElementById('selectAllUsers');
+        const deselectAllUsers = document.getElementById('deselectAllUsers');
+        const selectAllQuizzes = document.getElementById('selectAllQuizzes');
+        const deselectAllQuizzes = document.getElementById('deselectAllQuizzes');
+
+        // Clone and replace elements to remove old event listeners
+        if (selectAllUsers) {
+            const newSelectAllUsers = selectAllUsers.cloneNode(true);
+            selectAllUsers.parentNode.replaceChild(newSelectAllUsers, selectAllUsers);
+        }
+        if (deselectAllUsers) {
+            const newDeselectAllUsers = deselectAllUsers.cloneNode(true);
+            deselectAllUsers.parentNode.replaceChild(newDeselectAllUsers, deselectAllUsers);
+        }
+        if (selectAllQuizzes) {
+            const newSelectAllQuizzes = selectAllQuizzes.cloneNode(true);
+            selectAllQuizzes.parentNode.replaceChild(newSelectAllQuizzes, selectAllQuizzes);
+        }
+        if (deselectAllQuizzes) {
+            const newDeselectAllQuizzes = deselectAllQuizzes.cloneNode(true);
+            deselectAllQuizzes.parentNode.replaceChild(newDeselectAllQuizzes, deselectAllQuizzes);
+        }
+
         // Select/Deselect All Users
         document.getElementById('selectAllUsers')?.addEventListener('click', () => {
+            // console.log('Select All Users clicked');
             const checkboxes = document.querySelectorAll('.user-checkbox');
+            // console.log(`Found ${checkboxes.length} user checkboxes`);
             checkboxes.forEach(cb => cb.checked = true);
             this.updateCustomExportCounts();
         });
 
         document.getElementById('deselectAllUsers')?.addEventListener('click', () => {
+            // console.log('Deselect All Users clicked');
             const checkboxes = document.querySelectorAll('.user-checkbox');
+            // console.log(`Found ${checkboxes.length} user checkboxes`);
             checkboxes.forEach(cb => cb.checked = false);
             this.updateCustomExportCounts();
         });
 
         // Select/Deselect All Quizzes
         document.getElementById('selectAllQuizzes')?.addEventListener('click', () => {
+            console.log('Select All Quizzes clicked - this should work now!');
             const checkboxes = document.querySelectorAll('.quiz-checkbox');
-            checkboxes.forEach(cb => cb.checked = true);
+            console.log(`Found ${checkboxes.length} quiz checkboxes to select`);
+            checkboxes.forEach(cb => {
+                cb.checked = true;
+            });
             this.updateCustomExportCounts();
         });
 
         document.getElementById('deselectAllQuizzes')?.addEventListener('click', () => {
+            // console.log('Deselect All Quizzes clicked');
             const checkboxes = document.querySelectorAll('.quiz-checkbox');
+            // console.log(`Found ${checkboxes.length} quiz checkboxes`);
             checkboxes.forEach(cb => cb.checked = false);
             this.updateCustomExportCounts();
         });
 
-        // Category select all buttons
-        document.querySelectorAll('.category-select-all').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const category = e.target.dataset.category;
-                const checkboxes = document.querySelectorAll(`.quiz-checkbox[data-category="${category}"]`);
-                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-                checkboxes.forEach(cb => cb.checked = !allChecked);
-                this.updateCustomExportCounts();
+        // Category select all buttons - these need to be set up after HTML is populated
+        setTimeout(() => {
+            const categoryButtons = document.querySelectorAll('.category-select-all');
+            // console.log(`Setting up ${categoryButtons.length} category select all buttons`);
+            categoryButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const category = e.target.dataset.category;
+                    // console.log(`Category select all clicked for: ${category}`);
+                    const checkboxes = document.querySelectorAll(`.quiz-checkbox[data-category="${category}"]`);
+                    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                    // console.log(`Found ${checkboxes.length} checkboxes in category ${category}, allChecked: ${allChecked}`);
+                    checkboxes.forEach(cb => cb.checked = !allChecked);
+                    this.updateCustomExportCounts();
+                });
             });
-        });
+        }, 100);
 
         // Individual checkbox change listeners
         document.addEventListener('change', (e) => {
@@ -6270,6 +6302,8 @@ export class Admin2Dashboard {
 
         // Initial count update
         this.updateCustomExportCounts();
+        
+        console.log('Custom export event listeners setup complete');
     }
 
     // Update counts and enable/disable export button
@@ -6535,7 +6569,7 @@ export class Admin2Dashboard {
                 // Validate the value
                 if (isNaN(timerValue) || timerValue < 0 || timerValue > 300) {
                     console.warn('Invalid timer value in localStorage, resetting to default');
-                    timerValue = 60; // Default to 60 seconds
+                    timerValue = 30; // Change default to 30 seconds for consistency
                     localStorage.setItem('quizTimerValue', timerValue.toString());
                 }
                 
@@ -6564,22 +6598,22 @@ export class Admin2Dashboard {
             } catch (apiError) {
                 console.warn('Failed to get timer settings from API, using localStorage value', apiError);
                 
-                // Ensure there's always a value in localStorage
+                // Ensure there's always a value in localStorage - but use 30s default for consistency
                 if (localStorage.getItem('quizTimerValue') === null) {
-                    localStorage.setItem('quizTimerValue', '60'); // Default to 60 seconds
+                    localStorage.setItem('quizTimerValue', '30'); // Change to 30 seconds default
                     if (this.timerSettings.defaultSeconds === undefined) {
-                        this.timerSettings.defaultSeconds = 60;
+                        this.timerSettings.defaultSeconds = 30; // Change to 30 seconds default
                     }
                 }
             }
         } catch (error) {
             console.error('Failed to preload timer settings:', error);
             
-            // Make sure we have a default value as fallback
+            // Make sure we have a default value as fallback - use 30s for consistency
             if (localStorage.getItem('quizTimerValue') === null) {
-                localStorage.setItem('quizTimerValue', '60');
+                localStorage.setItem('quizTimerValue', '30'); // Change to 30 seconds default
                 if (this.timerSettings.defaultSeconds === undefined) {
-                    this.timerSettings.defaultSeconds = 60;
+                    this.timerSettings.defaultSeconds = 30; // Change to 30 seconds default
                 }
             }
         }

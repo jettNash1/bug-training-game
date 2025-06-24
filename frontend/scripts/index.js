@@ -2,6 +2,7 @@ import { APIService } from '../api-service.js';
 import { QuizUser } from '../QuizUser.js';
 import { QuizProgressService } from '../services/QuizProgressService.js';
 import { QuizList } from '../quiz-list.js';
+import { checkAuth } from '../auth.js';
 
 function normalizeQuizName(quizName) {
     // Use the QuizProgressService's normalizeQuizName to ensure consistency
@@ -1121,14 +1122,53 @@ class IndexPage {
 
 // Initialize the index page when the DOM is loaded
 let indexPage;
-document.addEventListener('DOMContentLoaded', () => {
-    // Create the QuizProgressService globally for consistency across the app
-    window.quizProgressService = new QuizProgressService();
+document.addEventListener('DOMContentLoaded', async () => {
+    // CRITICAL: Check authentication BEFORE showing any content
+    // This prevents unauthenticated users from seeing the page before redirect
+    try {
+        console.log('[Index] Checking authentication before initializing...');
+        const isAuthenticated = await checkAuth();
+        
+        if (!isAuthenticated) {
+            console.log('[Index] User not authenticated, redirect should have occurred');
+            // If checkAuth returns false, it should have already redirected
+            // But as a failsafe, we'll ensure no content is shown
+            document.body.style.display = 'none';
+            return;
+        }
+        
+        console.log('[Index] User authenticated, proceeding with initialization');
+        
+        // Remove auth checking overlay and show authenticated content
+        const authCheckElement = document.getElementById('authCheck');
+        if (authCheckElement) {
+            authCheckElement.remove();
+        }
+        document.body.classList.add('authenticated');
+        
+    } catch (error) {
+        console.error('[Index] Authentication check failed:', error);
+        // Hide content and redirect as failsafe
+        document.body.style.display = 'none';
+        window.location.replace('/login.html');
+        return;
+    }
     
-    indexPage = new IndexPage();
-    
-    // Store in window for global access
-    window.indexPage = indexPage;
+            // Only proceed with initialization if authenticated
+        // Create the QuizProgressService globally for consistency across the app
+        window.quizProgressService = new QuizProgressService();
+        
+        // Display username in header
+        const currentUsername = localStorage.getItem('username');
+        const usernameElement = document.getElementById('headerUsername');
+        if (usernameElement && currentUsername) {
+            usernameElement.textContent = currentUsername;
+        }
+        
+        indexPage = new IndexPage();
+        
+        // Store in window for global access
+        window.indexPage = indexPage;
     
     // console.log('[Index] Initialization complete');
 

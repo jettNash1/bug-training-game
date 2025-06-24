@@ -8,6 +8,32 @@
     <link rel="icon" type="image/png" href="assets/favicon.png">
     <link rel="apple-touch-icon" href="assets/favicon.png">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Initially hide body content until authentication is verified */
+        body {
+            visibility: hidden;
+        }
+        
+        /* Show content once authenticated (set by scripts/index.js) */
+        body.authenticated {
+            visibility: visible;
+        }
+        
+        /* Loading state styling */
+        .auth-checking {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            visibility: visible !important;
+        }
+    </style>
     <script type="module" src="./config.js"></script>
     <script type="module" src="./api-service.js"></script>
     <script type="module" src="./QuizUser.js"></script>
@@ -16,60 +42,12 @@
     <script type="module" src="./login.js"></script>
     <script type="module" src="./auth.js"></script>
     <script type="module" src="./scripts/index.js"></script>
-    <script type="module">
-        import { QuizUser } from './QuizUser.js';
-        import { APIService } from './api-service.js';
-        import { QuizList } from './quiz-list.js';
-        
-        document.addEventListener('DOMContentLoaded', async () => {
-            const currentUsername = localStorage.getItem('username');
-            if (!currentUsername) {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            try {
-                // Initialize user and load progress
-                const user = new QuizUser(currentUsername);
-                
-                // Display username in header
-                const usernameElement = document.getElementById('headerUsername');
-                if (usernameElement) {
-                    usernameElement.textContent = currentUsername;
-                }
-
-                // Initialize quiz list
-                const quizList = new QuizList();
-                await quizList.init();
-
-                // Set up auto-refresh when page becomes visible
-                let wasInactive = false;
-                // document.addEventListener('visibilitychange', () => {
-                //     if (document.visibilityState === 'hidden') {
-                //         wasInactive = true;
-                //     } else if (document.visibilityState === 'visible' && wasInactive) {
-                //         wasInactive = false;
-                //         quizList.displayQuizzes();
-                //     }
-                // });
-
-                // window.addEventListener('focus', () => {
-                //     if (wasInactive) {
-                //         wasInactive = false;
-                //         quizList.displayQuizzes();
-                //     }
-                // });
-
-                // window.addEventListener('blur', () => {
-                //     wasInactive = true;
-                // });
-            } catch (error) {
-                console.error('Failed to initialize user data:', error);
-            }
-        });
-    </script>
 </head>
 <body>
+    <div class="auth-checking" id="authCheck">
+        <div>Verifying access...</div>
+    </div>
+    
     <header class="app-header" role="banner">
         <div class="logo">
             <img src="assets/zoonou-logo-converted.svg" alt="Zoonou Logo" width="32" height="32">
