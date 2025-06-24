@@ -1708,15 +1708,6 @@ export class Admin2Dashboard {
     getHardcodedQuizTypes() {
         return [
             'cms-testing',
-            'web-testing',
-            'mobile-testing',
-            'api-testing',
-            'accessibility-testing',
-            'security-testing',
-            'performance-testing',
-            'automation-testing',
-            'game-testing',
-            'localization-testing',
             'reports',
             'raising-tickets'
         ];
@@ -1755,14 +1746,44 @@ export class Admin2Dashboard {
             // Try to load the scenarios from the JS file directly
             const module = await import(`./data/${fileName}-scenarios.js`);
             
+            // Create a mapping of quiz names to their actual export names
+            const exportNameMap = {
+                'automation-interview': 'automationInterviewScenarios',
+                'build-verification': 'buildVerificationScenarios',
+                'cms-testing': 'CMSTestingScenarios',
+                'communication': 'communicationScenarios',
+                'content-copy': 'contentCopyScenarios',
+                'email-testing': 'emailTestingScenarios',
+                'exploratory': 'exploratoryTestingScenarios',
+                'fully-scripted': 'fullyScriptedScenarios',
+                'functional-interview': 'functionalInterviewScenarios',
+                'initiative': 'initiativeScenarios',
+                'issue-tracking-tools': 'issueTrackingScenarios',
+                'issue-verification': 'issueVerificationScenarios',
+                'locale-testing': 'localeTestingScenarios',
+                'non-functional': 'nonFunctionalScenarios',
+                'raising-tickets': 'raisingTicketsScenarios',
+                'reports': 'reportsScenarios',
+                'risk-analysis': 'riskAnalysisScenarios',
+                'risk-management': 'riskManagementScenarios',
+                'sanity-smoke': 'sanitySmokeScenarios',
+                'script-metrics-troubleshooting': 'scriptMetricsScenarios',
+                'standard-script-testing': 'standardScriptScenarios',
+                'test-support': 'testSupportScenarios',
+                'test-types-tricks': 'testTypesScenarios',
+                'tester-mindset': 'testerMindsetScenarios',
+                'time-management': 'timeManagementScenarios'
+            };
+
             // Try different possible export names based on the file naming pattern
             const possibleExportNames = [
+                // Try the mapped export name first
+                exportNameMap[normalizedQuizName],
+                exportNameMap[fileName],
+                // Fallback to constructed names
                 `${fileName}Scenarios`,
                 'scenarios', 
                 'default',
-                // Handle special cases for file naming
-                fileName === 'cms-testing' ? 'cmsTestingScenarios' : null,
-                fileName === 'test' ? 'testScenarios' : null,
                 // Try camelCase variations
                 fileName.replace(/-([a-z])/g, (g) => g[1].toUpperCase()) + 'Scenarios',
                 // Try without hyphens
