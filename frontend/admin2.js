@@ -2078,13 +2078,13 @@ export class Admin2Dashboard {
                     scoreElement.innerHTML = `<strong>Score:</strong> ${calculatedScore}%`;
                 }
                 
-                // Update the card styling based on the new score
+                // Update the card styling based on the new score (matching index page colors)
                 if (calculatedScore >= 80) {
                     quizCard.className = 'quiz-card completed-perfect';
-                    quizCard.style.backgroundColor = '#e8f5e9'; // Light green
+                    quizCard.style.backgroundColor = '#C8E6C9'; // Light green (matches index page)
                 } else {
                     quizCard.className = 'quiz-card completed-partial';
-                    quizCard.style.backgroundColor = '#fff3e0'; // Light orange
+                    quizCard.style.backgroundColor = '#FFE0B2'; // Light orange (matches index page)
                 }
                 
                 console.log(`[Admin] Updated quiz card for ${username}/${quizType} with score ${calculatedScore}%`);
@@ -2250,18 +2250,18 @@ export class Admin2Dashboard {
                                 questionsAnswered > 0 ? 'In Progress' : 
                                 'Not Started';
                     
-                    // Determine background color based on status and score
-                    let backgroundColor = '#f5f5f5'; // Default gray for not started
+                    // Determine background color based on status and score (matching index page colors)
+                    let backgroundColor = '#fff'; // Default white for not started (matches index page)
                     if (questionsAnswered > 0) {
                         if (questionsAnswered === 15) {
                             // All questions completed
                             if (score >= 80) {
-                                backgroundColor = '#e8f5e9'; // Light green for 80% or higher
+                                backgroundColor = '#C8E6C9'; // Light green for 80% or higher (matches index page)
                             } else {
-                                backgroundColor = '#fff3e0'; // Light orange for completed but less than 80%
+                                backgroundColor = '#FFE0B2'; // Light orange for completed but less than 80% (matches index page)
                             }
                         } else {
-                            backgroundColor = '#f5f2e8'; // Light beige for in progress
+                            backgroundColor = '#FFF8E7'; // Light cream/yellow for in progress (matches index page)
                         }
                     }
                     
