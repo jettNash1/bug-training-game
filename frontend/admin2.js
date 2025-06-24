@@ -342,74 +342,25 @@ export class Admin2Dashboard {
         menuItems.forEach(item => {
             const button = item.querySelector('button');
             if (button) {
-                button.addEventListener('click', () => {
-                    console.log('Menu item clicked:', {
-                        sectionId: item.getAttribute('data-section'),
-                        buttonText: button.textContent.trim()
-                    });
+                            button.addEventListener('click', () => {
+                const sectionId = item.getAttribute('data-section');
+                console.log('Menu item clicked:', {
+                    sectionId: sectionId,
+                    buttonText: button.textContent.trim()
+                });
+                
+                // Save the current section to localStorage for persistence
+                localStorage.setItem('adminActiveSection', sectionId);
+                
+                // Show the selected section
+                this.showSection(sectionId);
                     
-                    // Remove active class from all menu items
-                    menuItems.forEach(mi => mi.classList.remove('active'));
-
-                    // Add active class to clicked menu item
-                    item.classList.add('active');
-
-                    // Get the section ID from data attribute
-                    const sectionId = item.getAttribute('data-section');
-                    const section = document.getElementById(sectionId);
-                    
-                    if (!section) {
-                        console.error(`Section not found for ID: ${sectionId}`);
-                        return;
-                    }
-                    
-                    // Hide all sections first
-                    contentSections.forEach(s => {
-                        s.classList.remove('active');
-                        s.style.display = 'none';
-                    });
-                    
-                    // Set display to block and add active class after a small delay
-                    section.style.display = 'block';
-                    setTimeout(() => {
-                        section.classList.add('active');
-                        // Try to reset scroll position of .content-area or .content-container
-                        const contentArea = document.querySelector('.content-area');
-                        if (contentArea) {
-                            contentArea.scrollTop = 0;
-                        } else {
-                            const contentContainer = document.querySelector('.content-container');
-                            if (contentContainer) contentContainer.scrollTop = 0;
-                        }
-                    }, 0);
-                    
-                    // Special handling for different sections
-                    switch(sectionId) {
-                        case 'schedule-section':
-                            this.refreshScheduleData();
-                            break;
-                        case 'settings-section':
-                            this.displayTimerSettings();
-                            this.displayGuideSettings();
-                            break;
-                        case 'scenarios-section':
-                            this.setupScenariosList();
-                            break;
-                        case 'create-account-section':
-                            this.setupCreateAccountForm();
-                            break;
-                        case 'badges-section':
-                            // Refresh badges user dropdown when badge section is activated
-                            this.populateBadgesUserDropdown();
-                            break;
-                        case 'export-section':
-                            // Initialize custom export when export section is activated
-                            setTimeout(() => this.initializeCustomExport(), 300);
-                            break;
-                    }
                 });
             }
         });
+        
+        // Restore the last active section on page load
+        this.restoreActiveSection();
 
         // Logout button
         const logoutBtn = document.getElementById('logoutBtn');
@@ -504,6 +455,86 @@ export class Admin2Dashboard {
                 `;
             }
         });
+    }
+    
+    // Method to show a specific section and handle special section logic
+    showSection(sectionId) {
+        const menuItems = document.querySelectorAll('.menu-item');
+        const contentSections = document.querySelectorAll('.content-section');
+        
+        // Remove active class from all menu items
+        menuItems.forEach(mi => mi.classList.remove('active'));
+        
+        // Add active class to the selected menu item
+        const selectedMenuItem = document.querySelector(`[data-section="${sectionId}"]`);
+        if (selectedMenuItem) {
+            selectedMenuItem.classList.add('active');
+        }
+        
+        // Get the section element
+        const section = document.getElementById(sectionId);
+        
+        if (!section) {
+            console.error(`Section not found for ID: ${sectionId}`);
+            return;
+        }
+        
+        // Hide all sections first
+        contentSections.forEach(s => {
+            s.classList.remove('active');
+            s.style.display = 'none';
+        });
+        
+        // Set display to block and add active class after a small delay
+        section.style.display = 'block';
+        setTimeout(() => {
+            section.classList.add('active');
+            // Try to reset scroll position of .content-area or .content-container
+            const contentArea = document.querySelector('.content-area');
+            if (contentArea) {
+                contentArea.scrollTop = 0;
+            } else {
+                const contentContainer = document.querySelector('.content-container');
+                if (contentContainer) contentContainer.scrollTop = 0;
+            }
+        }, 0);
+        
+        // Special handling for different sections
+        switch(sectionId) {
+            case 'schedule-section':
+                this.refreshScheduleData();
+                break;
+            case 'settings-section':
+                this.displayTimerSettings();
+                this.displayGuideSettings();
+                break;
+            case 'scenarios-section':
+                this.setupScenariosList();
+                break;
+            case 'create-account-section':
+                this.setupCreateAccountForm();
+                break;
+            case 'badges-section':
+                // Refresh badges user dropdown when badge section is activated
+                this.populateBadgesUserDropdown();
+                break;
+            case 'export-section':
+                // Initialize custom export when export section is activated
+                setTimeout(() => this.initializeCustomExport(), 300);
+                break;
+        }
+    }
+    
+    // Method to restore the last active section from localStorage
+    restoreActiveSection() {
+        const savedSection = localStorage.getItem('adminActiveSection');
+        const defaultSection = 'users-section'; // Default to users section
+        
+        // Use saved section if it exists and is valid, otherwise use default
+        const sectionToShow = savedSection && document.getElementById(savedSection) ? savedSection : defaultSection;
+        
+        console.log('Restoring active section:', sectionToShow);
+        this.showSection(sectionToShow);
     }
     
     async updateDashboard() {
@@ -6799,7 +6830,48 @@ export class Admin2Dashboard {
 }
 
 // Initialize the Admin2Dashboard when the document is ready
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // CRITICAL: Check admin authentication BEFORE showing any content
+    // This prevents unauthorized users from seeing the admin panel before redirect
+    try {
+        console.log('[Admin] Checking admin authentication before initializing...');
+        
+        const adminToken = localStorage.getItem('adminToken');
+        if (!adminToken) {
+            console.log('[Admin] No admin token found, redirecting to admin login');
+            window.location.replace('/pages/admin-login.html');
+            return;
+        }
+        
+        // Verify the admin token is valid
+        const tempDashboard = new Admin2Dashboard();
+        const isValidToken = await tempDashboard.verifyAdminToken(adminToken);
+        
+        if (!isValidToken) {
+            console.log('[Admin] Invalid admin token, redirecting to admin login');
+            localStorage.removeItem('adminToken');
+            window.location.replace('/pages/admin-login.html');
+            return;
+        }
+        
+        console.log('[Admin] Admin authenticated, proceeding with initialization');
+        
+        // Remove auth checking overlay and show authenticated content
+        const authCheckElement = document.getElementById('authCheck');
+        if (authCheckElement) {
+            authCheckElement.remove();
+        }
+        document.body.classList.add('authenticated');
+        
+    } catch (error) {
+        console.error('[Admin] Authentication check failed:', error);
+        // Hide content and redirect as failsafe
+        document.body.style.display = 'none';
+        window.location.replace('/pages/admin-login.html');
+        return;
+    }
+    
+    // Only proceed with initialization if authenticated
     const dashboard = new Admin2Dashboard();
     
     // --- Move this function up so it's defined before use ---
