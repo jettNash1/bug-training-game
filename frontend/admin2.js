@@ -893,7 +893,7 @@ export class Admin2Dashboard {
         // Clear existing content
         container.innerHTML = '';
 
-        const defaultSeconds = this.timerSettings?.defaultSeconds || 60;
+        const defaultSeconds = this.timerSettings?.defaultSeconds !== undefined ? this.timerSettings.defaultSeconds : 60;
         const quizTimers = this.timerSettings?.quizTimers || {};
         
         // Use inherited quizTypes array from parent class combined with hardcoded types
@@ -999,9 +999,14 @@ export class Admin2Dashboard {
                 if (response.success) {
                     // Update local timer settings with the response data
                     this.timerSettings = response.data;
+                    
+                    // Update localStorage to maintain synchronization with quiz pages
+                    localStorage.setItem('quizTimerValue', seconds.toString());
+                    localStorage.setItem('quizTimerSettings', JSON.stringify(response.data));
+                    
                     // Re-display the timer settings to reflect the change
                     this.displayTimerSettings();
-                    this.showInfo(`Default timer set to ${seconds} seconds`);
+                    this.showInfo(`Default timer set to ${seconds} seconds${seconds === 0 ? ' (timer disabled)' : ''}`);
                 } else {
                     throw new Error(response.message || 'Failed to save default timer');
                 }
@@ -1057,13 +1062,17 @@ export class Admin2Dashboard {
                 if (response.success) {
                     // Update local timer settings
                     this.timerSettings = response.data;
+                    
+                    // Update localStorage to maintain synchronization with quiz pages
+                    localStorage.setItem('quizTimerSettings', JSON.stringify(response.data));
+                    
                     console.log(`[Timer Debug] Updated timerSettings:`, this.timerSettings);
                     console.log(`[Timer Debug] Quiz timers object:`, this.timerSettings.quizTimers);
                     
                     // Refresh the entire timer settings display
                     this.displayTimerSettings();
                     
-                    this.showInfo(`Timer for ${this.formatQuizName(selectedQuiz)} set to ${seconds} seconds`);
+                    this.showInfo(`Timer for ${this.formatQuizName(selectedQuiz)} set to ${seconds} seconds${seconds === 0 ? ' (timer disabled)' : ''}`);
                 } else {
                     throw new Error(response.message || 'Failed to set quiz timer');
                 }
@@ -6479,13 +6488,17 @@ export class Admin2Dashboard {
             try {
                 const settings = await this.apiService.getQuizTimerSettings();
                 if (settings.success && settings.data) {
-                    // Use defaultSeconds consistently
+                    // Use defaultSeconds consistently - explicitly check for undefined to allow 0
                     const defaultSeconds = settings.data.defaultSeconds;
                     if (defaultSeconds !== undefined) {
                         this.timerSettings.defaultSeconds = defaultSeconds;
                         
-                        // Save to localStorage for quizzes to use
+                        // Save to localStorage for quizzes to use - handle 0 values correctly
                         localStorage.setItem('quizTimerValue', defaultSeconds.toString());
+                        
+                        // Save the complete timer settings for quizzes to use
+                        localStorage.setItem('quizTimerSettings', JSON.stringify(settings.data));
+                        
                         console.log('Preloaded timer settings from API:', defaultSeconds);
                     }
                 }
@@ -6495,7 +6508,9 @@ export class Admin2Dashboard {
                 // Ensure there's always a value in localStorage
                 if (localStorage.getItem('quizTimerValue') === null) {
                     localStorage.setItem('quizTimerValue', '60'); // Default to 60 seconds
-                    this.timerSettings.defaultSeconds = 60;
+                    if (this.timerSettings.defaultSeconds === undefined) {
+                        this.timerSettings.defaultSeconds = 60;
+                    }
                 }
             }
         } catch (error) {
@@ -6504,7 +6519,9 @@ export class Admin2Dashboard {
             // Make sure we have a default value as fallback
             if (localStorage.getItem('quizTimerValue') === null) {
                 localStorage.setItem('quizTimerValue', '60');
-                this.timerSettings.defaultSeconds = 60;
+                if (this.timerSettings.defaultSeconds === undefined) {
+                    this.timerSettings.defaultSeconds = 60;
+                }
             }
         }
     }
