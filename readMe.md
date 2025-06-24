@@ -256,23 +256,38 @@ qa-learning-hub/
 │   └── game.js                # Quiz game logic
 ├── frontend/
 │   ├── pages/                 # HTML pages for different sections
-│   ├── quizzes/               # Individual quiz implementations
-│   ├── scripts/               # Utility and helper scripts
-│   ├── services/              # Service layer for API calls
-│   ├── styles/                # CSS stylesheets
-│   ├── assets/                # Images, icons, and static files
-│   ├── components/            # Reusable UI components
-│   ├── data/                  # Quiz scenarios and test data
-│   ├── public/data/           # Public scenario data files
-│   ├── index.html             # Main application entry point
-│   ├── login.html             # User login page
-│   ├── admin2.html            # Admin dashboard
-│   └── config.js              # Frontend configuration
-├── docs/                      # Documentation files
-├── .env.example               # Environment variables template
-├── .gitignore                 # Git ignore patterns
-├── package.json               # Project dependencies
-└── README.md                  # This file
+│   │   ├── communication-quiz.html
+│   │   ├── login.html
+│   │   ├── admin2.html
+│   │   └── your-new-quiz.html
+│   ├── quizzes/
+│   │   ├── communication-quiz.js
+│   │   └── your-new-quiz.js
+│   ├── scripts/
+│   │   ├── badge-service.js
+│   │   └── quiz-progress-service.js
+│   ├── services/
+│   │   └── quiz-progress-service.js
+│   ├── styles/
+│   │   └── styles.css
+│   ├── assets/
+│   │   └── badges/
+│   ├── components/
+│   │   └── quiz-component.js
+│   ├── data/
+│   │   ├── communication-scenarios.js
+│   │   └── your-new-scenarios.js
+│   ├── public/data/
+│   │   └── communication-scenarios.js
+│   ├── index.html
+│   ├── login.html
+│   ├── admin2.html
+│   └── config.js
+├── docs/
+├── .env.example
+├── .gitignore
+├── package.json
+└── README.md
 ```
 
 ---
@@ -322,13 +337,13 @@ export const yourNewScenarios = {
                 // ... add 3-4 options per scenario
             ]
         },
-        // ... add 8-10 basic scenarios
+        // ... add 4 more basic scenarios
     ],
     intermediate: [
-        // ... add 8-10 intermediate scenarios
+        // ... add 5 intermediate scenarios
     ],
     advanced: [
-        // ... add 8-10 advanced scenarios  
+        // ... add 5 advanced scenarios  
     ]
 };
 ```
@@ -376,7 +391,11 @@ Edit your copied HTML file (`frontend/pages/your-new-quiz.html`):
 </script>
 ```
 
-### 5. Add to Quiz Categories
+### 5. Add Quiz Name to Multiple System Files
+
+For your new quiz to properly integrate with all system components, you need to add it to several files:
+
+#### A. Quiz Categories (Required)
 Update `frontend/quiz-list.js` to include your new quiz:
 
 ```javascript
@@ -389,11 +408,85 @@ export const QUIZ_CATEGORIES = {
 };
 ```
 
+#### B. Badge Service Badge Mapping (Required for Badge Images)
+Update `frontend/scripts/badge-service.js` badge image mapping:
+
+```javascript
+this.badgeImageMapping = {
+    // ... existing mappings
+    'your-new-quiz': 'your-new-quiz.svg',  // Add your quiz badge image mapping
+    // ... rest of mappings
+};
+```
+
+#### C. Quiz Progress Service Known Quiz Names (Required for Progress Tracking)
+Update `frontend/services/QuizProgressService.js` KNOWN_QUIZ_NAMES array:
+
+```javascript
+const KNOWN_QUIZ_NAMES = [
+    // ... existing quiz names
+    'your-new-quiz',  // Add your quiz name here
+    // ... rest of quiz names
+];
+```
+
+#### D. Quiz Progress Service Normalization (Required for Consistent Naming)
+Update the `knownQuizNames` array in the `normalizeQuizName` method in `frontend/services/QuizProgressService.js`:
+
+```javascript
+const knownQuizNames = [
+    // ... existing quiz names
+    'your-new-quiz',  // Add your quiz name here
+    // ... rest of quiz names
+];
+```
+
+#### E. Admin Dashboard Badge Mapping (Required for Admin Badge Display)
+Update `frontend/admin2.js` badge image mapping in the `getBadgeImage` method:
+
+```javascript
+const badgeImageMapping = {
+    // ... existing mappings
+    'your-new-quiz': 'your-new-quiz.svg',  // Add your quiz badge image mapping
+    // ... rest of mappings
+};
+```
+
+#### F. Create Badge Image Asset (Required)
+Create the corresponding SVG badge image file:
+- Create: `frontend/assets/badges/your-new-quiz.svg`
+- Or copy/modify an existing badge SVG to match your quiz theme
+
+#### G. Add Quiz Description (Required for Quiz Listing)
+Update `frontend/quiz-list.js` in the `getQuizDescription` method:
+
+```javascript
+getQuizDescription(quizName) {
+    const descriptions = {
+        // ... existing descriptions
+        'your-new-quiz': 'Your descriptive text about what this quiz teaches',
+        // ... rest of descriptions
+    };
+    return descriptions[quizName] || 'Master essential testing skills';
+}
+```
+
+#### H. Enhanced Admin Display Name (Optional)
+For better display in admin dashboard, update `frontend/admin2.js` in the `formatQuizName` method's `displayNames` object:
+
+```javascript
+const displayNames = {
+    // ... existing display names
+    'your-new-quiz': 'Your Enhanced Display Name for Admin',
+    // ... rest of display names
+};
+```
+
 ### 6. Add Navigation Links
 Update the main index page (`frontend/index.html`) - the quiz will automatically appear in the appropriate category section based on your `QUIZ_CATEGORIES` entry.
 
 ### 7. Admin Dashboard Integration
-Your new quiz will automatically appear in:
+Your new quiz should automatically appear in:
 - **Admin user progress tracking**
 - **Badge system** (users earn badges for 80%+ completion)
 - **Analytics and reporting**

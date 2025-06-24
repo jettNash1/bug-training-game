@@ -510,14 +510,17 @@
         }
 
         .users-list.row-view .user-card {
-            display: flex;
+            display: grid;
+            grid-template-columns: minmax(180px, 250px) 1fr auto;
             align-items: center;
-            padding: 1.25rem;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             transition: transform 0.2s, box-shadow 0.2s;
-            min-height: 80px;
+            min-height: 70px;
+            overflow: hidden;
         }
 
         .users-list.row-view .user-card:hover {
@@ -526,55 +529,53 @@
         }
 
         .users-list.row-view .row-content {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            gap: 2rem;
+            display: contents;
         }
 
         .users-list.row-view .user-info {
             display: flex;
             align-items: center;
-            min-width: 200px;
-            flex-shrink: 0;
+            min-width: 0;
         }
 
         .users-list.row-view .username {
             font-weight: 600;
             font-size: 1rem;
             color: #2c3e50;
+            margin-right: 0.5rem;
         }
 
         .users-list.row-view .user-stats {
             display: flex;
-            flex: 1;
-            gap: 2rem;
-            margin-left: auto;
-            margin-right: 1rem;
+            gap: 1.5rem;
+            justify-content: center;
+            min-width: 0;
         }
 
         .users-list.row-view .stat {
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 120px;
+            min-width: 0;
+            flex: 1;
         }
 
         .users-list.row-view .stat-label {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #6c757d;
             font-weight: 500;
             margin-bottom: 0.25rem;
+            white-space: nowrap;
         }
 
         .users-list.row-view .stat-value {
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: #2c3e50;
             font-weight: 600;
         }
 
         .users-list.row-view .view-details-btn {
-            padding: 0.6rem 1.2rem;
+            padding: 0.6rem 1rem;
             background: var(--secondary-color);
             color: white;
             border: none;
@@ -582,10 +583,9 @@
             cursor: pointer;
             transition: background-color 0.2s ease;
             font-weight: 500;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             white-space: nowrap;
-            min-width: 120px;
-            flex-shrink: 0;
+            width: 100px;
         }
 
         .users-list.row-view .view-details-btn:hover {
