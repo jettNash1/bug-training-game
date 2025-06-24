@@ -10,7 +10,7 @@ export const testTypesScenarios = {
                     {
                         text: 'Advanced Programming Interface',
                         outcome: 'Close but technically incorrect terminology',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Application Programming Interface',
@@ -38,7 +38,7 @@ export const testTypesScenarios = {
                     {
                         text: 'This should only be tested on desktop browsers',
                         outcome: 'This shows awareness of testing platforms but misses Augmented Reality specifics.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Checking application performance in different lighting conditions',
@@ -66,7 +66,7 @@ export const testTypesScenarios = {
                     {
                         text: '@testing.com',
                         outcome: 'This is a generic testing domain but not the recommended one',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: '@zoonou.com',
@@ -94,7 +94,7 @@ export const testTypesScenarios = {
                     {
                         text: 'The date should be included in the raised ticket',
                         outcome: 'This is partially relevant, but the information is incomplete.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'The application version number should be included within the ticket',
@@ -122,7 +122,7 @@ export const testTypesScenarios = {
                     {
                         text: 'This is used for generating fake data',
                         outcome: 'This is related to testing, but not specific to Virtual Private Network functionality.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'This is used for simulating different locations',
@@ -154,7 +154,7 @@ export const testTypesScenarios = {
                     {
                         text: 'Basic, Advanced, Expert',
                         outcome: 'Whilst this shows an understanding of progression, the terminology is incorrect.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Narrow, General, Super AI',
@@ -187,7 +187,7 @@ export const testTypesScenarios = {
                     {
                         text: 'Smartphones should be used for voice skill testing only',
                         outcome: 'Mobile devices can be used, but they\'re not the primary recommendation.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Smart home devices should be used for voice skill testing',
@@ -210,7 +210,7 @@ export const testTypesScenarios = {
                     {
                         text: 'Bluetooth should be disabled to prevent storage issues',
                         outcome: 'This is related to device settings, but an incorrect solution as this does not prevent frequent back ups',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Location services should be disabled to prevent storage issues',
@@ -238,7 +238,7 @@ export const testTypesScenarios = {
                     {
                         text: 'GoFullPage is a recommended accessibility extension',
                         outcome: 'This is a screen capture tool, but not generally used for accessibility.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Accessibility Insights for Web is a recommended accessibility extension',
@@ -281,7 +281,7 @@ export const testTypesScenarios = {
                     {
                         text: 'Use maximum resolution always when capturing evidence',
                         outcome: 'Whilst important, this is not always essential.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             }
@@ -297,7 +297,7 @@ export const testTypesScenarios = {
                     {
                         text: 'Having access to complete documentation from the client',
                         outcome: 'While important, other details are also required outside of documentation like contact information for developers for testing recommendations',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Understanding endpoints and access methods is important',
@@ -325,7 +325,7 @@ export const testTypesScenarios = {
                     {
                         text: 'Speed and colour should be considered for intelligent system testing',
                         outcome: 'This recognises some technical considerations but not all characteristics.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Flexibility, autonomy, ethics and safety should be considered for intelligent system testing',
@@ -353,7 +353,7 @@ export const testTypesScenarios = {
                     {
                         text: 'mkdir',
                         outcome: 'This is related to file manipulation, but incorrect',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'fsutil file createnew',
@@ -381,7 +381,7 @@ export const testTypesScenarios = {
                     {
                         text: 'Battery percentage should be checked during application or website testing',
                         outcome: 'This is related to device settings but would not be essential focus for testing',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Default font size setting should be checked during application or website testing',
@@ -419,7 +419,7 @@ export const testTypesScenarios = {
                     {
                         text: 'Split the video manually when capturing large screen recordings',
                         outcome: 'While this may help it is time consuming and an ineffective use of time management.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Use external storage when capturing large screen recordings',

@@ -10,26 +10,22 @@ export const riskManagementScenarios = {
                 {
                     text: 'Multiply severity by likelihood to determine impact and risk level',
                     outcome: 'Perfect! This is the correct formula for calculating risk impact.',
-                    experience: 15,
-                    isCorrect: true,
+                    experience: 15
                 },
                 {
                     text: 'Consider the severity of the issue and base the risk level of that only',
                     outcome: 'Risk calculation needs both severity and likelihood for accuracy.',
-                    experience: -10,
-                    isCorrect: false
+                    experience: -10
                 },
                 {
                     text: 'Add severity and likelihood together to calculate the risk level',
                     outcome: 'Multiplication, not addition, gives the correct risk impact score.',
-                    experience: -5,
-                    isCorrect: false
+                    experience: -5
                 },
                 {
                     text: 'Consider how likely the issue is to occur and base the risk level off this',
                     outcome: 'Both factors are needed for proper risk assessment.',
-                    experience: 0,
-                    isCorrect: false
+                    experience: 0
                 }
             ]
         },
@@ -42,26 +38,22 @@ export const riskManagementScenarios = {
                 {
                     text: 'Conduct comprehensive analysis of historical project data and previous risk assessments to establish patterns',
                     outcome: 'Historical data alone may miss new risks.',
-                    experience: -5,
-                    isCorrect: false
+                    experience: -5
                 },
                 {
                     text: 'Review documentation to determine scope, user and system impact',
                     outcome: 'Perfect! Documentation review is key to identifying risks.',
-                    experience: 15,
-                    isCorrect: true,
+                    experience: 15
                 },
                 {
                     text: 'Implement extensive monitoring systems to track all possible system behaviours and performance metrics',
                     outcome: 'Monitoring comes after risk identification.',
-                    experience: -10,
-                    isCorrect: false
+                    experience: -10
                 },
                 {
                     text: 'Establish detailed risk tracking protocols across multiple project phases',
                     outcome: 'Tracking comes after identification.',
-                    experience: 5,
-                    isCorrect: false
+                    experience: 0
                 }
             ]
         },
@@ -402,7 +394,7 @@ export const riskManagementScenarios = {
                 {
                     text: 'Continue testing other features and areas to gain the most coverage possible',
                     outcome: 'Coverage gaps need proper documentation and communication.',
-                    experience: 5
+                    experience: 0
                 }
             ]
         },

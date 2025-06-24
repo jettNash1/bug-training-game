@@ -25,7 +25,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'To gauge project progress and determine resources required to complete the testing activites',
                         outcome: 'This is true but incomplete as it misses the reporting aspect.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -53,7 +53,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Above the table header',
                         outcome: 'While this keeps data within the table, it\'s not the optimal location.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -81,7 +81,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Chart size in relation to the rest of the metrics features on the tab',
                         outcome: 'While chart size is a factor, data arrangement also matters',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -109,7 +109,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Keep original formulas for different environment rows and clear content',
                         outcome: 'While maintaining formulas is good, they need to be properly copied to assign different rows.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -137,7 +137,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Too many dates entered within the sessions total table',
                         outcome: 'While related to dates, the issue it\'s specifically related line availability.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -165,7 +165,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Restart Excel to refresh all formulas automatically',
                         outcome: 'First you should double click the cell in the data table with the incorrect figure and ensure that the dotted lines displayed over the environment table encompass all rows containing environments.',
-                        experience: -5
+                        experience: 0
                     }
                 ]
             },
@@ -309,7 +309,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Add new columns to existing tables within the environment check tab',
                         outcome: 'While this maintains data connection, it\'s not the optimal solution',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -322,7 +322,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'The primary column and environment count within the environments table',
                         outcome: 'While primary column is important, the checked field is also required to report accurate metrics.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'The primary column within the environments table',
@@ -365,7 +365,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Update the main environments list tab only',
                         outcome: 'While updating the main tab is important, excess rows still need handling.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -378,7 +378,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Extend the formula manually for each affected metric',
                         outcome: 'While this works, double-clicking is more efficient.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Copy a formula from another sheet',
@@ -421,7 +421,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Use specific environments only',
                         outcome: 'While this works for some projects, it\'s not flexible enough and the exact environment testing may not be achievable',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             }
@@ -438,7 +438,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Update all cell references within the environment checks tab',
                         outcome: 'Multiple aspects need attention rather than just this one area, including formula accuracy.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Update all references and verify formula accuracy',
@@ -481,7 +481,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Check individual formulas that relate to the environment table',
                         outcome: 'While important, it misses the broader dependencies like formula chains',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -504,7 +504,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Update the primary metrics across the test script tabs',
                         outcome: 'While important, secondary metrics also need attention for full reporting details.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Create new metrics to reflect the current testing references',
@@ -522,7 +522,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Check individual tab metrics throughout the test script',
                         outcome: 'While important, cross-tab relationships are also taken into consideration.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Determine an average from the discrepancies to enter into the metrics tables',
@@ -565,7 +565,7 @@ export const scriptMetricsScenarios = {
                     {
                         text: 'Update primary metrics across the test script',
                         outcome: 'While a good start, more comprehensive attention is required to cover all metrics.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             }

@@ -25,7 +25,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'To create a general framework approach for basic testing',
                         outcome: 'While it creates a framework, it is specifically detailed and comprehensive rather than general.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -48,7 +48,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: '30-40 test cases',
                         outcome: 'While this is a reasonable number, it\'s below the recommended range.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: '100-120 test cases',
@@ -76,7 +76,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'Basic bullet point structure',
                         outcome: 'While structured lists are used, Gherkin is the required format.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Code snippets only',
@@ -104,7 +104,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'Urgent, Normal, Low',
                         outcome: 'While this describes three levels including low, the other terms aren\'t correct',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: '1, 2, 3, 4, 5',
@@ -137,7 +137,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'Within each test suite in the test script',
                         outcome: 'While smoke tests are important, they should be in the topmost suite',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -309,7 +309,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'The level of detail in each test case differs between the two types of script',
                         outcome: 'While this is related, \'Test Steps\' and \'Expected Behaviour\' specific columns included in a full test script are the main difference',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -337,7 +337,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'These should be based on complexity',
                         outcome: 'While complexity is considered, it\'s not the only factor',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -365,7 +365,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'Hide the non-scoped environment from view within the script',
                         outcome: 'While removing them from view is good, greying out is the specific requirement',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -393,7 +393,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'Test one environment at a time after primary environments have fully tested',
                         outcome: 'While this can work, parallel testing is recommended when possible',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -421,7 +421,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'Add references after testing as a certain amount of exploratory testing helps find issues',
                         outcome: 'While references can be added later, they should ideally be included during creation',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             }
@@ -481,7 +481,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'Update the affected test cases only and continue with testing',
                         outcome: 'While this is needed, impact assessment and timeline updates are also required',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -509,7 +509,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'Test them only in primary environments',
                         outcome: 'While this is better than nothing, a balanced approach is required',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -537,7 +537,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'Combine them into single test cases',
                         outcome: 'While they should be aligned, they serve different purposes',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -565,7 +565,7 @@ export const fullyScriptedScenarios = {
                     {
                         text: 'Test platform-specific features only as these areas require priority testing',
                         outcome: 'While platform-specific features need attention, core functionality must also be tested',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             }

@@ -10,26 +10,22 @@ export const contentCopyScenarios = {
                     {
                         text: 'Testing the functionality of the software',
                         outcome: 'Functionality testing is explicitly out of scope for copy proofing.',
-                        experience: -10,
-                        isCorrect: false
+                        experience: -10
                     },
                     {
                         text: 'Checking grammar, spelling, and typos in content',
                         outcome: 'Correct! This is the core purpose of copy proofing.',
                         experience: 15,
-                        isCorrect: true
                     },
                     {
                         text: 'Verifying user interface design matches submitted documentation',
                         outcome: 'While content proofing includes some UI elements, copy proofing specifically focuses on text content.',
-                        experience: 5,
-                        isCorrect: false
+                        experience: 0
                     },
                     {
                         text: 'Testing cross-browser compatibility with supported environments',
                         outcome: 'This is a functional testing concern, not related to copy proofing.',
-                        experience: -5,
-                        isCorrect: false
+                        experience: -5
                     }
                 ]
             },
@@ -57,7 +53,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'Content consistency throughout the system under test',
                         outcome: 'While consistency is important, some aspects might be out of scope depending on the project and client recommendations.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -85,7 +81,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'Optimizing database performance',
                         outcome: 'While quality-related, this is not a content proofing objective',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -113,7 +109,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'To reduce development costs with less build releases required',
                         outcome: 'While good quality can reduce costs, it\'s not the primary reason for attention to detail',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -126,7 +122,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'Previous testing will become completely invalid',
                         outcome: 'Not all testing will become invalid, but some changes may make prior testing redundant.',
-                        experience: 5
+                        experience: -5
                     },
                     {
                         text: 'The functionality of the system under test will be affected',
@@ -141,7 +137,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'The client must restart the project to introduce new content',
                         outcome: 'While content changes may affect some areas already tested, it is not considered to fully re-test all content again',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -308,7 +304,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'Discrepancies between different screen sizes',
                         outcome: 'While relevant for content display, it\'s not the primary focus',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Battery consumption differences across the supported environments',
@@ -341,7 +337,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'Create separate tickets for each typo found during testing activities',
                         outcome: 'While thorough, this could be too time-consuming and grouping under specific areas is preferred',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -354,7 +350,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'Image file size and any issue regarding this area',
                         outcome: 'While important, this is too narrow a testing focus. Image quality and resolution should also be considered',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Image loading speed to check for response time issues',
@@ -392,7 +388,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'Testing without documentation requires more time',
                         outcome: 'While potentially true, it\'s not the main impact as grammar and spelling can still be tested',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Testing must then become automated to move forward',
@@ -415,7 +411,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'This focuses on technical terms throughout the system under test',
                         outcome: 'While technical terms should be included, this is a risk of narrow scoping.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Reviewing content appropriateness for a target market',
@@ -447,7 +443,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'Document differences only if specified in requirements',
                         outcome: 'While the client may have specified areas of scope, they may not have considered all critical areas relating to customer usage.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Report all differences between environments unless variation is specified in documentation',
@@ -485,7 +481,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'Content proofing must come first in the testing cycle',
                         outcome: 'While sometimes logical, it\'s not always a requirement',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -513,7 +509,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'Check content updates and query any inconsistencies',
                         outcome: 'Whilst checking current updates is important, potential issues could be missed within prior documentation areas',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -536,7 +532,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'It only impacts internal processes',
                         outcome: 'This is partially correct, although it overlooks how documentation quality influences client relationships',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'It reduces testing productivity and volume',
@@ -569,7 +565,7 @@ export const contentCopyScenarios = {
                     {
                         text: 'Prioritise issues based on page location',
                         outcome: 'This can be relevant to the project. However, other critical issues may be missed by taking this approach',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             }

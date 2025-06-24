@@ -20,7 +20,7 @@ export const localeTestingScenarios = {
                     {
                         text: 'To verify translations are grammatically correct',
                         outcome: 'While translation verification is part of locale testing, it\'s only one aspect of the broader scope.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'To ensure the website loads quickly in different regions',
@@ -48,7 +48,7 @@ export const localeTestingScenarios = {
                     {
                         text: 'Design specifications can be provided to assist with locale testing',
                         outcome: 'While design specifications might be provided, they\'re secondary to translation documents.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Network traffic data can be submitted to assist with locale testing',
@@ -76,7 +76,7 @@ export const localeTestingScenarios = {
                     {
                         text: 'Locale testing requires fluency in all supported test languages',
                         outcome: 'While language knowledge is helpful, testers can work with a translation matrix.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Locale testing requires network engineering expertise',
@@ -94,7 +94,7 @@ export const localeTestingScenarios = {
                     {
                         text: 'The currency symbol placement should be checked exclusively',
                         outcome: 'While this is part of currency localisation, it\'s just one aspect of currency-related checks.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Exchange rates between currencies should be tested',
@@ -127,7 +127,7 @@ export const localeTestingScenarios = {
                     {
                         text: 'Create separate scripts for each feature to be tested in regards to locale',
                         outcome: 'While organisation is important, organising by locale first Is more efficient than organising the script on a feature basis.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Organise all locales to be combined into one test case',

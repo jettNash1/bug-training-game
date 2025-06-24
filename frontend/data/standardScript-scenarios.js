@@ -10,7 +10,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'A piece of automated code that runs tests without human intervention',
                         outcome: 'While scripts can be automated, this answer misses the fundamental purpose of documenting and structuring test cases.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'A documented set of instructions and conditions that outline how to execute specific test cases within a software testing process',
@@ -53,7 +53,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'JSON format',
                         outcome: 'While JSON is a structured format, it\'s not the specified format for standard script test cases.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -71,7 +71,7 @@ export const standardScriptScenarios = {
                     {
                         text: '50-75 test cases',
                         outcome: 'While close to the correct range, this is slightly below the recommended amount.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: '75-100 test cases',
@@ -99,7 +99,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'Begin testing immediately to complete the most coverage within the project time frame set',
                         outcome: 'While testing needs to be done, reviews must come first.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Review the Operational Project Details and Statement of Work',
@@ -122,7 +122,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'To record test case results, focus time allocation and tester details',
                         outcome: 'While it does record data, it\'s specifically for submissions, not general test results.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'To store all test environment details used for the project',
@@ -299,7 +299,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'The length of time it takes to execute the specific test ',
                         outcome: 'While execution time might be considered, it\'s not a primary factor.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'The impact of the feature being tested and frequency of use',
@@ -332,7 +332,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'The columns or rows for out of scope environments should be hidden',
                         outcome: 'While this would hide unused sections, it\'s not the recommended approach as this would still affect metrics',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'These sections should be greyed out and the dashes removed from the result and date columns',
@@ -350,7 +350,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'The test suites should be organised alphabetically by suite name',
                         outcome: 'While this would be organised, it doesn\'t consider importance',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'This should be organised based on tester preference',
@@ -378,7 +378,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'Only the test case ID should be included in the test case reference',
                         outcome: 'While ID is important, more information is required, including documentation references that can help in executing the test.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Information that aided in creating the test case and which will help during execution',
@@ -416,7 +416,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'These should all be run, only when issues are found',
                         outcome: 'While issues might trigger retesting, smoke tests come first.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'These should be run after compatibility testing',
@@ -438,7 +438,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'Create entirely new test cases for each environment',
                         outcome: 'While some new cases might be needed, copying and modifying is more efficient',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Copy and modify test suites as needed, adjusting for environment-specific differences',
@@ -466,7 +466,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'Primary testing should always be completed first and foremost',
                         outcome: 'While primary testing is important, parallel testing is possible.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Only do compatibility testing if time constraints permit it',
@@ -504,7 +504,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'Pause testing until all requirements are finalised with client feedback',
                         outcome: 'While pausing might seem logical, it\'s not the recommended approach and is not good time management.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Delete the affected test cases to be updated when requirements are finalised.',
@@ -522,7 +522,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'User journeys must always use Gherkin format',
                         outcome: 'While Gherkin can be used, it\'s not required for user journeys',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'These don\'t require Gherkin format but should contain logical step processes',
@@ -550,7 +550,7 @@ export const standardScriptScenarios = {
                     {
                         text: 'The client\'s stated requirements should only influence the structure of the test cases',
                         outcome: 'While client requirements are important, other factors must be considered like risk assessment.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'A combination of target audience, project timing, risk assessment, and client requirements',

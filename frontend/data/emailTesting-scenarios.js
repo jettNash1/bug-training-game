@@ -10,26 +10,22 @@ export const emailTestingScenarios = {
                     {
                         text: 'To increase email open rates with subscribers',
                         outcome: 'This relates to marketing metrics, not email testing',
-                        experience: -10,
-                        isCorrect: false
+                        experience: -10
                     },
                     {
                         text: 'To verify email functionality and appearance',
                         outcome: 'Correct! This is the purpose of email testing.',
-                        experience: 15,
-                        isCorrect: true
+                        experience: 15
                     },
                     {
                         text: 'To check if emails reach spam folders',
                         outcome: 'While spam prevention is a benefit, it\'s not the primary purpose.',
-                        experience: 5,
-                        isCorrect: false
+                        experience: 0
                     },
                     {
                         text: 'To test different subject lines for marketing effectiveness',
                         outcome: 'The subject line is just one small component of an email.',
-                        experience: -5,
-                        isCorrect: false
+                        experience: -5
                     }
                 ]
             },
@@ -42,7 +38,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'Gmail and Outlook should be the main focus',
                         outcome: 'While these are important clients, the scope should be broader.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Gmail, Outlook, Yahoo Mail, and Apple Mail',
@@ -70,7 +66,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'Universal Testing Module',
                         outcome: 'While it is a module for testing, "Universal" is incorrect',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Unified Tracking Method',
@@ -113,7 +109,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'This should be tested only when specifically requested',
                         outcome: 'While client requests matter, dark mode testing is a standard practice',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -136,7 +132,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'Make sure the test environments are set up for testing activities',
                         outcome: 'While important, this comes after reviewing documentation',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Create test accounts for testing different outcomes to test scenarios',
@@ -158,7 +154,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'Immediately report it against the specific environment',
                         outcome: 'While reporting is important, checking other environments for the issue first is more efficient.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Check if the issue exists across other environments',
@@ -186,7 +182,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'Only pass or fail for the specific tests',
                         outcome: 'While pass or fail is included, more detailed options should be available and stated.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Using the Result Key options against each test',
@@ -214,7 +210,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'Image quality and resolution should be checked',
                         outcome: 'While quality is important, other aspects must also be checked including alignment and image placement',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Image placement, alignment, quality, label, and display in both light and dark modes',
@@ -247,7 +243,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'Details can be verified against the client\'s company website',
                         outcome: 'While the website can help, target market specificity is key which can be obtained through client documentation',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Match details to the target market (e.g., UK address for UK market)',
@@ -280,7 +276,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'Test completion percentage should be stated in the metrics report',
                         outcome: 'While completion is tracked, more metrics are required including environment matrix and ticket status',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'All critical issues should be stated in the metrics report',
@@ -302,7 +298,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'This should be used for estimating total project time',
                         outcome: 'While it helps with timing, it\'s more comprehensive and includes more adjustable testing activities.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'To calculate exact testing hours needed to complete a project',
@@ -345,7 +341,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'Test unsubscribe functionality in production environments',
                         outcome: 'While production testing may work, it\'s not the recommended approach as this could disrupt on going monitoring by the client in production',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -358,7 +354,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'Test all text wrapping on supported mobile devices',
                         outcome: 'While mobile testing is important, all devices need checking that are specified by the client.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Compare against design specifications for consistent text flow across all devices',
@@ -386,7 +382,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'Failed tests from the days test activities should be included',
                         outcome: 'While failures are important, all results must be included.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Critical issues from the days test activities should be included',
@@ -419,7 +415,7 @@ export const emailTestingScenarios = {
                     {
                         text: 'Check each email client independently in relation to light & dark mode testing',
                         outcome: 'While individual testing is needed, overall system settings must also be considered.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Coordinate system settings and individual app preferences, understanding that some clients follow system settings while others need manual configuration',

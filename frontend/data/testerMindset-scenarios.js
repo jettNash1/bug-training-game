@@ -80,7 +80,7 @@ export const testerMindsetScenarios = {
             {
                 text: 'Request environment replication to safely conduct testing activities.',
                 outcome: 'Good thinking, but first, the current differences must be documented.',
-                experience: 10
+                experience: 0
             }
         ]
     },
@@ -136,7 +136,7 @@ export const testerMindsetScenarios = {
             {
                 text: 'Ask developers what and which areas to test within the project',
                 outcome: 'Developer input helps but thorough planning is required as a developer mindset is not always the same as an end user.',
-                experience: 5
+                experience: 0
             }
         ]
     },
@@ -332,12 +332,12 @@ intermediate: [
             {
                 text: 'Stop scripted testing to investigate and find the root cause',
                 outcome: 'The issue should be documented although, planned testing should be continued with.',
-                experience: 0
+                experience: -5
             },
             {
                 text: 'Add new test cases immediately to address the areas that return the issue',
                 outcome: 'Whilst adding new test cases is required as testing evolves on a project. The issues should be document first and test case updates can be performed after the current execution.',
-                experience: 10
+                experience: 0
             }
         ]
     },
@@ -365,7 +365,7 @@ intermediate: [
             {
                 text: 'Focus only on new features within a release to keep testing activities current',
                 outcome: 'Support should include both new and existing functionality testing.',
-                experience: 5
+                experience: 0
             }
         ]
     },
@@ -421,7 +421,7 @@ intermediate: [
             {
                 text: 'Conduct thorough analysis of all system components and their interconnected dependencies',
                 outcome: 'System analysis is important but should be guided by risk assessment.',
-                experience: 5
+                experience: 0
             }
         ]
     }
@@ -448,12 +448,12 @@ advanced: [
             {
                 text: 'Document the issue to be included in the next sprint for developer attention',
                 outcome: 'Critical issues within the production environment require immediate attention.',
-                experience: -15
+                experience: -10
             },
             {
                 text: 'Start investigating the root cause of the bug immediately',
                 outcome: 'Incident response process should be followed before attempting to find the cause so all interested parties are aware of the issue.',
-                experience: 5
+                experience: 0
             }
         ]
     },
