@@ -2538,8 +2538,8 @@ export class Admin2Dashboard {
                     if (confirm(`Are you sure you want to reset progress for ${this.formatQuizName(quizName)}?`)) {
                         try {
                             await this.resetQuizProgress(userName, quizName);
-                            // Refresh the user list and details view
-                            await this.loadUsers();
+                            // Update the grid to reflect changes (local data was already updated in resetQuizProgress)
+                            await this.updateUsersList();
                             overlay.remove();
                             this.showSuccess(`Reset progress for ${this.formatQuizName(quizName)}`);
                             this.showUserDetails(userName);
@@ -2586,7 +2586,7 @@ export class Admin2Dashboard {
                             await this.resetAllProgress(username);
                             overlay.remove();
                             this.showSuccess(`Progress reset for ${username}`);
-                            this.updateUsersList();
+                            // updateUsersList is already called in resetAllProgress method
                         } catch (error) {
                             this.showError(`Failed to reset progress: ${error.message}`);
                         }
@@ -2674,6 +2674,18 @@ export class Admin2Dashboard {
                     }
                 });
             }
+
+            // Add event listeners to the existing close button that was created earlier
+            closeBtn.addEventListener('click', () => {
+                overlay.remove();
+            });
+            
+            closeBtn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    closeBtn.click();
+                }
+            });
         } catch (error) {
             console.error('Error showing user details:', error);
             this.showError(`Failed to show user details: ${error.message}`);
@@ -2847,6 +2859,15 @@ export class Admin2Dashboard {
                 this.showSuccess(`Successfully reset all quiz progress for ${username}`);
             }
 
+            // Update local user data to reflect the resets
+            const user = this.users.find(u => u.username === username);
+            if (user) {
+                // Clear all quiz progress
+                user.quizProgress = {};
+                // Clear all quiz results
+                user.quizResults = [];
+            }
+
             // Refresh the user list and UI
             await this.updateUsersList();
 
@@ -2868,6 +2889,21 @@ export class Admin2Dashboard {
 
             if (!response.success) {
                 throw new Error(response.message || 'Failed to reset quiz progress');
+            }
+
+            // Update the local user data to reflect the reset
+            const user = this.users.find(u => u.username === username);
+            if (user) {
+                // Reset the quiz progress in the local data
+                if (user.quizProgress && user.quizProgress[quizType.toLowerCase()]) {
+                    delete user.quizProgress[quizType.toLowerCase()];
+                }
+                // Reset quiz results in the local data
+                if (user.quizResults) {
+                    user.quizResults = user.quizResults.filter(result => 
+                        result.quizName.toLowerCase() !== quizType.toLowerCase()
+                    );
+                }
             }
 
             return response;
