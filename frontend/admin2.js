@@ -432,6 +432,8 @@ export class Admin2Dashboard {
                 // Update view class on users list
                 if (usersList) {
                     usersList.className = `users-list ${button.dataset.view}-view`;
+                    // Re-render the user list to apply the new view
+                    this.updateUsersList();
                 }
             });
         });
