@@ -19,7 +19,7 @@ export class Admin2Dashboard {
         };
         
         // Additional initialization for Admin2Dashboard
-        this.isRowView = false; // Default to grid view
+        this.isRowView = true; // Default to row view
         this.guideSettings = {};
         
         // Store the dashboard instance globally for easier access
