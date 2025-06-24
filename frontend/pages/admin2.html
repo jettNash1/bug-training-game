@@ -512,11 +512,12 @@
         .users-list.row-view .user-card {
             display: flex;
             align-items: center;
-            padding: 1rem;
+            padding: 1.25rem;
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             transition: transform 0.2s, box-shadow 0.2s;
+            min-height: 80px;
         }
 
         .users-list.row-view .user-card:hover {
@@ -524,16 +525,115 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
-        .users-list.row-view .user-header {
+        .users-list.row-view .row-content {
             display: flex;
-            width: 100%;
             align-items: center;
+            width: 100%;
+            gap: 2rem;
+        }
+
+        .users-list.row-view .user-info {
+            display: flex;
+            align-items: center;
+            min-width: 200px;
+            flex-shrink: 0;
+        }
+
+        .users-list.row-view .username {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #2c3e50;
         }
 
         .users-list.row-view .user-stats {
             display: flex;
+            flex: 1;
+            gap: 2rem;
             margin-left: auto;
-            gap: 1.5rem;
+            margin-right: 1rem;
+        }
+
+        .users-list.row-view .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 120px;
+        }
+
+        .users-list.row-view .stat-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .users-list.row-view .stat-value {
+            font-size: 1rem;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .users-list.row-view .view-details-btn {
+            padding: 0.6rem 1.2rem;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-weight: 500;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            min-width: 120px;
+            flex-shrink: 0;
+        }
+
+        .users-list.row-view .view-details-btn:hover {
+            background: var(--primary-color);
+        }
+
+        /* Grid view styles remain the same */
+        .users-list.grid-view .user-card {
+            background: var(--card-background);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .users-list.grid-view .user-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .users-list.grid-view .user-header {
+            margin-bottom: 1rem;
+        }
+
+        .users-list.grid-view .user-header h4 {
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .users-list.grid-view .user-stats {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .users-list.grid-view .view-details-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .users-list.grid-view .view-details-btn:hover {
+            background: var(--primary-color);
         }
 
         /* Settings panel styles */
