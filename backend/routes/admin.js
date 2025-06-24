@@ -55,8 +55,12 @@ router.post('/login', async (req, res) => {
         
         // Debug log to check environment variables
         console.log('Checking credentials. Expected:', {
-            expectedUser: process.env.ADMIN_USERNAME,
-            hasPassword: !!process.env.ADMIN_PASSWORD,
+            expectedUser1: process.env.ADMIN_USERNAME,
+            expectedUser2: process.env.ADMIN_USERNAME_2,
+            expectedUser3: process.env.ADMIN_USERNAME_3,
+            hasPassword1: !!process.env.ADMIN_PASSWORD,
+            hasPassword2: !!process.env.ADMIN_PASSWORD_2,
+            hasPassword3: !!process.env.ADMIN_PASSWORD_3,
             hasSecret: !!process.env.JWT_SECRET
         });
         
@@ -69,15 +73,20 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // Strict comparison for admin credentials
-        if (username === process.env.ADMIN_USERNAME && 
-            password === process.env.ADMIN_PASSWORD) {
+        // Check admin credentials - support multiple admin accounts
+        const isAdmin1 = (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD);
+        const isAdmin2 = (process.env.ADMIN_USERNAME_2 && process.env.ADMIN_PASSWORD_2 && 
+                          username === process.env.ADMIN_USERNAME_2 && password === process.env.ADMIN_PASSWORD_2);
+        const isAdmin3 = (process.env.ADMIN_USERNAME_3 && process.env.ADMIN_PASSWORD_3 && 
+                          username === process.env.ADMIN_USERNAME_3 && password === process.env.ADMIN_PASSWORD_3);
+        
+        if (isAdmin1 || isAdmin2 || isAdmin3) {
             
             // Generate admin-specific token with isAdmin flag
             const token = jwt.sign(
                 { 
                     isAdmin: true,
-                    username: process.env.ADMIN_USERNAME
+                    username: username // Use the actual username that logged in
                 }, 
                 process.env.JWT_SECRET,
                 { expiresIn: '24h' }
