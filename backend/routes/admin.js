@@ -1802,4 +1802,129 @@ router.post('/schedules/process', auth, async (req, res) => {
     }
 });
 
-module.exports = router; 
+// CRITICAL FIX: Add function to check and process auto resets
+async function checkAutoResets() {
+    try {
+        console.log('[Auto Reset] Checking for due auto resets...');
+        
+        const now = new Date();
+        const autoResets = await AutoReset.find({ enabled: true });
+        
+        console.log(`[Auto Reset] Found ${autoResets.length} enabled auto reset settings`);
+        
+        for (const autoReset of autoResets) {
+            try {
+                // Skip if no nextResetTime is set
+                if (!autoReset.nextResetTime) {
+                    console.log(`[Auto Reset] Skipping ${autoReset.quizName} - no nextResetTime set`);
+                    continue;
+                }
+                
+                const nextResetTime = new Date(autoReset.nextResetTime);
+                console.log(`[Auto Reset] ${autoReset.quizName} next reset: ${nextResetTime}, current: ${now}`);
+                
+                // Check if reset is due
+                if (nextResetTime <= now) {
+                    console.log(`[Auto Reset] Processing auto reset for ${autoReset.quizName}`);
+                    
+                    // Get users who have completed this quiz
+                    const completedUsers = await User.find({
+                        [`quizProgress.${autoReset.quizName}.status`]: 'completed'
+                    }).select('username');
+                    
+                    console.log(`[Auto Reset] Found ${completedUsers.length} users who completed ${autoReset.quizName}`);
+                    
+                    let resetCount = 0;
+                    
+                    // Reset quiz for each completed user
+                    for (const user of completedUsers) {
+                        try {
+                            const quizKey = `quizProgress.${autoReset.quizName}`;
+                            await User.updateOne(
+                                { username: user.username },
+                                { 
+                                    $unset: { [quizKey]: "" },
+                                    $pull: { 
+                                        quizResults: { quizName: autoReset.quizName }
+                                    }
+                                }
+                            );
+                            
+                            console.log(`[Auto Reset] Reset ${autoReset.quizName} for user ${user.username}`);
+                            resetCount++;
+                        } catch (error) {
+                            console.error(`[Auto Reset] Failed to reset ${autoReset.quizName} for user ${user.username}:`, error);
+                        }
+                    }
+                    
+                    // Calculate next reset time
+                    const nextReset = new Date(now.getTime() + (autoReset.resetPeriod * 60 * 1000));
+                    
+                    // Update the auto reset setting
+                    autoReset.lastReset = now;
+                    autoReset.nextResetTime = nextReset;
+                    autoReset.lastUpdated = now;
+                    await autoReset.save();
+                    
+                    console.log(`[Auto Reset] Completed auto reset for ${autoReset.quizName}. Reset ${resetCount} users. Next reset: ${nextReset}`);
+                } else {
+                    console.log(`[Auto Reset] ${autoReset.quizName} not due yet. Next reset at ${nextResetTime}`);
+                }
+            } catch (error) {
+                console.error(`[Auto Reset] Error processing auto reset for ${autoReset.quizName}:`, error);
+            }
+        }
+    } catch (error) {
+        console.error('[Auto Reset] Error checking auto resets:', error);
+    }
+}
+
+// Function to process scheduled resets (can be called by background task)
+async function processScheduledResets() {
+    try {
+        console.log('[Scheduled Reset] Processing scheduled resets...');
+        
+        const now = new Date();
+        const dueSchedules = await ScheduledReset.find({
+            status: 'pending',
+            resetDateTime: { $lte: now }
+        });
+        
+        console.log(`[Scheduled Reset] Found ${dueSchedules.length} due scheduled resets`);
+        
+        for (const schedule of dueSchedules) {
+            try {
+                console.log(`[Scheduled Reset] Processing reset for ${schedule.username}'s ${schedule.quizName} quiz`);
+                
+                // Reset the quiz progress
+                const quizKey = `quizProgress.${schedule.quizName}`;
+                await User.updateOne(
+                    { username: schedule.username },
+                    { 
+                        $unset: { [quizKey]: "" },
+                        $pull: { 
+                            quizResults: { quizName: schedule.quizName }
+                        }
+                    }
+                );
+                
+                // Mark schedule as completed
+                schedule.status = 'completed';
+                await schedule.save();
+                
+                console.log(`[Scheduled Reset] Successfully processed reset for ${schedule.username}'s ${schedule.quizName} quiz`);
+            } catch (error) {
+                console.error(`[Scheduled Reset] Error processing schedule ${schedule._id}:`, error);
+                schedule.status = 'failed';
+                await schedule.save();
+            }
+        }
+    } catch (error) {
+        console.error('[Scheduled Reset] Error processing scheduled resets:', error);
+    }
+}
+
+// Export both the router and the functions for the background task
+module.exports = router;
+module.exports.checkAutoResets = checkAutoResets;
+module.exports.processScheduledResets = processScheduledResets; 

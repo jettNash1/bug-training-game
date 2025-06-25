@@ -277,6 +277,26 @@ if (process.env.NODE_ENV === 'production') {
     }, 30000); // Check every 30 seconds
 }
 
+// CRITICAL FIX: Add scheduled task to process auto resets and scheduled resets
+setInterval(async () => {
+    try {
+        console.log('[Scheduled Task] Checking for auto resets and scheduled resets...');
+        
+        // Import the admin route functions
+        const { processScheduledResets, checkAutoResets } = require('./routes/admin');
+        
+        // Process scheduled resets (manual schedules)
+        await processScheduledResets();
+        
+        // Process auto resets (automatic schedules based on completion)
+        await checkAutoResets();
+        
+        console.log('[Scheduled Task] Auto reset and scheduled reset check completed');
+    } catch (error) {
+        console.error('[Scheduled Task] Error processing resets:', error);
+    }
+}, 60000); // Check every minute
+
 // Routes
 const userRoutes = require('./routes/users');
 app.use('/api/users', userRoutes);
