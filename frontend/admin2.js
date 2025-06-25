@@ -6650,7 +6650,7 @@ export class Admin2Dashboard {
     // ... Add these utility methods after verifyAdminToken and preloadTimerSettings methods
 
     getLastActiveDate(user) {
-        console.log('getLastActiveDate called with:', user ? user.username : 'undefined');
+        // console.log('getLastActiveDate called with:', user ? user.username : 'undefined');
         if (!user) return 0;
 
         const dates = [];
@@ -6660,7 +6660,7 @@ export class Admin2Dashboard {
             dates.push(new Date(user.lastLogin).getTime());
         }
 
-        // Add quiz completion dates
+        // Add quiz completion dates from quiz results
         if (user.quizResults && user.quizResults.length > 0) {
             user.quizResults.forEach(result => {
                 if (result.completedAt) {
@@ -6668,6 +6668,15 @@ export class Admin2Dashboard {
                 }
                 if (result.lastActive) {
                     dates.push(new Date(result.lastActive).getTime());
+                }
+            });
+        }
+
+        // CRITICAL FIX: Add lastUpdated dates from quiz progress (tracks any question activity)
+        if (user.quizProgress && typeof user.quizProgress === 'object') {
+            Object.values(user.quizProgress).forEach(progress => {
+                if (progress && progress.lastUpdated) {
+                    dates.push(new Date(progress.lastUpdated).getTime());
                 }
             });
         }
