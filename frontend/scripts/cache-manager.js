@@ -98,13 +98,13 @@ export const cacheManager = new CacheManager();
 
 // Auto-initialize when imported (non-blocking)
 if (typeof window !== 'undefined') {
-    // Initialize after DOM is ready
+    // Initialize after DOM is ready with longer delay to avoid timer interference
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => cacheManager.initialize(), 1000);
+            setTimeout(() => cacheManager.initialize(), 10000);
         });
     } else {
-        setTimeout(() => cacheManager.initialize(), 1000);
+        setTimeout(() => cacheManager.initialize(), 10000);
     }
 }
 
