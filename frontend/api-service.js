@@ -6,28 +6,15 @@ export class APIService {
     constructor() {
         this.baseUrl = this.getApiBaseUrl();
         this.scheduledResetInterval = null;
-        this.startScheduledResetCheck();
+        // DISABLED: Scheduled reset checking is now handled by backend
+        // this.startScheduledResetCheck() - removed to prevent duplicate processing
     }
     
     startScheduledResetCheck() {
-        // Clear any existing interval
-        if (this.scheduledResetInterval) {
-            clearInterval(this.scheduledResetInterval);
-        }
-
-        // Check for scheduled resets every minute
-        this.scheduledResetInterval = setInterval(async () => {
-            try {
-                console.log('Background check: Checking for scheduled resets...');
-                await this.checkAndProcessScheduledResets();
-            } catch (error) {
-                console.error('Background check: Error checking scheduled resets:', error);
-            }
-        }, 60000); // Check every minute
-
-        // Run an immediate check
-        this.checkAndProcessScheduledResets()
-            .catch(error => console.error('Background check: Error in initial scheduled reset check:', error));
+        // DISABLED: Scheduled reset checking is now handled by backend
+        // All frontend reset processing has been moved to backend to prevent duplicates
+        console.log('Frontend scheduled reset checking is disabled - handled by backend');
+        return;
     }
 
     stopScheduledResetCheck() {

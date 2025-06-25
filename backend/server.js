@@ -278,24 +278,41 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // CRITICAL FIX: Add scheduled task to process auto resets and scheduled resets
-setInterval(async () => {
-    try {
-        console.log('[Scheduled Task] Checking for auto resets and scheduled resets...');
-        
-        // Import the admin route functions
-        const { processScheduledResets, checkAutoResets } = require('./routes/admin');
-        
-        // Process scheduled resets (manual schedules)
-        await processScheduledResets();
-        
-        // Process auto resets (automatic schedules based on completion)
-        await checkAutoResets();
-        
-        console.log('[Scheduled Task] Auto reset and scheduled reset check completed');
-    } catch (error) {
-        console.error('[Scheduled Task] Error processing resets:', error);
+// Use singleton pattern to prevent multiple intervals
+let resetTaskInterval = null;
+
+function startResetTask() {
+    if (resetTaskInterval) {
+        console.log('[Reset Task] Task already running, skipping duplicate');
+        return;
     }
-}, 60000); // Check every minute
+    
+    console.log('[Reset Task] Starting background reset task...');
+    resetTaskInterval = setInterval(async () => {
+        try {
+            console.log('[Reset Task] Checking for due resets...');
+            
+            // Import the admin route functions
+            const { processScheduledResets, checkAutoResets } = require('./routes/admin');
+            
+            // Process both types of resets
+            const [scheduledResults, autoResults] = await Promise.all([
+                processScheduledResets(),
+                checkAutoResets()
+            ]);
+            
+            // Only log if there were actual resets processed
+            if (scheduledResults?.processed > 0 || autoResults?.processed > 0) {
+                console.log(`[Reset Task] Processed ${scheduledResults?.processed || 0} scheduled resets and ${autoResults?.processed || 0} auto resets`);
+            }
+        } catch (error) {
+            console.error('[Reset Task] Error processing resets:', error);
+        }
+    }, 60000); // Check every minute
+}
+
+// Start the reset task after MongoDB connection
+startResetTask();
 
 // Routes
 const userRoutes = require('./routes/users');

@@ -81,26 +81,9 @@ export class Admin2Dashboard {
         try {
             // console.log('Initializing Admin2Dashboard...');
             // Add a guard variable to prevent too frequent checks
-            this.lastScheduleCheck = 0;
-            const MIN_CHECK_INTERVAL = 30000; // 30 seconds minimum between checks
-            
-            // Setup interval to check for scheduled resets that need processing
-            this.scheduleCheckInterval = setInterval(() => {
-                const now = Date.now();
-                // Only check if enough time has passed since the last check
-                if (now - this.lastScheduleCheck >= MIN_CHECK_INTERVAL) {
-                    this.lastScheduleCheck = now;
-                this.checkScheduledResets().catch(error => {
-                    console.error('Error during scheduled resets check:', error);
-                });
-                }
-            }, 60000); // Check every minute
-            
-            // Do an initial check for scheduled resets
-            this.lastScheduleCheck = Date.now();
-            this.checkScheduledResets().catch(error => {
-                console.error('Error during initial scheduled resets check:', error);
-            });
+            // DISABLED: Frontend auto-reset checking is now handled by backend
+            // Removed to prevent duplicate notifications and processing
+            // Backend handles all auto-reset and scheduled reset processing
             
             // Wait for DOM to be fully loaded
             if (document.readyState !== 'complete') {
@@ -3415,10 +3398,8 @@ export class Admin2Dashboard {
         // Load and display existing scheduled resets
         this.loadScheduledResets();
         
-        // Also check for any scheduled resets that need to be executed
-        this.checkScheduledResets().catch(error => {
-            console.error('Error checking scheduled resets during setup:', error);
-        });
+        // DISABLED: Frontend checking is now handled by backend
+        // this.checkScheduledResets() - removed to prevent duplicate processing
     }
     
     // Populate user dropdown with available users
@@ -3555,7 +3536,7 @@ export class Admin2Dashboard {
                     try {
                         checkButton.disabled = true;
                         checkButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
-                        await this.checkScheduledResets();
+                        // await this.checkScheduledResets(); // DISABLED - handled by backend
                         checkButton.disabled = false;
                         checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
                     } catch (error) {
@@ -5178,16 +5159,10 @@ export class Admin2Dashboard {
                 // Get the quiz name from the element's data attribute
                 const quizName = countdownElement.dataset.quiz;
                 if (quizName) {
-                // Trigger a check for auto-resets that need processing
-                    this.checkScheduledResets()
-                        .then(() => {
-                            console.log(`Processed scheduled reset for ${quizName}`);
-                            // Force a UI update after processing
-                            this.displayAutoResetSettings();
-                        })
-                        .catch(err => {
-                    console.error('Error checking scheduled resets:', err);
-                });
+                // DISABLED: Frontend checking is now handled by backend
+                // this.checkScheduledResets() - removed to prevent duplicate processing
+                // Force a UI update to reflect any changes
+                this.displayAutoResetSettings();
                 }
                 
                 return;
@@ -5513,10 +5488,8 @@ export class Admin2Dashboard {
                 // Show success message
                 this.showInfo(`Auto-reset for ${quizName} ${response.data ? 'updated' : 'enabled'}`);
                 
-                // Force an immediate check for scheduled resets to process any already completed quizzes
-                this.checkScheduledResets()
-                    .then(() => console.log('Checked for scheduled resets after saving setting'))
-                    .catch(err => console.error('Error checking scheduled resets:', err));
+                // DISABLED: Frontend checking is now handled by backend
+                // this.checkScheduledResets() - removed to prevent duplicate processing
                 
                 return response.data;
             } else {

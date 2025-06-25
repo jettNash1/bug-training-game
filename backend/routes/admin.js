@@ -1805,55 +1805,89 @@ router.post('/schedules/process', auth, async (req, res) => {
 // CRITICAL FIX: Add function to check and process auto resets
 async function checkAutoResets() {
     try {
-        console.log('[Auto Reset] Checking for due auto resets...');
-        
         const now = new Date();
         const autoResets = await AutoReset.find({ enabled: true });
-        
-        console.log(`[Auto Reset] Found ${autoResets.length} enabled auto reset settings`);
+        let totalProcessed = 0;
         
         for (const autoReset of autoResets) {
             try {
                 // Skip if no nextResetTime is set
                 if (!autoReset.nextResetTime) {
-                    console.log(`[Auto Reset] Skipping ${autoReset.quizName} - no nextResetTime set`);
                     continue;
                 }
                 
                 const nextResetTime = new Date(autoReset.nextResetTime);
-                console.log(`[Auto Reset] ${autoReset.quizName} next reset: ${nextResetTime}, current: ${now}`);
                 
                 // Check if reset is due
                 if (nextResetTime <= now) {
-                    console.log(`[Auto Reset] Processing auto reset for ${autoReset.quizName}`);
-                    
                     // Get users who have completed this quiz
                     const completedUsers = await User.find({
                         [`quizProgress.${autoReset.quizName}.status`]: 'completed'
                     }).select('username');
                     
-                    console.log(`[Auto Reset] Found ${completedUsers.length} users who completed ${autoReset.quizName}`);
-                    
                     let resetCount = 0;
                     
-                    // Reset quiz for each completed user
-                    for (const user of completedUsers) {
+                    // Reset quiz for each completed user using comprehensive logic
+                    for (const userDoc of completedUsers) {
                         try {
-                            const quizKey = `quizProgress.${autoReset.quizName}`;
-                            await User.updateOne(
-                                { username: user.username },
-                                { 
-                                    $unset: { [quizKey]: "" },
-                                    $pull: { 
-                                        quizResults: { quizName: autoReset.quizName }
-                                    }
-                                }
-                            );
+                            // Fetch full user document for comprehensive reset
+                            const user = await User.findOne({ username: userDoc.username });
+                            const quizUser = await QuizUser.findOne({ username: userDoc.username });
                             
-                            console.log(`[Auto Reset] Reset ${autoReset.quizName} for user ${user.username}`);
+                            if (!user && !quizUser) {
+                                console.error(`[Auto Reset] User ${userDoc.username} not found`);
+                                continue;
+                            }
+
+                            // Generate all possible variations of the quiz name
+                            const quizVariations = [
+                                autoReset.quizName.toLowerCase(),
+                                autoReset.quizName.toUpperCase(),
+                                autoReset.quizName.replace(/-/g, ''),
+                                autoReset.quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),
+                                autoReset.quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()),
+                                autoReset.quizName.replace(/-/g, '_'),
+                                autoReset.quizName.replace(/\s+/g, '-').toLowerCase(),
+                                autoReset.quizName.replace(/\s+/g, '').toLowerCase()
+                            ].filter((v, i, arr) => arr.indexOf(v) === i); // Remove duplicates
+
+                            // Reset in main User model
+                            if (user) {
+                                if (!user.quizProgress) {
+                                    user.quizProgress = new Map();
+                                }
+
+                                // Delete all variations from quiz progress
+                                quizVariations.forEach(variant => {
+                                    if (user.quizProgress.has(variant)) {
+                                        user.quizProgress.delete(variant);
+                                    }
+                                });
+
+                                // Remove quiz results for all variations
+                                if (user.quizResults) {
+                                    user.quizResults = user.quizResults.filter(result => {
+                                        if (!result || !result.quizName) return false;
+                                        return !quizVariations.includes(result.quizName);
+                                    });
+                                }
+
+                                await user.save();
+                            }
+                            
+                            // Reset in QuizUser model (if it exists)
+                            if (quizUser && quizUser.quizScores) {
+                                quizVariations.forEach(variant => {
+                                    if (quizUser.quizScores.has(variant)) {
+                                        quizUser.quizScores.delete(variant);
+                                    }
+                                });
+                                await quizUser.save();
+                            }
+                            
                             resetCount++;
                         } catch (error) {
-                            console.error(`[Auto Reset] Failed to reset ${autoReset.quizName} for user ${user.username}:`, error);
+                            console.error(`[Auto Reset] Failed to reset ${autoReset.quizName} for user ${userDoc.username}:`, error);
                         }
                     }
                     
@@ -1866,61 +1900,128 @@ async function checkAutoResets() {
                     autoReset.lastUpdated = now;
                     await autoReset.save();
                     
-                    console.log(`[Auto Reset] Completed auto reset for ${autoReset.quizName}. Reset ${resetCount} users. Next reset: ${nextReset}`);
-                } else {
-                    console.log(`[Auto Reset] ${autoReset.quizName} not due yet. Next reset at ${nextResetTime}`);
+                    if (resetCount > 0) {
+                        console.log(`[Auto Reset] Reset ${autoReset.quizName} for ${resetCount} users. Next reset: ${nextReset}`);
+                    }
+                    totalProcessed++;
                 }
             } catch (error) {
                 console.error(`[Auto Reset] Error processing auto reset for ${autoReset.quizName}:`, error);
             }
         }
+        
+        return { processed: totalProcessed };
     } catch (error) {
         console.error('[Auto Reset] Error checking auto resets:', error);
+        return { processed: 0 };
     }
 }
 
 // Function to process scheduled resets (can be called by background task)
 async function processScheduledResets() {
     try {
-        console.log('[Scheduled Reset] Processing scheduled resets...');
-        
         const now = new Date();
-        const dueSchedules = await ScheduledReset.find({
-            status: 'pending',
-            resetDateTime: { $lte: now }
-        });
         
-        console.log(`[Scheduled Reset] Found ${dueSchedules.length} due scheduled resets`);
+        // Use atomic findOneAndUpdate to prevent race conditions
+        // This ensures only one process can claim each scheduled reset
+        let processedCount = 0;
         
-        for (const schedule of dueSchedules) {
+        // Continuously find and process due schedules one at a time to prevent race conditions
+        while (true) {
+            // Atomically find and mark one due schedule as 'processing'
+            const schedule = await ScheduledReset.findOneAndUpdate(
+                {
+                    status: 'pending',
+                    resetDateTime: { $lte: now }
+                },
+                {
+                    status: 'processing',
+                    processingStartedAt: now
+                },
+                {
+                    new: true
+                }
+            );
+            
+            // If no more due schedules, break
+            if (!schedule) {
+                break;
+            }
             try {
-                console.log(`[Scheduled Reset] Processing reset for ${schedule.username}'s ${schedule.quizName} quiz`);
+                // Use the same comprehensive reset logic as the API endpoint
+                const user = await User.findOne({ username: schedule.username });
+                const quizUser = await QuizUser.findOne({ username: schedule.username });
                 
-                // Reset the quiz progress
-                const quizKey = `quizProgress.${schedule.quizName}`;
-                await User.updateOne(
-                    { username: schedule.username },
-                    { 
-                        $unset: { [quizKey]: "" },
-                        $pull: { 
-                            quizResults: { quizName: schedule.quizName }
-                        }
+                if (!user && !quizUser) {
+                    console.error(`[Scheduled Reset] User ${schedule.username} not found`);
+                    schedule.status = 'failed';
+                    await schedule.save();
+                    continue;
+                }
+
+                // Generate all possible variations of the quiz name
+                const quizVariations = [
+                    schedule.quizName.toLowerCase(),
+                    schedule.quizName.toUpperCase(),
+                    schedule.quizName.replace(/-/g, ''),
+                    schedule.quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),
+                    schedule.quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()),
+                    schedule.quizName.replace(/-/g, '_'),
+                    schedule.quizName.replace(/\s+/g, '-').toLowerCase(),
+                    schedule.quizName.replace(/\s+/g, '').toLowerCase()
+                ].filter((v, i, arr) => arr.indexOf(v) === i); // Remove duplicates
+
+                // Reset in main User model
+                if (user) {
+                    if (!user.quizProgress) {
+                        user.quizProgress = new Map();
                     }
-                );
+
+                    // Delete all variations from quiz progress
+                    quizVariations.forEach(variant => {
+                        if (user.quizProgress.has(variant)) {
+                            user.quizProgress.delete(variant);
+                        }
+                    });
+
+                    // Remove quiz results for all variations
+                    if (user.quizResults) {
+                        user.quizResults = user.quizResults.filter(result => {
+                            if (!result || !result.quizName) return false;
+                            return !quizVariations.includes(result.quizName);
+                        });
+                    }
+
+                    await user.save();
+                }
+                
+                // Reset in QuizUser model (if it exists)
+                if (quizUser && quizUser.quizScores) {
+                    quizVariations.forEach(variant => {
+                        if (quizUser.quizScores.has(variant)) {
+                            quizUser.quizScores.delete(variant);
+                        }
+                    });
+                    await quizUser.save();
+                }
                 
                 // Mark schedule as completed
                 schedule.status = 'completed';
                 await schedule.save();
                 
-                console.log(`[Scheduled Reset] Successfully processed reset for ${schedule.username}'s ${schedule.quizName} quiz`);
+                console.log(`[Scheduled Reset] Processed reset for ${schedule.username}'s ${schedule.quizName} quiz`);
+                processedCount++;
             } catch (error) {
                 console.error(`[Scheduled Reset] Error processing schedule ${schedule._id}:`, error);
                 schedule.status = 'failed';
                 await schedule.save();
             }
         }
+        
+        return { processed: processedCount };
     } catch (error) {
         console.error('[Scheduled Reset] Error processing scheduled resets:', error);
+        return { processed: 0 };
     }
 }
 

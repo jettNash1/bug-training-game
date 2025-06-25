@@ -25,8 +25,12 @@ const scheduledResetSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'completed', 'failed'],
+        enum: ['pending', 'processing', 'completed', 'failed'],
         default: 'pending'
+    },
+    processingStartedAt: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true
