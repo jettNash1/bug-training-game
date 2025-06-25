@@ -196,6 +196,11 @@ mongoose.connect(process.env.MONGODB_URI, mongooseOptions)
                     name: mongoose.connection.name
                 });
             }
+            
+            // Start the reset task AFTER MongoDB is connected and ready
+            console.log('MongoDB connected - starting background reset task...');
+            startResetTask();
+            
         } catch (error) {
             console.error('Error creating indexes or initializing settings:', error);
             // Continue even if index creation fails
@@ -288,6 +293,19 @@ function startResetTask() {
     }
     
     console.log('[Reset Task] Starting background reset task...');
+    console.log('[Reset Task] Current time:', new Date().toISOString());
+    
+    // Immediate check to see what's in the database
+    const ScheduledReset = require('./models/scheduledReset.model');
+    ScheduledReset.find({}).then(schedules => {
+        console.log(`[Reset Task] Found ${schedules.length} total scheduled resets in database:`);
+        schedules.forEach(s => {
+            console.log(`  - ${s.username} | ${s.quizName} | ${s.resetDateTime} | ${s.status}`);
+        });
+    }).catch(err => {
+        console.error('[Reset Task] Error checking scheduled resets:', err);
+    });
+    
     resetTaskInterval = setInterval(async () => {
         try {
             const now = new Date();
@@ -329,8 +347,7 @@ function startResetTask() {
     }, 60000); // Check every minute
 }
 
-// Start the reset task after MongoDB connection
-startResetTask();
+// Reset task will be started after MongoDB connection is established
 
 // Routes
 const userRoutes = require('./routes/users');
