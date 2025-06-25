@@ -2499,240 +2499,10 @@ export class APIService {
         }
     }
 
-    async saveQuizProgress(quizName, progress) {
-        try {
-            console.log(`[API Debug] Raw experience value type: ${typeof progress.experience}, value: ${progress.experience}, isNaN: ${isNaN(progress.experience)}`);
-            
-            // Normalize the quiz name for consistency - always use standard normalized name
-            const normalizedQuizName = this.normalizeQuizName(quizName);
-            
-            // Additional debug information
-            console.log(`[API Debug] Saving progress for quiz: ${quizName} → ${normalizedQuizName}`);
-            console.log(`[API Debug] Before sanitization: progress=`, progress);
-            
-            // Type checking and complete sanitization of the progress object
-            const sanitizedProgress = {
-                ...progress,
-                // Ensure experience is a valid number
-                experience: !isNaN(parseFloat(progress.experience)) ? parseFloat(progress.experience) : 0,
-                // Ensure other numeric values are also valid
-                questionsAnswered: !isNaN(parseInt(progress.questionsAnswered)) ? parseInt(progress.questionsAnswered) : 0,
-                currentScenario: !isNaN(parseInt(progress.currentScenario)) ? parseInt(progress.currentScenario) : 0,
-                scorePercentage: !isNaN(parseFloat(progress.scorePercentage)) ? parseFloat(progress.scorePercentage) : 0,
-                // Ensure arrays are always arrays
-                tools: Array.isArray(progress.tools) ? progress.tools : [],
-                questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : [],
-                // Ensure other fields have fallbacks
-                status: progress.status || 'in-progress',
-                randomizedScenarios: progress.randomizedScenarios || {},
-                lastUpdated: progress.lastUpdated || new Date().toISOString()
-            };
-            
-            // Special check for history-based experience calculation for communication quiz
-            if (sanitizedProgress.experience === 0 && 
-                Array.isArray(sanitizedProgress.questionHistory) && 
-                sanitizedProgress.questionHistory.length > 0) {
-                
-                let calculatedExperience = 0;
-                
-                // Try to calculate experience from question history
-                sanitizedProgress.questionHistory.forEach(question => {
-                    if (question.selectedAnswer && typeof question.selectedAnswer.experience === 'number') {
-                        calculatedExperience += question.selectedAnswer.experience;
-                    }
-                });
-                
-                if (calculatedExperience > 0) {
-                    console.log(`[API Debug] Communication quiz: Calculated experience ${calculatedExperience} from question history`);
-                    sanitizedProgress.experience = calculatedExperience;
-                }
-            }
-            
-            console.log(`[API Debug] After fixes: experience=${sanitizedProgress.experience}`);
-            
-            // Ensure all required fields are present with defaults - now using the sanitized values
-            const progressData = {
-                experience: sanitizedProgress.experience,
-                questionsAnswered: sanitizedProgress.questionsAnswered,
-                status: sanitizedProgress.status,
-                scorePercentage: sanitizedProgress.scorePercentage,
-                tools: sanitizedProgress.tools,
-                questionHistory: sanitizedProgress.questionHistory,
-                currentScenario: sanitizedProgress.currentScenario,
-                randomizedScenarios: sanitizedProgress.randomizedScenarios,
-                lastUpdated: sanitizedProgress.lastUpdated
-            };
-            
-            // Check for inconsistent states before saving
-            // If completed/passed/failed, ensure we have the right number of questions
-            if (['completed', 'passed', 'failed'].includes(progressData.status)) {
-                // If we don't have enough questions answered, revert to in-progress
-                if (progressData.questionHistory.length < 15 && progressData.questionsAnswered < 15) {
-                    console.log(`[API] Fixing inconsistent state before save: quiz marked as ${progressData.status} but has insufficient questions. Setting to in-progress.`);
-                    progressData.status = 'in-progress';
-                }
-            }
-            
-            console.log(`[API] Processed progress data for ${normalizedQuizName}:`, {
-                currentScenario: progressData.currentScenario,
-                questionsAnswered: progressData.questionsAnswered,
-                status: progressData.status,
-                questionHistoryLength: (progressData.questionHistory || []).length,
-                experience: progressData.experience,
-                experienceType: typeof progressData.experience
-            });
-            
-            // First save to localStorage as backup
-            let localSaveSuccessful = false;
-            try {
-                const username = localStorage.getItem('username');
-                if (username) {
-                    // Use the new unique storage key method
-                    const storageKey = this.getUniqueQuizStorageKey(username, normalizedQuizName);
-                    
-                    // Save with the new key format
-                    localStorage.setItem(storageKey, JSON.stringify({ 
-                        data: progressData,
-                        timestamp: new Date().toISOString(),
-                        quizName: normalizedQuizName // Explicitly add quiz name to data for verification
-                    }));
-                    
-                    console.log(`[API] Saved backup to localStorage with strict key for ${normalizedQuizName}: ${storageKey}`);
-                    
-                    // Set success flag
-                    localSaveSuccessful = true;
-                    
-                    // Also save to old format for backward compatibility during transition
-                    const oldStorageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-                    localStorage.setItem(oldStorageKey, JSON.stringify({ 
-                            data: progressData,
-                        timestamp: new Date().toISOString(),
-                        quizName: normalizedQuizName // Add quiz name for verification
-                        }));
-                    console.log(`[API] Also saved to old format key for backward compatibility: ${oldStorageKey}`);
-                } else {
-                    console.warn('[API] Could not save to localStorage - no username found');
-                }
-            } catch (e) {
-                console.error('[API] Failed to save localStorage backup:', e);
-            }
-            
-            // Try to save to API with normalized quiz name
-            let apiSaveSuccessful = false;
-            
-            try {
-                // Augment the post data with explicit metadata
-                const postData = {
-                    quizName: normalizedQuizName,
-                    progress: progressData,
-                    _metaInfo: {
-                        clientTimestamp: new Date().toISOString(),
-                        originalQuizName: quizName,
-                        normalizedQuizName: normalizedQuizName,
-                        experienceType: typeof progressData.experience
-                    }
-                };
-                
-                console.log(`[API] Saving to API: ${normalizedQuizName}`, postData);
-                
-                const apiUrl = `${this.baseUrl}/users/quiz-progress`;
-                console.log(`[API] POST URL: ${apiUrl}`);
-                
-                const response = await this.fetchWithAuth(
-                    apiUrl,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(postData)
-                    }
-                );
-                
-                if (response && response.success) {
-                    console.log(`[API] Successfully saved progress for quiz ${normalizedQuizName}`);
-                    apiSaveSuccessful = true;
-                } else {
-                    console.warn(`[API] Failed to save progress to API: ${response?.message || 'Unknown error'}`);
-                }
-            } catch (apiError) {
-                console.error(`[API] Error saving to API:`, apiError);
-            }
-            
-            return {
-                success: true,
-                data: progressData,
-                apiSaved: apiSaveSuccessful,
-                localSaved: localSaveSuccessful
-            };
-            
-        } catch (error) {
-            console.error(`[API] Error saving quiz progress:`, error);
-            
-            // Try to save to localStorage as last resort fallback
-            try {
-                const username = localStorage.getItem('username');
-                if (username) {
-                    // Create a sanitized copy of progress to ensure we're storing valid data
-                    const fallbackProgress = {
-                        ...progress,
-                        experience: !isNaN(parseFloat(progress.experience)) ? parseFloat(progress.experience) : 0,
-                        questionsAnswered: !isNaN(parseInt(progress.questionsAnswered)) ? parseInt(progress.questionsAnswered) : 0,
-                        currentScenario: !isNaN(parseInt(progress.currentScenario)) ? parseInt(progress.currentScenario) : 0,
-                        scorePercentage: !isNaN(parseFloat(progress.scorePercentage)) ? parseFloat(progress.scorePercentage) : 0,
-                        tools: Array.isArray(progress.tools) ? progress.tools : [],
-                        questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : []
-                    };
-                    
-                    const normalizedQuizName = this.normalizeQuizName(quizName);
-                    const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-                    localStorage.setItem(storageKey, JSON.stringify({ 
-                        data: fallbackProgress,
-                        timestamp: new Date().toISOString() 
-                    }));
-                    
-                    console.log(`[API] Saved emergency fallback to localStorage for ${normalizedQuizName}`);
-                    
-                    // For communication quiz, save to additional emergency backup location
-                    if (normalizedQuizName === 'communication') {
-                        localStorage.setItem(`quiz_progress_${username}_communication_emergency`, JSON.stringify({ 
-                            data: fallbackProgress,
-                            timestamp: new Date().toISOString() 
-                        }));
-                        console.log(`[API] Created emergency backup for communication quiz`);
-                    }
-                    
-                    return {
-                        success: true,
-                        message: 'Saved to localStorage only (API failed)',
-                        data: fallbackProgress,
-                        apiSaved: false,
-                        localSaved: true
-                    };
-                }
-            } catch (e) {
-                console.error('[API] Failed to save localStorage fallback:', e);
-            }
-            
-            return {
-                success: false,
-                message: error.message || 'Failed to save quiz progress',
-                data: progress // Return original progress in case of error
-            };
-        }
-    }
-
     /**
-     * COMPREHENSIVE quiz data clearing for reset operations
-     * This method clears ALL possible sources where quiz data might be cached:
-     * - localStorage (quiz progress, timer persistence, emergency backups)
-     * - sessionStorage (any cached quiz data)
-     * - In-memory QuizUser cache (if available)
-     * - All timer persistence data for the quiz
-     * 
-     * @param {string} username - The username
-     * @param {string} quizName - The name of the quiz
-     * @returns {boolean} - Whether any data was cleared
+     * ENHANCED: Clear quiz localStorage and trigger cross-browser cache invalidation
+     * This now includes server-side session invalidation to handle multiple browsers/users
+     * PLUS prevents any further caching until page reload
      */
     clearQuizLocalStorage(username, quizName) {
         try {
@@ -2742,6 +2512,10 @@ export class APIService {
             }
             
             console.log(`[API] COMPREHENSIVE RESET: Clearing ALL cached data for quiz: ${quizName}, user: ${username}`);
+            
+            // NEW: Set a global flag to prevent any caching during this session
+            window.CACHE_INVALIDATED = true;
+            window.RESET_IN_PROGRESS = true;
             
             // Get the normalized quiz name for consistency
             const normalizedQuizName = this.normalizeQuizName(quizName);
@@ -2771,6 +2545,11 @@ export class APIService {
                 // User session invalidation markers
                 `session_invalid_${username}`,
                 `cache_invalid_${username}_${normalizedQuizName}`,
+                
+                // QuizProgressService keys
+                `strict_quiz_progress_${username}_${normalizedQuizName}`,
+                `quizResults_${username}_${normalizedQuizName}`,
+                `quizResults_${username}`,
             ];
             
             let cleared = false;
@@ -2787,7 +2566,7 @@ export class APIService {
             // Clear sessionStorage entries (quiz progress might be cached here too)
             try {
                 const sessionKeys = Object.keys(sessionStorage).filter(key => 
-                    (key.includes('quiz_progress') || key.includes('timer')) && 
+                    (key.includes('quiz_progress') || key.includes('timer') || key.includes('quizResults')) && 
                     (key.includes(username) || key.includes(normalizedQuizName) || key.includes(quizName))
                 );
                 
@@ -2808,6 +2587,11 @@ export class APIService {
                         console.log(`[API] RESET: Cleared QuizUser in-memory cache for ${normalizedQuizName}`);
                         cleared = true;
                     }
+                    // Clear all progress to be safe
+                    window.quizUser.quizProgress = {};
+                    window.quizUser.quizResults = window.quizUser.quizResults.filter(r => 
+                        r.quizName !== normalizedQuizName && r.quizName !== quizName
+                    );
                 }
                 
                 // Also try via IndexPage if available
@@ -2817,6 +2601,13 @@ export class APIService {
                         console.log(`[API] RESET: Cleared IndexPage QuizUser cache for ${normalizedQuizName}`);
                         cleared = true;
                     }
+                }
+                
+                // Clear QuizProgressService cache if available
+                if (window.quizProgressService) {
+                    console.log(`[API] RESET: Resetting QuizProgressService cache`);
+                    window.quizProgressService.initialized = false;
+                    cleared = true;
                 }
             } catch (memoryError) {
                 console.warn('[API] Error clearing in-memory cache:', memoryError);
@@ -2842,6 +2633,44 @@ export class APIService {
                 });
             } catch (scanError) {
                 console.warn('[API] Error during advanced localStorage scan:', scanError);
+            }
+            
+            // NEW: Set global flags to prevent further caching
+            window.CACHE_INVALIDATED = true;
+            window.RESET_IN_PROGRESS = true;
+            
+            // Clear QuizUser in-memory cache if accessible via window global
+            try {
+                if (window.quizUser && window.quizUser.quizProgress) {
+                    if (window.quizUser.quizProgress[normalizedQuizName]) {
+                        delete window.quizUser.quizProgress[normalizedQuizName];
+                        console.log(`[API] RESET: Cleared QuizUser in-memory cache for ${normalizedQuizName}`);
+                        cleared = true;
+                    }
+                    // Clear all progress to be safe
+                    window.quizUser.quizProgress = {};
+                    window.quizUser.quizResults = window.quizUser.quizResults.filter(r => 
+                        r.quizName !== normalizedQuizName && r.quizName !== quizName
+                    );
+                }
+                
+                // Also try via IndexPage if available
+                if (window.indexPage && window.indexPage.user && window.indexPage.user.quizProgress) {
+                    if (window.indexPage.user.quizProgress[normalizedQuizName]) {
+                        delete window.indexPage.user.quizProgress[normalizedQuizName];
+                        console.log(`[API] RESET: Cleared IndexPage QuizUser cache for ${normalizedQuizName}`);
+                        cleared = true;
+                    }
+                }
+                
+                // Clear QuizProgressService cache if available
+                if (window.quizProgressService) {
+                    console.log(`[API] RESET: Resetting QuizProgressService cache`);
+                    window.quizProgressService.initialized = false;
+                    cleared = true;
+                }
+            } catch (memoryError) {
+                console.warn('[API] Error clearing in-memory cache:', memoryError);
             }
             
             // NEW: Set cache invalidation markers for cross-browser detection
@@ -3072,5 +2901,144 @@ export class APIService {
         
         // Create the storage key with a prefix to avoid collisions with other data
         return `strict_quiz_progress_${username}_${normalizedQuizName}`;
+    }
+
+    /**
+     * NEW: Override saveQuizProgress to prevent saving during reset
+     */
+    async saveQuizProgress(quizName, progress) {
+        // Check if cache has been invalidated
+        if (window.CACHE_INVALIDATED || window.RESET_IN_PROGRESS) {
+            console.warn(`[API] RESET MODE: Preventing quiz progress save for ${quizName} - cache invalidated`);
+            return { success: false, message: 'Cache invalidated - please reload page' };
+        }
+        
+        try {
+            const normalizedQuizName = this.normalizeQuizName(quizName);
+            const username = localStorage.getItem('username');
+            
+            if (!username) {
+                console.warn('[API] No username found for saving quiz progress');
+                return { success: false, message: 'No username found' };
+            }
+
+            // Check server for cache invalidation first
+            const cacheInvalidated = await this.checkCacheInvalidation(username, normalizedQuizName);
+            if (cacheInvalidated) {
+                console.warn(`[API] Cache invalidated for ${normalizedQuizName} - preventing save`);
+                return { success: false, message: 'Cache invalidated - please reload page' };
+            }
+
+            // Store progress with normalized quiz name
+            const progressData = {
+                quizName: normalizedQuizName,
+                ...progress,
+                lastUpdated: new Date().toISOString()
+            };
+
+            // Save to localStorage with unique key
+            const storageKey = this.getUniqueQuizStorageKey(username, normalizedQuizName);
+            localStorage.setItem(storageKey, JSON.stringify(progressData));
+            console.log(`[API] Saved quiz progress for ${normalizedQuizName} with key: ${storageKey}`);
+
+            // Save to server
+            const response = await this.fetchWithAuth(`${this.baseUrl}/api/quiz-progress`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    quizName: normalizedQuizName,
+                    progress: progressData
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data;
+            } else {
+                console.error(`[API] Failed to save quiz progress to server: ${response.status}`);
+                // Still return success since localStorage save worked
+                return { success: true, message: 'Saved to local storage only' };
+            }
+        } catch (error) {
+            console.error(`[API] Error saving quiz progress for ${quizName}:`, error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * EMERGENCY: Force clear ALL cache for a specific user
+     * This can be called from browser console: window.apiService.forceClearAllUserCache('username')
+     */
+    forceClearAllUserCache(username) {
+        if (!username) {
+            console.error('[API] Username required for cache clearing');
+            return false;
+        }
+        
+        console.log(`[API] EMERGENCY CACHE CLEAR: Clearing ALL data for user: ${username}`);
+        
+        try {
+            // Get all localStorage keys
+            const allKeys = Object.keys(localStorage);
+            let clearedCount = 0;
+            
+            // Clear any key that contains the username
+            allKeys.forEach(key => {
+                if (key.toLowerCase().includes(username.toLowerCase()) || 
+                    key.includes('quiz') || 
+                    key.includes('timer') || 
+                    key.includes('progress') ||
+                    key.includes('results')) {
+                    localStorage.removeItem(key);
+                    console.log(`[API] Cleared: ${key}`);
+                    clearedCount++;
+                }
+            });
+            
+            // Clear all sessionStorage
+            sessionStorage.clear();
+            console.log(`[API] Cleared all sessionStorage`);
+            
+            // Clear all in-memory caches
+            if (window.quizUser) {
+                window.quizUser.quizProgress = {};
+                window.quizUser.quizResults = [];
+                console.log(`[API] Cleared QuizUser cache`);
+            }
+            
+            if (window.indexPage && window.indexPage.user) {
+                window.indexPage.user.quizProgress = {};
+                window.indexPage.user.quizResults = [];
+                console.log(`[API] Cleared IndexPage cache`);
+            }
+            
+            if (window.quizProgressService) {
+                window.quizProgressService.initialized = false;
+                console.log(`[API] Reset QuizProgressService`);
+            }
+            
+            // Set global flags
+            window.CACHE_INVALIDATED = true;
+            window.RESET_IN_PROGRESS = true;
+            
+            console.log(`[API] EMERGENCY CACHE CLEAR COMPLETE: Cleared ${clearedCount} localStorage keys`);
+            console.log(`[API] User should reload the page to see reset data`);
+            
+            return true;
+        } catch (error) {
+            console.error('[API] Error during emergency cache clear:', error);
+            return false;
+        }
+    }
+}
+
+// Make APIService available globally for debugging
+if (typeof window !== 'undefined') {
+    window.APIService = APIService;
+    // Create a global instance for console access
+    if (!window.apiService) {
+        window.apiService = new APIService();
     }
 } 

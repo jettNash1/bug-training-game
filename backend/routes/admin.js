@@ -324,11 +324,6 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
 
         console.log('Checking quiz variations:', quizVariations);
 
-        // Reset quiz progress for all variations
-        if (!user.quizProgress) {
-            user.quizProgress = new Map();
-        }
-
         // COMPREHENSIVE DATABASE RESET: Reset data in BOTH User models
         let userResetCount = 0;
         let quizUserResetCount = 0;
