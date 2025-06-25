@@ -290,10 +290,29 @@ function startResetTask() {
     console.log('[Reset Task] Starting background reset task...');
     resetTaskInterval = setInterval(async () => {
         try {
-            console.log('[Reset Task] Checking for due resets...');
+            const now = new Date();
+            console.log(`[Reset Task] Checking for due resets at ${now.toISOString()}`);
             
             // Import the admin route functions
             const { processScheduledResets, checkAutoResets } = require('./routes/admin');
+            
+            // First check if there are any pending scheduled resets
+            const ScheduledReset = require('./models/scheduledReset.model');
+            const pendingSchedules = await ScheduledReset.find({ 
+                status: 'pending',
+                resetDateTime: { $lte: now }
+            });
+            
+            console.log(`[Reset Task] Found ${pendingSchedules.length} pending scheduled resets due for processing`);
+            
+            if (pendingSchedules.length > 0) {
+                console.log('[Reset Task] Due scheduled resets:', pendingSchedules.map(s => ({
+                    username: s.username,
+                    quiz: s.quizName,
+                    resetTime: s.resetDateTime,
+                    status: s.status
+                })));
+            }
             
             // Process both types of resets
             const [scheduledResults, autoResults] = await Promise.all([
@@ -301,10 +320,9 @@ function startResetTask() {
                 checkAutoResets()
             ]);
             
-            // Only log if there were actual resets processed
-            if (scheduledResults?.processed > 0 || autoResults?.processed > 0) {
-                console.log(`[Reset Task] Processed ${scheduledResults?.processed || 0} scheduled resets and ${autoResults?.processed || 0} auto resets`);
-            }
+            // Always log the results for debugging
+            console.log(`[Reset Task] Results - Scheduled: ${scheduledResults?.processed || 0}, Auto: ${autoResults?.processed || 0}`);
+            
         } catch (error) {
             console.error('[Reset Task] Error processing resets:', error);
         }

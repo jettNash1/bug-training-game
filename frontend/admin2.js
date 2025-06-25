@@ -3573,12 +3573,23 @@ export class Admin2Dashboard {
             scheduledItemsList.innerHTML = '';
             
             if (schedules.length === 0) {
-                scheduledItemsList.innerHTML = '<p class="no-items-message">No scheduled resets yet.</p>';
+                scheduledItemsList.innerHTML = `
+                    <p class="no-items-message">No scheduled resets yet.</p>
+                    <button onclick="window.admin2Dashboard.debugScheduledResets()" class="btn btn-secondary btn-sm" style="margin-top: 10px;">Debug Scheduled Resets</button>
+                `;
                 return;
             }
             
             // Sort schedules by date/time (earliest first)
             schedules.sort((a, b) => new Date(a.resetDateTime) - new Date(b.resetDateTime));
+
+            // Add debug button before the list
+            const debugButton = document.createElement('button');
+            debugButton.className = 'btn btn-secondary btn-sm';
+            debugButton.style.marginBottom = '10px';
+            debugButton.textContent = 'Debug Scheduled Resets';
+            debugButton.onclick = () => window.admin2Dashboard.debugScheduledResets();
+            scheduledItemsList.appendChild(debugButton);
             
             // Create list items for each scheduled reset
             schedules.forEach(schedule => {
@@ -3673,6 +3684,40 @@ export class Admin2Dashboard {
             
             // Refresh the display to ensure consistency
             await this.loadScheduledResets();
+        }
+    }
+
+    async debugScheduledResets() {
+        try {
+            const response = await this.apiService.getScheduledResetsDebug();
+            if (response.success) {
+                console.log('DEBUG: Scheduled Resets Data:', response.data);
+                
+                const debugInfo = response.data;
+                let message = `DEBUG INFO:\n\n`;
+                message += `Current Server Time: ${debugInfo.currentTime}\n`;
+                message += `Current Local Time: ${debugInfo.currentTimeLocal}\n`;
+                message += `Total Schedules: ${debugInfo.totalSchedules}\n\n`;
+                
+                debugInfo.schedules.forEach((schedule, index) => {
+                    message += `Schedule ${index + 1}:\n`;
+                    message += `  Username: ${schedule.username}\n`;
+                    message += `  Quiz: ${schedule.quizName}\n`;
+                    message += `  Reset DateTime (UTC): ${schedule.resetDateTime}\n`;
+                    message += `  Reset DateTime (Local): ${schedule.resetDateTimeLocal}\n`;
+                    message += `  Status: ${schedule.status}\n`;
+                    message += `  Is Past Due: ${schedule.isPast}\n`;
+                    message += `  Hours Until Reset: ${schedule.hoursUntilReset}\n`;
+                    message += `  Timezone Offset: ${schedule.timezoneOffset}\n\n`;
+                });
+                
+                alert(message);
+            } else {
+                alert('Failed to fetch debug info: ' + response.message);
+            }
+        } catch (error) {
+            console.error('Error getting debug info:', error);
+            alert('Error getting debug info: ' + error.message);
         }
     }
     

@@ -1673,6 +1673,10 @@ export class APIService {
             throw error;
         }
     }
+
+    async getScheduledResetsDebug() {
+        return this.fetchWithAdminAuth(`${this.baseUrl}/admin/schedules/debug`);
+    }
     
     async createScheduledReset(username, quizName, resetDateTime) {
         try {

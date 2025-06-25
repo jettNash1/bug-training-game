@@ -1929,6 +1929,32 @@ async function checkAutoResets() {
 async function processScheduledResets() {
     try {
         const now = new Date();
+        console.log(`[processScheduledResets] Starting at ${now.toISOString()}`);
+        
+        // First, let's see what schedules exist
+        const allSchedules = await ScheduledReset.find({});
+        console.log(`[processScheduledResets] Total schedules in database: ${allSchedules.length}`);
+        
+        const pendingSchedules = await ScheduledReset.find({ status: 'pending' });
+        console.log(`[processScheduledResets] Pending schedules: ${pendingSchedules.length}`);
+        
+        const dueSchedules = await ScheduledReset.find({ 
+            status: 'pending',
+            resetDateTime: { $lte: now }
+        });
+        console.log(`[processScheduledResets] Due schedules: ${dueSchedules.length}`);
+        
+        if (dueSchedules.length > 0) {
+            console.log(`[processScheduledResets] Due schedules details:`, dueSchedules.map(s => ({
+                id: s._id,
+                username: s.username,
+                quiz: s.quizName,
+                resetDateTime: s.resetDateTime,
+                resetDateTimeISO: s.resetDateTime.toISOString(),
+                currentTime: now.toISOString(),
+                isPast: s.resetDateTime <= now
+            })));
+        }
         
         // Use atomic findOneAndUpdate to prevent race conditions
         // This ensures only one process can claim each scheduled reset
@@ -1953,8 +1979,11 @@ async function processScheduledResets() {
             
             // If no more due schedules, break
             if (!schedule) {
+                console.log(`[processScheduledResets] No more due schedules to process`);
                 break;
             }
+            
+            console.log(`[processScheduledResets] Processing schedule ${schedule._id} for ${schedule.username}'s ${schedule.quizName} quiz`);
             try {
                 // Use the same comprehensive reset logic as the API endpoint
                 const user = await User.findOne({ username: schedule.username });
@@ -2172,6 +2201,54 @@ router.post('/auto-reset/:quizName', auth, async (req, res) => {
             success: false,
             message: 'Batch auto-reset failed',
             error: error.message
+        });
+    }
+});
+
+// Debug endpoint to check scheduled resets with detailed info
+router.get('/schedules/debug', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const now = new Date();
+        const schedules = await ScheduledReset.find({}).sort({ resetDateTime: 1 });
+        
+        const debugInfo = schedules.map(schedule => ({
+            id: schedule._id,
+            username: schedule.username,
+            quizName: schedule.quizName,
+            resetDateTime: schedule.resetDateTime,
+            resetDateTimeString: schedule.resetDateTime.toISOString(),
+            resetDateTimeLocal: schedule.resetDateTime.toLocaleString(),
+            timezoneOffset: schedule.timezoneOffset,
+            status: schedule.status,
+            createdAt: schedule.createdAt,
+            currentTime: now.toISOString(),
+            currentTimeLocal: now.toLocaleString(),
+            isPast: schedule.resetDateTime <= now,
+            hoursUntilReset: Math.round((schedule.resetDateTime - now) / (1000 * 60 * 60))
+        }));
+        
+        res.json({
+            success: true,
+            data: {
+                totalSchedules: schedules.length,
+                currentTime: now.toISOString(),
+                currentTimeLocal: now.toLocaleString(),
+                schedules: debugInfo
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching debug schedule info:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch debug schedule info'
         });
     }
 });
