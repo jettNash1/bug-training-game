@@ -2073,6 +2073,109 @@ router.post('/invalidate-cache', auth, async (req, res) => {
     }
 });
 
+// Batch auto-reset endpoint for all users of a specific quiz
+router.post('/auto-reset/:quizName', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { quizName } = req.params;
+        console.log(`[Batch Auto-Reset] Starting batch reset for quiz: ${quizName}`);
+
+        // Get all quiz name variations to handle different naming conventions
+        const quizVariations = [
+            quizName,
+            quizName.toLowerCase(),
+            quizName.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, ''),
+            quizName.replace(/-/g, ''),
+            quizName.charAt(0).toUpperCase() + quizName.slice(1).toLowerCase(),
+            quizName.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+        ].filter((v, i, arr) => arr.indexOf(v) === i); // Remove duplicates
+
+        // Get all users
+        const users = await User.find({});
+        let resetCount = 0;
+
+        for (const user of users) {
+            try {
+                let userModified = false;
+                
+                // Reset in main User model
+                if (!user.quizProgress) {
+                    user.quizProgress = new Map();
+                }
+
+                // Delete all variations from quiz progress
+                quizVariations.forEach(variant => {
+                    if (user.quizProgress.has(variant)) {
+                        user.quizProgress.delete(variant);
+                        userModified = true;
+                    }
+                });
+
+                // Remove quiz results for all variations
+                if (user.quizResults && user.quizResults.length > 0) {
+                    const originalLength = user.quizResults.length;
+                    user.quizResults = user.quizResults.filter(result => {
+                        if (!result || !result.quizName) return false;
+                        return !quizVariations.includes(result.quizName);
+                    });
+                    
+                    if (user.quizResults.length !== originalLength) {
+                        userModified = true;
+                    }
+                }
+
+                if (userModified) {
+                    await user.save();
+                    resetCount++;
+                }
+                
+                // Also check QuizUser model
+                const quizUser = await QuizUser.findOne({ username: user.username });
+                if (quizUser && quizUser.quizScores) {
+                    let quizUserModified = false;
+                    
+                    quizVariations.forEach(variant => {
+                        if (quizUser.quizScores.has(variant)) {
+                            quizUser.quizScores.delete(variant);
+                            quizUserModified = true;
+                        }
+                    });
+                    
+                    if (quizUserModified) {
+                        await quizUser.save();
+                    }
+                }
+                
+            } catch (userError) {
+                console.error(`[Batch Auto-Reset] Failed to reset ${quizName} for user ${user.username}:`, userError);
+            }
+        }
+
+        console.log(`[Batch Auto-Reset] Completed batch reset for ${quizName}. Reset ${resetCount} users.`);
+
+        res.json({
+            success: true,
+            message: `Batch auto-reset completed for ${quizName}`,
+            data: { resetCount, totalUsers: users.length, quizName }
+        });
+
+    } catch (error) {
+        console.error(`[Batch Auto-Reset] Error in batch auto-reset for ${req.params.quizName}:`, error);
+        res.status(500).json({
+            success: false,
+            message: 'Batch auto-reset failed',
+            error: error.message
+        });
+    }
+});
+
 // Export both the router and the functions for the background task
 module.exports = router;
 module.exports.checkAutoResets = checkAutoResets;

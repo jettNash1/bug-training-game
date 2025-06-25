@@ -5175,94 +5175,7 @@ export class Admin2Dashboard {
         });
     }
 
-    simpleUpdateCountdown(element, nextResetTimeString, quizName) {
-        try {
-            const resetDate = new Date(nextResetTimeString);
-            if (isNaN(resetDate.getTime())) {
-                element.textContent = 'Invalid date';
-                return;
-            }
 
-            const now = new Date();
-            const timeDiff = resetDate - now;
-
-            if (timeDiff <= 0) {
-                // Reset is due - trigger it and reset the countdown
-                element.textContent = 'Resetting...';
-                this.performAutoReset(quizName);
-                return;
-            }
-
-            // Simple time display
-            const totalMinutes = Math.floor(timeDiff / (1000 * 60));
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = totalMinutes % 60;
-            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-            if (hours > 0) {
-                element.textContent = `${hours}h ${minutes}m ${seconds}s`;
-            } else if (minutes > 0) {
-                element.textContent = `${minutes}m ${seconds}s`;
-            } else {
-                element.textContent = `${seconds}s`;
-            }
-        } catch (error) {
-            element.textContent = 'Error';
-        }
-    }
-
-    simpleCalculateNextReset(resetPeriod) {
-        try {
-            if (typeof resetPeriod !== 'number' || resetPeriod <= 0) return null;
-            
-            const now = new Date();
-            const nextReset = new Date(now.getTime() + (resetPeriod * 60 * 1000));
-            return nextReset.toISOString();
-        } catch (error) {
-            return null;
-        }
-    }
-
-    async performAutoReset(quizName) {
-        try {
-            console.log(`Auto-reset triggered for ${quizName}`);
-            
-            // Get all users and reset their quiz progress
-            const users = this.users || [];
-            let resetCount = 0;
-            
-            for (const user of users) {
-                try {
-                    // Reset this quiz for this user
-                    const response = await this.apiService.resetQuizProgress(user.username, quizName);
-                    if (response.success) {
-                        resetCount++;
-                    }
-                } catch (error) {
-                    console.error(`Failed to reset ${quizName} for ${user.username}:`, error);
-                }
-            }
-            
-            // Calculate next reset time
-            const settings = this.autoResetSettings[quizName];
-            if (settings && settings.resetPeriod) {
-                const nextReset = this.simpleCalculateNextReset(settings.resetPeriod);
-                if (nextReset) {
-                    settings.nextResetTime = nextReset;
-                    this.autoResetSettings[quizName] = settings;
-                    
-                    // Save the updated next reset time to the backend
-                    await this.apiService.saveAutoResetSetting(quizName, settings.resetPeriod, settings.enabled);
-                }
-            }
-            
-            this.showInfo(`Auto-reset completed for ${this.formatQuizName(quizName)}. Reset ${resetCount} users.`);
-            
-        } catch (error) {
-            console.error(`Auto-reset failed for ${quizName}:`, error);
-            this.showError(`Auto-reset failed for ${this.formatQuizName(quizName)}: ${error.message}`);
-        }
-    }
 
     getPeriodLabel(minutes) {
         if (minutes === 1) return '1 Minute';
@@ -6917,9 +6830,15 @@ export class Admin2Dashboard {
             const timeDiff = resetDate - now;
 
             if (timeDiff <= 0) {
-                // Reset is due - trigger it and reset the countdown
-                element.textContent = 'Resetting...';
-                this.performAutoReset(quizName);
+                // Reset is due - trigger it ONCE and prevent spam
+                if (!element.dataset.resetting) {
+                    element.dataset.resetting = 'true';
+                    element.textContent = 'Resetting...';
+                    this.performAutoReset(quizName).finally(() => {
+                        // Clear the resetting flag after completion
+                        delete element.dataset.resetting;
+                    });
+                }
                 return;
             }
 
@@ -6954,43 +6873,51 @@ export class Admin2Dashboard {
     }
 
     async performAutoReset(quizName) {
+        // Prevent multiple simultaneous resets for the same quiz
+        const resetKey = `reset_${quizName}`;
+        if (this[resetKey]) {
+            console.log(`Reset already in progress for ${quizName}, skipping`);
+            return;
+        }
+        
+        this[resetKey] = true;
+        
         try {
             console.log(`Auto-reset triggered for ${quizName}`);
             
-            // Get all users and reset their quiz progress
-            const users = this.users || [];
-            let resetCount = 0;
+            // Use the backend's batch reset function
+            const response = await this.apiService.fetchWithAdminAuth(
+                `${this.apiService.baseUrl}/admin/auto-reset/${quizName}`,
+                { method: 'POST' }
+            );
             
-            for (const user of users) {
-                try {
-                    // Reset this quiz for this user
-                    const response = await this.apiService.resetQuizProgress(user.username, quizName);
-                    if (response.success) {
-                        resetCount++;
+            if (response.success) {
+                console.log(`Backend auto-reset completed for ${quizName}: ${response.data?.resetCount || 'unknown'} users`);
+                
+                // Calculate next reset time
+                const settings = this.autoResetSettings[quizName];
+                if (settings && settings.resetPeriod) {
+                    const nextReset = this.simpleCalculateNextReset(settings.resetPeriod);
+                    if (nextReset) {
+                        settings.nextResetTime = nextReset;
+                        this.autoResetSettings[quizName] = settings;
+                        
+                        // Save the updated next reset time to the backend
+                        await this.apiService.saveAutoResetSetting(quizName, settings.resetPeriod, settings.enabled);
                     }
-                } catch (error) {
-                    console.error(`Failed to reset ${quizName} for ${user.username}:`, error);
                 }
+                
+                this.showInfo(`Auto-reset completed for ${this.formatQuizName(quizName)}. Reset ${response.data?.resetCount || 'all'} users.`);
+            } else {
+                throw new Error(response.message || 'Backend auto-reset failed');
             }
-            
-            // Calculate next reset time
-            const settings = this.autoResetSettings[quizName];
-            if (settings && settings.resetPeriod) {
-                const nextReset = this.simpleCalculateNextReset(settings.resetPeriod);
-                if (nextReset) {
-                    settings.nextResetTime = nextReset;
-                    this.autoResetSettings[quizName] = settings;
-                    
-                    // Save the updated next reset time to the backend
-                    await this.apiService.saveAutoResetSetting(quizName, settings.resetPeriod, settings.enabled);
-                }
-            }
-            
-            this.showInfo(`Auto-reset completed for ${this.formatQuizName(quizName)}. Reset ${resetCount} users.`);
             
         } catch (error) {
             console.error(`Auto-reset failed for ${quizName}:`, error);
             this.showError(`Auto-reset failed for ${this.formatQuizName(quizName)}: ${error.message}`);
+        } finally {
+            // Always clear the reset lock
+            delete this[resetKey];
         }
     }
 }
