@@ -5046,45 +5046,88 @@ export class Admin2Dashboard {
     }
 
     calculateNextResetTime(input) {
-        const now = new Date();
-        
-        // Handle both parameter types (setting object or resetPeriod)
-        const resetPeriod = typeof input === 'object' ? input.resetPeriod : input;
-        
-        // If resetPeriod is a number, it's in minutes
-        if (typeof resetPeriod === 'number') {
-            // Calculate next reset time from now
-            const nextReset = new Date(now.getTime() + (resetPeriod * 60 * 1000));
-            console.log(`Calculated next reset time: ${nextReset.toISOString()} (${resetPeriod} minutes from now)`);
-            return nextReset.toISOString();
+        try {
+            const now = new Date();
+            
+            // Validate current time
+            if (isNaN(now.getTime())) {
+                console.error('[ERROR] Current time is invalid');
+                return null;
+            }
+            
+            // Handle both parameter types (setting object or resetPeriod)
+            const resetPeriod = typeof input === 'object' ? input.resetPeriod : input;
+            
+            // Validate resetPeriod
+            if (resetPeriod === null || resetPeriod === undefined) {
+                console.error('[ERROR] resetPeriod is null or undefined');
+                return null;
+            }
+            
+            // If resetPeriod is a number, it's in minutes
+            if (typeof resetPeriod === 'number') {
+                // Validate the number is reasonable (not negative, not too large)
+                if (resetPeriod < 0 || resetPeriod > 525600) { // Max 1 year in minutes
+                    console.error(`[ERROR] Invalid resetPeriod number: ${resetPeriod}`);
+                    return null;
+                }
+                
+                // Calculate next reset time from now
+                const nextReset = new Date(now.getTime() + (resetPeriod * 60 * 1000));
+                
+                // Validate the calculated date
+                if (isNaN(nextReset.getTime())) {
+                    console.error(`[ERROR] Calculated date is invalid for period ${resetPeriod}`);
+                    return null;
+                }
+                
+                console.log(`[DEBUG] Calculated next reset time: ${nextReset.toISOString()} (${resetPeriod} minutes from now)`);
+                return nextReset.toISOString();
+            }
+            
+            // For string-based periods (daily, weekly, monthly)
+            if (typeof resetPeriod === 'string') {
+                let nextReset = new Date(now);
+                nextReset.setHours(0, 0, 0, 0); // Reset to midnight
+                
+                switch (resetPeriod.toLowerCase()) {
+                    case 'daily':
+                        // Next day at midnight
+                        nextReset.setDate(nextReset.getDate() + 1);
+                        break;
+                    case 'weekly':
+                        // Next Sunday at midnight
+                        const daysUntilSunday = (7 - nextReset.getDay()) % 7;
+                        nextReset.setDate(nextReset.getDate() + (daysUntilSunday || 7));
+                        break;
+                    case 'monthly':
+                        // First day of next month
+                        nextReset.setMonth(nextReset.getMonth() + 1);
+                        nextReset.setDate(1);
+                        break;
+                    default:
+                        console.error(`[ERROR] Unknown resetPeriod string: ${resetPeriod}`);
+                        // Default to daily
+                        nextReset.setDate(nextReset.getDate() + 1);
+                }
+                
+                // Validate the calculated date
+                if (isNaN(nextReset.getTime())) {
+                    console.error(`[ERROR] Calculated date is invalid for period ${resetPeriod}`);
+                    return null;
+                }
+                
+                console.log(`[DEBUG] Calculated next reset time: ${nextReset.toISOString()} (${resetPeriod})`);
+                return nextReset.toISOString();
+            }
+            
+            console.error(`[ERROR] Invalid resetPeriod type: ${typeof resetPeriod}`, resetPeriod);
+            return null;
+            
+        } catch (error) {
+            console.error('[ERROR] Exception in calculateNextResetTime:', error);
+            return null;
         }
-        
-        // For string-based periods (daily, weekly, monthly)
-        let nextReset = new Date(now);
-        nextReset.setHours(0, 0, 0, 0); // Reset to midnight
-        
-        switch (resetPeriod) {
-            case 'daily':
-                // Next day at midnight
-                nextReset.setDate(nextReset.getDate() + 1);
-                break;
-            case 'weekly':
-                // Next Sunday at midnight
-                const daysUntilSunday = (7 - nextReset.getDay()) % 7;
-                nextReset.setDate(nextReset.getDate() + (daysUntilSunday || 7));
-                break;
-            case 'monthly':
-                // First day of next month
-                nextReset.setMonth(nextReset.getMonth() + 1);
-                nextReset.setDate(1);
-                break;
-            default:
-                // Default to daily
-                nextReset.setDate(nextReset.getDate() + 1);
-        }
-        
-        console.log(`Calculated next reset time: ${nextReset.toISOString()} (${resetPeriod})`);
-        return nextReset.toISOString();
     }
 
     startCountdownUpdates() {
@@ -5137,9 +5180,23 @@ export class Admin2Dashboard {
             // calculate the nextResetTime dynamically
             if (!settings.nextResetTime && settings.resetPeriod && settings.enabled) {
                 try {
+                    // Validate resetPeriod before calculation
+                    if (!settings.resetPeriod || (typeof settings.resetPeriod !== 'number' && typeof settings.resetPeriod !== 'string')) {
+                        console.error(`[ERROR] Invalid resetPeriod for ${quizName}:`, settings.resetPeriod);
+                        element.textContent = 'Invalid period';
+                        return;
+                    }
+                    
                     // Use the second calculateNextResetTime that accepts just resetPeriod
                     const calculatedNextReset = this.calculateNextResetTime(settings.resetPeriod);
                     console.log(`[DEBUG] Dynamically calculated next reset for ${quizName}: ${calculatedNextReset}`);
+                    
+                    // Validate the calculated result
+                    if (!calculatedNextReset || calculatedNextReset === 'Invalid Date' || calculatedNextReset === null) {
+                        console.error(`[ERROR] Calculation returned invalid result for ${quizName}:`, calculatedNextReset);
+                        element.textContent = 'Calculation failed';
+                        return;
+                    }
                     
                     // Store the calculated time so we don't recalculate every second
                     settings.nextResetTime = calculatedNextReset;
@@ -5160,7 +5217,22 @@ export class Admin2Dashboard {
             }
 
             try {
+                // Validate the nextResetTime before creating Date object
+                if (!settings.nextResetTime || settings.nextResetTime === 'Invalid Date' || settings.nextResetTime === 'undefined') {
+                    console.error(`[ERROR] Invalid nextResetTime for ${quizName}:`, settings.nextResetTime);
+                    element.textContent = 'Invalid time';
+                    return;
+                }
+                
                 const nextResetTime = new Date(settings.nextResetTime);
+                
+                // Check if the Date object is valid
+                if (isNaN(nextResetTime.getTime())) {
+                    console.error(`[ERROR] nextResetTime creates invalid Date for ${quizName}:`, settings.nextResetTime);
+                    element.textContent = 'Invalid date';
+                    return;
+                }
+                
                 console.log(`[DEBUG] Calling updateCountdownDisplay for ${quizName} with time: ${nextResetTime}`);
                 this.updateCountdownDisplay(element, nextResetTime);
             } catch (error) {
@@ -5212,13 +5284,8 @@ export class Admin2Dashboard {
                 countdownElement.textContent = 'Reset due now!';
                 countdownElement.classList.add('countdown-overdue');
                 
-                // Get the quiz name from the element's data attribute
-                if (quizName) {
-                // DISABLED: Frontend checking is now handled by backend
-                // this.checkScheduledResets() - removed to prevent duplicate processing
-                // Force a UI update to reflect any changes
-                this.displayAutoResetSettings();
-                }
+                // REMOVED: this.displayAutoResetSettings() - was causing infinite recursion
+                // Backend handles the actual reset processing
                 
                 return;
             }
