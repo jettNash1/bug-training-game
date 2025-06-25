@@ -146,7 +146,7 @@ export class BadgeService {
                 } else if (progress.correctAnswers !== undefined && progress.totalQuestions !== undefined) {
                     // Calculate from correct/total counts - only if completed
                     if (progress.totalQuestions === TOTAL_QUIZ_QUESTIONS) {
-                        scorePercentage = (progress.correctAnswers / progress.totalQuestions) * 100;
+                    scorePercentage = (progress.correctAnswers / progress.totalQuestions) * 100;
                     } else {
                         scorePercentage = 0; // Incomplete quiz
                     }
@@ -396,8 +396,8 @@ export class BadgeService {
             
             if (quizResult && quizResult.score !== undefined) {
                 scorePercentage = quizResult.score;
-                          } else if (progress && progress.questionHistory && progress.questionHistory.length > 0) {
-                  const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+            } else if (progress && progress.questionHistory && progress.questionHistory.length > 0) {
+                const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
                   // Only calculate percentage if they've completed the full quiz
                   if (progress.questionHistory.length === TOTAL_QUIZ_QUESTIONS) {
                       scorePercentage = (correctAnswers / TOTAL_QUIZ_QUESTIONS) * 100;
@@ -405,7 +405,7 @@ export class BadgeService {
                       // If quiz is incomplete, show actual progress (questions answered / total)
                       scorePercentage = (progress.questionHistory.length / TOTAL_QUIZ_QUESTIONS) * 100;
                   }
-              }
+            }
             
             // Badge is earned only if completed all questions AND achieved 80%+ score
             const isCompleted = hasCompletedAllQuestions && scorePercentage >= 80;

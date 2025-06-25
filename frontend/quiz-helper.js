@@ -59,7 +59,7 @@ export class BaseQuiz {
         
         // Initialize timer with default value - will be properly loaded in initializeSettings()
         this.timePerQuestion = 30; // Default value (matches admin defaults)
-        this.timerDisabled = false;
+                            this.timerDisabled = false;
         
         this.remainingTime = null;
         this.questionStartTime = null; // Track when each question starts
@@ -276,8 +276,8 @@ export class BaseQuiz {
             console.error('[Quiz] Error initializing timer settings:', error);
             // Fallback to reasonable default if something goes wrong (consistent with admin defaults)
             if (this.timePerQuestion === undefined || this.timePerQuestion === null) {
-                this.timePerQuestion = 30;
-                this.timerDisabled = false;
+            this.timePerQuestion = 30;
+            this.timerDisabled = false;
             }
             return this.timePerQuestion;
         }

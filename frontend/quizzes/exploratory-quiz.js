@@ -151,12 +151,8 @@ export class ExploratoryQuiz extends BaseQuiz {
             if (this.timePerQuestion !== undefined && this.timePerQuestion !== null) {
                 console.log(`[ExploratoryQuiz] Timer settings loaded: ${this.timePerQuestion}s per question`);
                 
-                // Check for persisted timer state
-                const restoredTime = this.restoreTimerState();
-                if (restoredTime !== null) {
-                    this.persistedTimeRemaining = restoredTime;
-                    console.log(`[ExploratoryQuiz] Will restore timer to ${restoredTime}s`);
-                }
+                // Add page unload handler for timer persistence
+                this.addPageUnloadHandler();
                 
                 this.startGame();
                 return;
@@ -164,7 +160,10 @@ export class ExploratoryQuiz extends BaseQuiz {
             
             if (attempts >= maxAttempts) {
                 console.warn('[ExploratoryQuiz] Timer settings not loaded after maximum attempts, using BaseQuiz value');
-                // Use timer value already set by BaseQuiz (from admin settings or default)
+                
+                // Add page unload handler for timer persistence
+                this.addPageUnloadHandler();
+                
                 this.startGame();
                 return;
             }
@@ -276,6 +275,8 @@ export class ExploratoryQuiz extends BaseQuiz {
     
     // Initialize the timer for the current question
     initializeTimer() {
+        console.log(`[ExploratoryQuiz] Initializing timer for question ${this.player.questionHistory.length}`);
+        
         // Clear any existing timer
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
@@ -291,53 +292,52 @@ export class ExploratoryQuiz extends BaseQuiz {
             return;
         }
         
+        // Check if timer is disabled (0 seconds) or timer functionality is disabled
+        if (this.timerDisabled || this.timePerQuestion === 0) {
+            console.log(`[ExploratoryQuiz] Timer is disabled, hiding timer display`);
+            timerContainer.classList.add('hidden');
+            return;
+        }
+        
         // Show the timer
         timerContainer.classList.remove('hidden');
         timerContainer.classList.remove('visually-hidden');
         
-        // Determine time to use - check for restored time first
+        // Check for restored timer state first
+        const restoredTime = this.restoreTimerState();
         let timeLeft;
-        if (this.persistedTimeRemaining !== null) {
-            timeLeft = this.persistedTimeRemaining;
-            this.persistedTimeRemaining = null; // Clear it after use
-            console.log(`[ExploratoryQuiz] Resuming timer with ${timeLeft}s remaining`);
+        
+        if (restoredTime !== null) {
+            timeLeft = restoredTime;
+            console.log(`[ExploratoryQuiz] Restored timer with ${timeLeft} seconds remaining`);
         } else {
             timeLeft = this.timePerQuestion;
-            console.log(`[ExploratoryQuiz] Starting new timer with ${timeLeft}s`);
+            console.log(`[ExploratoryQuiz] Starting new timer with ${timeLeft} seconds`);
         }
         
-        // If timer is 0 or disabled, hide timer and continue without timing
-        if (timeLeft <= 0) {
-            console.log('[ExploratoryQuiz] Timer disabled (0 seconds)');
-            timerContainer.classList.add('hidden');
-            timerContainer.classList.add('visually-hidden');
-            return;
-        }
-        
-        // Update display and record start time
         timerDisplay.textContent = `${timeLeft}s`;
-        this.questionStartTime = Date.now();
-        this.timerStartTime = Date.now(); // For persistence calculations
+        this.timerStartTime = Date.now();
         
-        // Start the countdown
+        // Save timer state periodically
+        const saveInterval = setInterval(() => {
+            if (this.questionTimer && this.timerStartTime) {
+                this.saveCurrentTimerState();
+            } else {
+                clearInterval(saveInterval);
+            }
+        }, 3000); // Save every 3 seconds
+        
+        this.questionStartTime = Date.now();
         this.questionTimer = setInterval(() => {
             timeLeft--;
             timerDisplay.textContent = `${timeLeft}s`;
-            
-            // Save timer state every few seconds (not every second to avoid performance issues)
-            if (timeLeft % 3 === 0) {
-                this.saveTimerState(timeLeft);
-            }
-            
             if (timeLeft <= 0) {
                 clearInterval(this.questionTimer);
+                clearInterval(saveInterval);
                 this.questionTimer = null;
                 this.handleTimedOut();
             }
         }, 1000);
-        
-        // Save initial timer state
-        this.saveTimerState(timeLeft);
     }
     
     // Handle when time runs out for a question

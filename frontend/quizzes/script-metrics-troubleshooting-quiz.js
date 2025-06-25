@@ -138,25 +138,18 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
 
     // Wait for timer settings to be loaded before starting the game
     async startGameWhenReady() {
-        console.log('[ScriptMetricsQuiz] Waiting for timer settings to be loaded...');
+        console.log('[ScriptMetricsTroubleshootingQuiz] Waiting for timer settings to be loaded...');
         
         let attempts = 0;
         const maxAttempts = 50; // 5 seconds max wait
         
         const checkTimerSettings = () => {
             attempts++;
-            console.log(`[ScriptMetricsQuiz] Check attempt ${attempts}, timePerQuestion: ${this.timePerQuestion}`);
+            console.log(`[ScriptMetricsTroubleshootingQuiz] Check attempt ${attempts}, timePerQuestion: ${this.timePerQuestion}`);
             
             // Check if timer settings have been loaded (either from API or default)
             if (this.timePerQuestion !== undefined && this.timePerQuestion !== null) {
-                console.log(`[ScriptMetricsQuiz] Timer settings loaded: ${this.timePerQuestion}s per question`);
-                
-                // Check for persisted timer state
-                const restoredTime = this.restoreTimerState();
-                if (restoredTime !== null) {
-                    this.persistedTimeRemaining = restoredTime;
-                    console.log(`[ScriptMetricsQuiz] Will restore timer to ${restoredTime}s`);
-                }
+                console.log(`[ScriptMetricsTroubleshootingQuiz] Timer settings loaded: ${this.timePerQuestion}s per question`);
                 
                 // Add page unload handler for timer persistence
                 this.addPageUnloadHandler();
@@ -166,8 +159,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
             }
             
             if (attempts >= maxAttempts) {
-                console.warn('[ScriptMetricsQuiz] Timer settings not loaded after maximum attempts, using BaseQuiz value');
-                // Use timer value already set by BaseQuiz (from admin settings or default)
+                console.warn('[ScriptMetricsTroubleshootingQuiz] Timer settings not loaded after maximum attempts, using BaseQuiz value');
                 
                 // Add page unload handler for timer persistence
                 this.addPageUnloadHandler();
@@ -283,6 +275,8 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
     
     // Initialize the timer for the current question
     initializeTimer() {
+        console.log(`[ScriptMetricsTroubleshootingQuiz] Initializing timer for question ${this.player.questionHistory.length}`);
+        
         // Clear any existing timer
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
@@ -294,66 +288,56 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
         const timerDisplay = document.getElementById('timer-display');
         
         if (!timerContainer || !timerDisplay) {
-            console.error('[ScriptMetricsQuiz] Timer elements not found');
+            console.error('[ScriptMetricsTroubleshootingQuiz] Timer elements not found');
+            return;
+        }
+        
+        // Check if timer is disabled (0 seconds) or timer functionality is disabled
+        if (this.timerDisabled || this.timePerQuestion === 0) {
+            console.log(`[ScriptMetricsTroubleshootingQuiz] Timer is disabled, hiding timer display`);
+            timerContainer.classList.add('hidden');
             return;
         }
         
         // Show the timer
         timerContainer.classList.remove('hidden');
-        timerContainer.classList.remove('timer-warning');
+        timerContainer.classList.remove('visually-hidden');
         
-        // Determine time to use - check for restored time first
+        // Check for restored timer state first
+        const restoredTime = this.restoreTimerState();
         let timeLeft;
-        if (this.persistedTimeRemaining !== null) {
-            timeLeft = this.persistedTimeRemaining;
-            this.persistedTimeRemaining = null; // Clear it after use
-            console.log(`[ScriptMetricsQuiz] Resuming timer with ${timeLeft}s remaining`);
+        
+        if (restoredTime !== null) {
+            timeLeft = restoredTime;
+            console.log(`[ScriptMetricsTroubleshootingQuiz] Restored timer with ${timeLeft} seconds remaining`);
         } else {
             timeLeft = this.timePerQuestion;
-            console.log(`[ScriptMetricsQuiz] Starting new timer with ${timeLeft}s`);
+            console.log(`[ScriptMetricsTroubleshootingQuiz] Starting new timer with ${timeLeft} seconds`);
         }
         
-        // If timer is 0 or disabled, hide timer and continue without timing
-        if (timeLeft <= 0) {
-            console.log('[ScriptMetricsQuiz] Timer disabled (0 seconds)');
-            timerContainer.classList.add('hidden');
-            timerContainer.classList.add('visually-hidden');
-            return;
-        }
+        timerDisplay.textContent = `${timeLeft}s`;
+        this.timerStartTime = Date.now();
         
-        // Set starting time
-        timerDisplay.textContent = timeLeft;
+        // Save timer state periodically
+        const saveInterval = setInterval(() => {
+            if (this.questionTimer && this.timerStartTime) {
+                this.saveCurrentTimerState();
+            } else {
+                clearInterval(saveInterval);
+            }
+        }, 3000); // Save every 3 seconds
         
-        // Record start time
         this.questionStartTime = Date.now();
-        this.timerStartTime = Date.now(); // For persistence calculations
-        
-        // Start timer interval
         this.questionTimer = setInterval(() => {
-            const elapsedSeconds = Math.floor((Date.now() - this.questionStartTime) / 1000);
-            const remainingSeconds = Math.max(0, timeLeft - elapsedSeconds);
-            
-            timerDisplay.textContent = remainingSeconds;
-            
-            // Save timer state every few seconds (not every second to avoid performance issues)
-            if (remainingSeconds % 3 === 0) {
-                this.saveTimerState(remainingSeconds);
-            }
-            
-            // Add warning class when less than 10 seconds remain
-            if (remainingSeconds <= 10 && !timerContainer.classList.contains('timer-warning')) {
-                timerContainer.classList.add('timer-warning');
-            }
-            
-            // If time is up, auto-submit answer or select random option
-            if (remainingSeconds <= 0) {
+            timeLeft--;
+            timerDisplay.textContent = `${timeLeft}s`;
+            if (timeLeft <= 0) {
                 clearInterval(this.questionTimer);
+                clearInterval(saveInterval);
+                this.questionTimer = null;
                 this.handleTimedOut();
             }
         }, 1000);
-        
-        // Save initial timer state
-        this.saveTimerState(timeLeft);
     }
     
     // Handle when time runs out for a question
