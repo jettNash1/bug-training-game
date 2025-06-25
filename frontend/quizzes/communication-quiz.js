@@ -235,6 +235,8 @@ export class CommunicationQuiz extends BaseQuiz {
             // Check if the quiz is already completed
             if (this.shouldEndGame()) {
                 this.endGame(false);
+                // Hide loading overlay when showing completed quiz
+                this.hideLoadingOverlay();
                 return;
             }
             
@@ -248,11 +250,15 @@ export class CommunicationQuiz extends BaseQuiz {
             // Display the first/next scenario
             this.displayScenario();
             
+            // Hide loading overlay once quiz is ready
+            this.hideLoadingOverlay();
             this.isLoading = false;
         } catch (error) {
             console.error('[CommunicationQuiz] Error starting game:', error);
             this.isLoading = false;
             this.showError('Failed to start the quiz. Please refresh the page.');
+            // Hide loading overlay even on error
+            this.hideLoadingOverlay();
         }
     }
     

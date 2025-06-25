@@ -221,6 +221,8 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             // Check if the quiz is already completed
             if (this.shouldEndGame()) {
                 this.endGame(false);
+                // Hide loading overlay after showing end screen
+                this.hideLoadingOverlay();
                 return;
             }
             
@@ -234,10 +236,15 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             // Display the first/next scenario
             this.displayScenario();
             
+            // Hide loading overlay once everything is ready
+            this.hideLoadingOverlay();
+            
             this.isLoading = false;
         } catch (error) {
             console.error('[AutomationInterviewQuiz] Error starting game:', error);
             this.isLoading = false;
+            // Hide loading overlay even on error
+            this.hideLoadingOverlay();
             this.showError('Failed to start the quiz. Please refresh the page.');
         }
     }

@@ -2736,9 +2736,12 @@ export class APIService {
     }
 
     /**
-     * Clears localStorage data for a specific quiz
-     * This is useful when a quiz is completed to prevent old cached data from interfering
-     * with future attempts.
+     * COMPREHENSIVE quiz data clearing for reset operations
+     * This method clears ALL possible sources where quiz data might be cached:
+     * - localStorage (quiz progress, timer persistence, emergency backups)
+     * - sessionStorage (any cached quiz data)
+     * - In-memory QuizUser cache (if available)
+     * - All timer persistence data for the quiz
      * 
      * @param {string} username - The username
      * @param {string} quizName - The name of the quiz
@@ -2751,33 +2754,114 @@ export class APIService {
                 return false;
             }
             
-            console.log(`[API] Clearing localStorage data for quiz: ${quizName}, user: ${username}`);
+            console.log(`[API] COMPREHENSIVE RESET: Clearing ALL cached data for quiz: ${quizName}, user: ${username}`);
             
-            // Get the unique storage key for this quiz
+            // Get the normalized quiz name for consistency
             const normalizedQuizName = this.normalizeQuizName(quizName);
-            const storageKey = this.getUniqueQuizStorageKey(username, normalizedQuizName);
             
-            // Clear old format key too for backward compatibility
-            const oldStorageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+            // Storage keys to clear
+            const storageKeys = [
+                // Main quiz progress keys (new format)
+                this.getUniqueQuizStorageKey(username, normalizedQuizName),
+                
+                // Old format quiz progress keys
+                `quiz_progress_${username}_${normalizedQuizName}`,
+                
+                // Emergency backup keys
+                `quiz_progress_${username}_${normalizedQuizName}_backup`,
+                `quiz_progress_${username}_${normalizedQuizName}_emergency`,
+                
+                // QuizUser consolidated cache
+                `quizProgress_${username}`,
+                
+                // Timer persistence keys (check all possible question indices)
+                ...Array.from({length: 50}, (_, i) => `${normalizedQuizName}_timer_${username}_${i}`),
+                
+                // Additional timer key formats that might exist
+                `timer_${normalizedQuizName}_${username}`,
+                `${quizName}_timer_${username}`,
+            ];
             
             let cleared = false;
             
-            // Clear both new and old format keys
-            if (localStorage.getItem(storageKey) !== null) {
-                    localStorage.removeItem(storageKey);
-                console.log(`[API] Cleared localStorage entry for quiz: ${normalizedQuizName} (new format)`);
-                cleared = true;
+            // Clear localStorage entries
+            storageKeys.forEach(key => {
+                if (localStorage.getItem(key) !== null) {
+                    localStorage.removeItem(key);
+                    console.log(`[API] RESET: Cleared localStorage key: ${key}`);
+                    cleared = true;
+                }
+            });
+            
+            // Clear sessionStorage entries (quiz progress might be cached here too)
+            try {
+                const sessionKeys = Object.keys(sessionStorage).filter(key => 
+                    (key.includes('quiz_progress') || key.includes('timer')) && 
+                    (key.includes(username) || key.includes(normalizedQuizName) || key.includes(quizName))
+                );
+                
+                sessionKeys.forEach(key => {
+                    sessionStorage.removeItem(key);
+                    console.log(`[API] RESET: Cleared sessionStorage key: ${key}`);
+                    cleared = true;
+                });
+            } catch (sessionError) {
+                console.warn('[API] Error clearing sessionStorage:', sessionError);
             }
             
-            if (localStorage.getItem(oldStorageKey) !== null) {
-                localStorage.removeItem(oldStorageKey);
-                console.log(`[API] Cleared localStorage entry for quiz: ${normalizedQuizName} (old format)`);
-                cleared = true;
+            // Clear QuizUser in-memory cache if accessible via window global
+            try {
+                if (window.quizUser && window.quizUser.quizProgress) {
+                    if (window.quizUser.quizProgress[normalizedQuizName]) {
+                        delete window.quizUser.quizProgress[normalizedQuizName];
+                        console.log(`[API] RESET: Cleared QuizUser in-memory cache for ${normalizedQuizName}`);
+                        cleared = true;
+                    }
+                }
+                
+                // Also try via IndexPage if available
+                if (window.indexPage && window.indexPage.user && window.indexPage.user.quizProgress) {
+                    if (window.indexPage.user.quizProgress[normalizedQuizName]) {
+                        delete window.indexPage.user.quizProgress[normalizedQuizName];
+                        console.log(`[API] RESET: Cleared IndexPage QuizUser cache for ${normalizedQuizName}`);
+                        cleared = true;
+                    }
+                }
+            } catch (memoryError) {
+                console.warn('[API] Error clearing in-memory cache:', memoryError);
+            }
+            
+            // Advanced cleanup: Scan ALL localStorage keys for this user/quiz combination
+            try {
+                const allKeys = Object.keys(localStorage);
+                const userQuizKeys = allKeys.filter(key => {
+                    const keyLower = key.toLowerCase();
+                    const usernameLower = username.toLowerCase();
+                    const quizLower = normalizedQuizName.toLowerCase();
+                    
+                    return (keyLower.includes(usernameLower) && keyLower.includes(quizLower)) ||
+                           (keyLower.includes('quiz') && keyLower.includes(usernameLower) && keyLower.includes(quizLower)) ||
+                           (keyLower.includes('timer') && keyLower.includes(usernameLower) && keyLower.includes(quizLower));
+                });
+                
+                userQuizKeys.forEach(key => {
+                    localStorage.removeItem(key);
+                    console.log(`[API] RESET: Advanced cleanup - cleared localStorage key: ${key}`);
+                    cleared = true;
+                });
+            } catch (scanError) {
+                console.warn('[API] Error during advanced localStorage scan:', scanError);
+            }
+            
+            if (cleared) {
+                console.log(`[API] COMPREHENSIVE RESET COMPLETE: Successfully cleared all cached data for ${username}'s ${normalizedQuizName} quiz`);
+            } else {
+                console.log(`[API] RESET: No cached data found for ${username}'s ${normalizedQuizName} quiz`);
             }
             
             return cleared;
         } catch (error) {
-            console.error(`[API] Error clearing localStorage for quiz ${quizName}:`, error);
+            console.error(`[API] Error during comprehensive quiz data clearing for ${quizName}:`, error);
             return false;
         }
     }

@@ -2858,6 +2858,11 @@ export class Admin2Dashboard {
                 try {
                     const response = await this.apiService.resetQuizProgress(username, quizType);
                     if (response.success) {
+                        // CRITICAL FIX: Clear localStorage cache for this user's quiz
+                        // This prevents old cached progress from being restored when the user next visits the quiz
+                        this.apiService.clearQuizLocalStorage(username, quizType);
+                        console.log(`[Admin] Cleared localStorage cache for ${username}'s ${quizType} quiz`);
+                        
                         successCount++;
                     } else {
                         failureCount++;
@@ -2918,6 +2923,11 @@ export class Admin2Dashboard {
             if (!response.success) {
                 throw new Error(response.message || 'Failed to reset quiz progress');
             }
+
+            // CRITICAL FIX: Clear localStorage cache for this user's quiz
+            // This prevents old cached progress from being restored when the user next visits the quiz
+            this.apiService.clearQuizLocalStorage(username, quizType);
+            console.log(`[Admin] Cleared localStorage cache for ${username}'s ${quizType} quiz`);
 
             // Update the local user data to reflect the reset
             const user = this.users.find(u => u.username === username);
@@ -3780,6 +3790,11 @@ export class Admin2Dashboard {
                                         const resetResponse = await this.apiService.resetQuizProgress(username, setting.quizName);
                                         
                                         if (resetResponse.success) {
+                                            // CRITICAL FIX: Clear localStorage cache for this user's quiz
+                                            // This prevents old cached progress from being restored when the user next visits the quiz
+                                            this.apiService.clearQuizLocalStorage(username, setting.quizName);
+                                            console.log(`[Admin] Cleared localStorage cache for ${username}'s ${setting.quizName} quiz`);
+                                            
                                             successCount++;
                                             console.log(`Reset ${username}'s ${setting.quizName} quiz`);
                                         } else {
@@ -5390,6 +5405,11 @@ export class Admin2Dashboard {
                     const resetResponse = await this.apiService.resetQuizProgress(username, quizName);
                     
                     if (resetResponse.success) {
+                        // CRITICAL FIX: Clear localStorage cache for this user's quiz
+                        // This prevents old cached progress from being restored when the user next visits the quiz
+                        this.apiService.clearQuizLocalStorage(username, quizName);
+                        console.log(`[Admin] Cleared localStorage cache for ${username}'s ${quizName} quiz`);
+                        
                         successCount++;
                         console.log(`Reset ${username}'s ${quizName} quiz`);
                     } else {

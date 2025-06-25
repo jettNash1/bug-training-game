@@ -273,11 +273,14 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
             });
         }
 
-        console.log('Attempting to reset quiz progress:', { username, quizName });
+        console.log('Attempting COMPREHENSIVE quiz reset:', { username, quizName });
 
+        // COMPREHENSIVE RESET: Check both User models
         const user = await User.findOne({ username });
-        if (!user) {
-            console.log('User not found:', username);
+        const quizUser = await QuizUser.findOne({ username });
+        
+        if (!user && !quizUser) {
+            console.log('User not found in either User or QuizUser model:', username);
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
@@ -313,36 +316,74 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
             user.quizProgress = new Map();
         }
 
-        // Delete all variations from quiz progress
-        let deletedVariations = [];
-        quizVariations.forEach(variant => {
-            if (user.quizProgress.has(variant)) {
-                user.quizProgress.delete(variant);
-                deletedVariations.push(variant);
+        // COMPREHENSIVE DATABASE RESET: Reset data in BOTH User models
+        let userResetCount = 0;
+        let quizUserResetCount = 0;
+        
+        // Reset in main User model
+        if (user) {
+            if (!user.quizProgress) {
+                user.quizProgress = new Map();
             }
-        });
-        console.log('Deleted quiz progress for variations:', deletedVariations);
 
-        // Remove quiz results for all variations
-        if (user.quizResults) {
-            const initialLength = user.quizResults.length;
-            user.quizResults = user.quizResults.filter(result => {
-                if (!result || !result.quizName) return false;
-                const shouldKeep = !quizVariations.includes(result.quizName);
-                if (!shouldKeep) {
-                    console.log('Removing quiz result:', result.quizName);
+            // Delete all variations from quiz progress
+            let deletedVariations = [];
+            quizVariations.forEach(variant => {
+                if (user.quizProgress.has(variant)) {
+                    user.quizProgress.delete(variant);
+                    deletedVariations.push(variant);
+                    userResetCount++;
                 }
-                return shouldKeep;
             });
-            console.log(`Removed ${initialLength - user.quizResults.length} quiz results`);
-        }
+            console.log('User model - Deleted quiz progress for variations:', deletedVariations);
 
-        await user.save();
-        console.log('Successfully reset quiz progress for:', { username, quizName });
+            // Remove quiz results for all variations
+            if (user.quizResults) {
+                const initialLength = user.quizResults.length;
+                user.quizResults = user.quizResults.filter(result => {
+                    if (!result || !result.quizName) return false;
+                    const shouldKeep = !quizVariations.includes(result.quizName);
+                    if (!shouldKeep) {
+                        console.log('User model - Removing quiz result:', result.quizName);
+                        userResetCount++;
+                    }
+                    return shouldKeep;
+                });
+                console.log(`User model - Removed ${initialLength - user.quizResults.length} quiz results`);
+            }
+
+            await user.save();
+        }
+        
+        // Reset in QuizUser model (if it exists)
+        if (quizUser && quizUser.quizScores) {
+            console.log('QuizUser model found - resetting quiz scores');
+            quizVariations.forEach(variant => {
+                if (quizUser.quizScores.has(variant)) {
+                    quizUser.quizScores.delete(variant);
+                    console.log('QuizUser model - Deleted quiz score for:', variant);
+                    quizUserResetCount++;
+                }
+            });
+            
+            await quizUser.save();
+        }
+        console.log('COMPREHENSIVE RESET COMPLETE:', { 
+            username, 
+            quizName, 
+            userModelResets: userResetCount,
+            quizUserModelResets: quizUserResetCount,
+            totalResets: userResetCount + quizUserResetCount
+        });
         
         res.json({ 
             success: true,
-            message: `Quiz progress reset for user ${username}`,
+            message: `Comprehensive quiz progress reset for user ${username} (${userResetCount + quizUserResetCount} items cleared)`,
+            details: {
+                userModelResets: userResetCount,
+                quizUserModelResets: quizUserResetCount,
+                totalResets: userResetCount + quizUserResetCount
+            },
             user: user
         });
     } catch (error) {

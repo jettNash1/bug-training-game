@@ -14,6 +14,9 @@ export class BaseQuiz {
         this.questionTimer = null;
         this.apiService = new APIService();
         
+        // Show loading overlay immediately
+        this.showLoadingOverlay();
+        
         // Initialize QuizProgressService - use global instance if available
         this.quizProgressService = window.quizProgressService || new QuizProgressService();
         
@@ -80,6 +83,34 @@ export class BaseQuiz {
                 }
             }, 500);
         }
+    }
+
+    // Show the loading overlay
+    showLoadingOverlay() {
+        const overlay = document.getElementById('quizLoadingOverlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+            overlay.style.visibility = 'visible';
+        }
+        
+        // Hide the body content
+        document.body.classList.remove('quiz-initialized');
+    }
+
+    // Hide the loading overlay and show quiz content
+    hideLoadingOverlay() {
+        const overlay = document.getElementById('quizLoadingOverlay');
+        if (overlay) {
+            // Add fade-out animation
+            overlay.style.transition = 'opacity 0.3s ease-out';
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 300);
+        }
+        
+        // Show the body content
+        document.body.classList.add('quiz-initialized');
     }
 
     // Helper method to detect quiz name from URL or document
@@ -504,9 +535,14 @@ export class BaseQuiz {
             
             // Display the current scenario
             await this.displayScenario();
+            
+            // Hide loading overlay once everything is ready
+            this.hideLoadingOverlay();
         } catch (error) {
             console.error('[Quiz] Error in startGame:', error);
             this.showError('Failed to start the quiz. Please refresh the page and try again.');
+            // Hide loading overlay even on error
+            this.hideLoadingOverlay();
         }
     }
 
