@@ -911,8 +911,9 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
     
     // Timer persistence methods
     getTimerStorageKey() {
+        const username = localStorage.getItem('username') || 'anonymous';
         const questionIndex = this.player.questionHistory.length;
-        return `standard-script_timer_${this.player.username}_q${questionIndex}`;
+        return `standard-script_timer_${username}_q${questionIndex}`;
     }
     
     saveTimerState(timeRemaining) {
@@ -982,16 +983,19 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
     
     clearAllTimerStates() {
         try {
-            const keys = Object.keys(localStorage);
-            const prefix = `standard-script_timer_${this.player.username}_`;
+            const username = localStorage.getItem('username') || 'anonymous';
+            const prefix = `standard-script_timer_${username}_`;
             
-            keys.forEach(key => {
-                if (key.startsWith(prefix)) {
-                    localStorage.removeItem(key);
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(prefix)) {
+                    keysToRemove.push(key);
                 }
-            });
+            }
             
-            console.log('[StandardScriptTestingQuiz] Cleared all timer states');
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            console.log(`[StandardScriptTestingQuiz] Cleared ${keysToRemove.length} timer states`);
         } catch (error) {
             console.warn('[StandardScriptTestingQuiz] Failed to clear timer states:', error);
         }

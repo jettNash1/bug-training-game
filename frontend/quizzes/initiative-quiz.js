@@ -888,8 +888,9 @@ export class InitiativeQuiz extends BaseQuiz {
     
     // Timer persistence methods
     getTimerStorageKey() {
+        const username = localStorage.getItem('username') || 'anonymous';
         const questionIndex = this.player.questionHistory.length;
-        return `initiative_timer_${this.player.username}_q${questionIndex}`;
+        return `initiative_timer_${username}_q${questionIndex}`;
     }
     
     saveTimerState(timeRemaining) {
@@ -959,16 +960,19 @@ export class InitiativeQuiz extends BaseQuiz {
     
     clearAllTimerStates() {
         try {
-            const keys = Object.keys(localStorage);
-            const prefix = `initiative_timer_${this.player.username}_`;
+            const username = localStorage.getItem('username') || 'anonymous';
+            const prefix = `initiative_timer_${username}_`;
             
-            keys.forEach(key => {
-                if (key.startsWith(prefix)) {
-                    localStorage.removeItem(key);
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(prefix)) {
+                    keysToRemove.push(key);
                 }
-            });
+            }
             
-            console.log('[InitiativeQuiz] Cleared all timer states');
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            console.log(`[InitiativeQuiz] Cleared ${keysToRemove.length} timer states`);
         } catch (error) {
             console.warn('[InitiativeQuiz] Failed to clear timer states:', error);
         }

@@ -867,8 +867,9 @@ export class RiskManagementQuiz extends BaseQuiz {
     
     // Timer persistence methods
     getTimerStorageKey() {
+        const username = localStorage.getItem('username') || 'anonymous';
         const questionIndex = this.player.questionHistory.length;
-        return `risk-management_timer_${this.player.username}_q${questionIndex}`;
+        return `risk-management_timer_${username}_q${questionIndex}`;
     }
     
     saveTimerState(timeRemaining) {
@@ -938,16 +939,19 @@ export class RiskManagementQuiz extends BaseQuiz {
     
     clearAllTimerStates() {
         try {
-            const keys = Object.keys(localStorage);
-            const prefix = `risk-management_timer_${this.player.username}_`;
+            const username = localStorage.getItem('username') || 'anonymous';
+            const prefix = `risk-management_timer_${username}_`;
             
-            keys.forEach(key => {
-                if (key.startsWith(prefix)) {
-                    localStorage.removeItem(key);
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(prefix)) {
+                    keysToRemove.push(key);
                 }
-            });
+            }
             
-            console.log('[RiskManagementQuiz] Cleared all timer states');
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            console.log(`[RiskManagementQuiz] Cleared ${keysToRemove.length} timer states`);
         } catch (error) {
             console.warn('[RiskManagementQuiz] Failed to clear timer states:', error);
         }

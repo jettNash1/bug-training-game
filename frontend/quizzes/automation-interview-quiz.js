@@ -886,7 +886,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
      * Get the localStorage key for timer persistence for current question
      */
     getTimerStorageKey() {
-        const username = localStorage.getItem('username');
+        const username = localStorage.getItem('username') || 'anonymous';
         const questionIndex = this.player.questionHistory.length;
         return `${this.quizName}_timer_${username}_q${questionIndex}`;
     }
@@ -979,17 +979,20 @@ export class AutomationInterviewQuiz extends BaseQuiz {
      */
     clearAllTimerStates() {
         try {
-            const username = localStorage.getItem('username');
+            const username = localStorage.getItem('username') || 'anonymous';
             const keyPrefix = `${this.quizName}_timer_${username}_`;
             
             // Find and remove all timer-related keys for this quiz
+            const keysToRemove = [];
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
                 if (key && key.startsWith(keyPrefix)) {
-                    localStorage.removeItem(key);
-                    i--; // Adjust index since we removed an item
+                    keysToRemove.push(key);
                 }
             }
+            
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            console.log(`[AutomationInterviewQuiz] Cleared ${keysToRemove.length} timer states`);
         } catch (error) {
             console.error('[AutomationInterviewQuiz] Error clearing all timer states:', error);
         }
