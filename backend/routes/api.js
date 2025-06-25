@@ -219,4 +219,26 @@ router.get('/public/guide-settings', async (req, res) => {
             message: 'Failed to fetch guide settings'
         });
     }
+});
+
+// Version endpoint for cache busting
+router.get('/version', (req, res) => {
+    try {
+        // Read version from package.json or environment variable
+        const packageJson = require('../../package.json');
+        const version = process.env.APP_VERSION || packageJson.version || '1.0.0';
+        
+        res.json({
+            version: version,
+            timestamp: Date.now(),
+            environment: process.env.NODE_ENV || 'development'
+        });
+    } catch (error) {
+        console.error('Error getting version:', error);
+        res.json({
+            version: '1.0.0',
+            timestamp: Date.now(),
+            environment: 'unknown'
+        });
+    }
 }); 

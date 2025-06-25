@@ -3,6 +3,7 @@ import { QuizUser } from '../QuizUser.js';
 import { QuizProgressService } from '../services/QuizProgressService.js';
 import { QuizList } from '../quiz-list.js';
 import { checkAuth } from '../auth.js';
+import { cacheManager } from './cache-manager.js';
 
 function normalizeQuizName(quizName) {
     // Use the QuizProgressService's normalizeQuizName to ensure consistency
@@ -226,6 +227,9 @@ class IndexPage {
             
             // Show loading overlay
             this.showLoadingOverlay();
+            
+            // Initialize cache management first
+            await cacheManager.initialize();
             
             // Initialize API service
             this.apiService = new APIService();
