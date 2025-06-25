@@ -95,6 +95,32 @@ export const CacheUtils = {
         // Clear cache if it's been more than 1 hour since last clear
         return timeSinceLastClear > oneHour;
     },
+
+    /**
+     * Checks if a timer persistence key is still active (recent)
+     * @param {string} key - The localStorage key to check
+     * @returns {boolean} - True if timer key is still active
+     */
+    isActiveTimerKey(key) {
+        try {
+            // Timer keys have format: quizname_timer_username_qN
+            if (!key.includes('_timer_') || !key.includes('_q')) {
+                return false;
+            }
+            
+            const timerData = localStorage.getItem(key);
+            if (!timerData) return false;
+            
+            const data = JSON.parse(timerData);
+            if (!data.timestamp) return false;
+            
+            // Consider active if saved within last 30 minutes
+            const thirtyMinutes = 30 * 60 * 1000;
+            return (Date.now() - data.timestamp) < thirtyMinutes;
+        } catch (error) {
+            return false; // If we can't parse it, it's probably old/invalid
+        }
+    },
     
     /**
      * Simple cache clearing for page load issues
@@ -111,7 +137,7 @@ export const CacheUtils = {
             
             console.log('[CacheUtils] Performing automatic cache maintenance...');
             
-            // Clear old quiz-related cached data (but preserve user data)
+            // Clear old quiz-related cached data (but preserve user data and active timers)
             const preserveKeys = [
                 CONFIG.STORAGE_KEYS.USER_TOKEN,
                 CONFIG.STORAGE_KEYS.USERNAME,
@@ -122,9 +148,17 @@ export const CacheUtils = {
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
                 if (key && !preserveKeys.includes(key)) {
-                    // Only remove quiz-related keys and old app data
-                    if (key.includes('quiz_') || key.includes('app_') || key.includes('timer_')) {
+                    // Only remove specific old app data, but protect active timer sessions
+                    if (key.includes('app_') || key.includes('quiz_progress_old_') || key.includes('stale_')) {
                         keysToRemove.push(key);
+                    } else if (key.includes('timer_')) {
+                        // For timer keys, only remove if they're old/inactive
+                        if (!this.isActiveTimerKey(key)) {
+                            keysToRemove.push(key);
+                            console.log(`[CacheUtils] Removing old timer key: ${key}`);
+                        } else {
+                            console.log(`[CacheUtils] Preserving active timer key: ${key}`);
+                        }
                     }
                 }
             }
@@ -149,10 +183,10 @@ export const CacheUtils = {
 
 // Auto-run cache maintenance on import (non-blocking)
 if (typeof window !== 'undefined') {
-    // Run cache maintenance after a short delay to not block page load
+    // Run cache maintenance after a longer delay to avoid interfering with quiz initialization
     setTimeout(() => {
         CacheUtils.clearOldCache();
-    }, 2000);
+    }, 5000); // Increased from 2 seconds to 5 seconds
 }
 
 // Export for backward compatibility
