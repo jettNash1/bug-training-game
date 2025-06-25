@@ -997,12 +997,21 @@ export class TimeManagementQuiz extends BaseQuiz {
     }
     
     saveCurrentTimerState() {
-        if (this.questionTimer && this.timerStartTime) {
-            const elapsedTime = Math.floor((Date.now() - this.timerStartTime) / 1000);
-            const timeRemaining = Math.max(0, this.timePerQuestion - elapsedTime);
-            if (timeRemaining > 0) {
-                this.saveTimerState(timeRemaining);
+        if (!this.questionTimer || !this.timerStartTime) {
+            return;
+        }
+        
+        try {
+            // Calculate remaining time from timer display
+            const timerDisplay = document.getElementById('timer-display');
+            if (timerDisplay) {
+                const displayedTime = parseInt(timerDisplay.textContent);
+                if (!isNaN(displayedTime) && displayedTime > 0) {
+                    this.saveTimerState(displayedTime);
+                }
             }
+        } catch (error) {
+            console.error('[TimeManagementQuiz] Error saving current timer state:', error);
         }
     }
 }
