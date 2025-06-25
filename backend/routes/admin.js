@@ -1984,6 +1984,12 @@ async function processScheduledResets() {
             }
             
             console.log(`[processScheduledResets] Processing schedule ${schedule._id} for ${schedule.username}'s ${schedule.quizName} quiz`);
+            console.log(`[processScheduledResets] Schedule details:`, {
+                resetDateTime: schedule.resetDateTime,
+                resetDateTimeISO: schedule.resetDateTime.toISOString(),
+                currentTime: now.toISOString(),
+                timezoneOffset: schedule.timezoneOffset
+            });
             try {
                 // Use the same comprehensive reset logic as the API endpoint
                 const user = await User.findOne({ username: schedule.username });
@@ -2042,16 +2048,19 @@ async function processScheduledResets() {
                     await quizUser.save();
                 }
                 
-                // Mark schedule as completed
-                schedule.status = 'completed';
-                await schedule.save();
+                // Mark schedule as completed and then delete it
+                console.log(`[Scheduled Reset] Successfully reset ${schedule.quizName} for ${schedule.username}`);
                 
-                console.log(`[Scheduled Reset] Processed reset for ${schedule.username}'s ${schedule.quizName} quiz`);
+                // Delete the schedule since it's completed
+                await ScheduledReset.findByIdAndDelete(schedule._id);
+                console.log(`[Scheduled Reset] Deleted completed schedule ${schedule._id}`);
+                
                 processedCount++;
             } catch (error) {
                 console.error(`[Scheduled Reset] Error processing schedule ${schedule._id}:`, error);
-                schedule.status = 'failed';
-                await schedule.save();
+                // Delete failed schedules to prevent them from being retried indefinitely
+                await ScheduledReset.findByIdAndDelete(schedule._id);
+                console.log(`[Scheduled Reset] Deleted failed schedule ${schedule._id}`);
             }
         }
         
@@ -2205,53 +2214,6 @@ router.post('/auto-reset/:quizName', auth, async (req, res) => {
     }
 });
 
-// Debug endpoint to check scheduled resets with detailed info
-router.get('/schedules/debug', auth, async (req, res) => {
-    try {
-        // Verify admin status
-        if (!req.user.isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin access required'
-            });
-        }
-
-        const now = new Date();
-        const schedules = await ScheduledReset.find({}).sort({ resetDateTime: 1 });
-        
-        const debugInfo = schedules.map(schedule => ({
-            id: schedule._id,
-            username: schedule.username,
-            quizName: schedule.quizName,
-            resetDateTime: schedule.resetDateTime,
-            resetDateTimeString: schedule.resetDateTime.toISOString(),
-            resetDateTimeLocal: schedule.resetDateTime.toLocaleString(),
-            timezoneOffset: schedule.timezoneOffset,
-            status: schedule.status,
-            createdAt: schedule.createdAt,
-            currentTime: now.toISOString(),
-            currentTimeLocal: now.toLocaleString(),
-            isPast: schedule.resetDateTime <= now,
-            hoursUntilReset: Math.round((schedule.resetDateTime - now) / (1000 * 60 * 60))
-        }));
-        
-        res.json({
-            success: true,
-            data: {
-                totalSchedules: schedules.length,
-                currentTime: now.toISOString(),
-                currentTimeLocal: now.toLocaleString(),
-                schedules: debugInfo
-            }
-        });
-    } catch (error) {
-        console.error('Error fetching debug schedule info:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch debug schedule info'
-        });
-    }
-});
 
 // Export both the router and the functions for the background task
 module.exports = router;
