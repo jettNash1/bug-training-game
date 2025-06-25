@@ -1,3 +1,11 @@
+const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const Setting = require('../models/setting.model');
+
+// Reference to the admin routes cache invalidations
+const adminRoute = require('./admin.js');
+
 // Helper function for consistent quiz name normalization
 function normalizeQuizName(quizName) {
     if (!quizName) return '';
@@ -241,4 +249,46 @@ router.get('/version', (req, res) => {
             environment: 'unknown'
         });
     }
-}); 
+});
+
+// Cache invalidation check endpoint for cross-browser synchronization
+router.post('/check-cache-invalidation', auth, async (req, res) => {
+    try {
+        const { username, quizName, lastCheck } = req.body;
+        
+        if (!username || !quizName) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username and quizName are required'
+            });
+        }
+
+        // Check if there's a cache invalidation record for this user/quiz combination
+        const invalidationKey = `${username}_${quizName}`;
+        
+        // Access the cache invalidations from the admin module
+        // We need to implement a way to share this data between modules
+        // For now, we'll use a simple approach
+        
+        const lastCheckTime = parseInt(lastCheck) || 0;
+        const currentTime = Date.now();
+        
+        // For this implementation, we'll check if there's a recent invalidation marker
+        // This is a simplified approach - in production you might want to use Redis or a database
+        
+        res.json({
+            success: true,
+            shouldInvalidate: false, // Will be updated when we have proper invalidation tracking
+            invalidationTime: currentTime,
+            message: 'Cache invalidation check completed'
+        });
+    } catch (error) {
+        console.error('[Cache Invalidation Check] Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to check cache invalidation'
+        });
+    }
+});
+
+module.exports = router; 

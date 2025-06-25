@@ -198,6 +198,16 @@ export class BaseQuiz {
                 return false;
             }
             
+            // NEW: Check for cache invalidation before loading progress
+            try {
+                const cacheInvalidated = await this.apiService.checkCacheInvalidation(username, this.quizName);
+                if (cacheInvalidated) {
+                    console.log(`[${this.quizName}] Cache was invalidated by admin - cleared old data`);
+                }
+            } catch (cacheError) {
+                console.warn(`[${this.quizName}] Cache invalidation check failed (continuing normally):`, cacheError);
+            }
+            
             // Use QuizProgressService to get progress
             const progressResult = await this.quizProgressService.getQuizProgress(this.quizName);
             

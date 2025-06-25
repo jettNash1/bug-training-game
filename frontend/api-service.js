@@ -2767,6 +2767,10 @@ export class APIService {
                 // Additional timer key formats that might exist
                 `timer_${normalizedQuizName}_${username}`,
                 `${quizName}_timer_${username}`,
+                
+                // User session invalidation markers
+                `session_invalid_${username}`,
+                `cache_invalid_${username}_${normalizedQuizName}`,
             ];
             
             let cleared = false;
@@ -2840,6 +2844,21 @@ export class APIService {
                 console.warn('[API] Error during advanced localStorage scan:', scanError);
             }
             
+            // NEW: Set cache invalidation markers for cross-browser detection
+            try {
+                const invalidationTimestamp = Date.now();
+                localStorage.setItem(`cache_invalidated_${username}_${normalizedQuizName}`, invalidationTimestamp.toString());
+                localStorage.setItem(`reset_timestamp_${username}`, invalidationTimestamp.toString());
+                console.log(`[API] RESET: Set cache invalidation markers for cross-browser detection`);
+            } catch (invalidationError) {
+                console.warn('[API] Error setting cache invalidation markers:', invalidationError);
+            }
+            
+            // NEW: Trigger server-side cache invalidation notification
+            this.notifyServerCacheInvalidation(username, normalizedQuizName).catch(error => {
+                console.warn('[API] Failed to notify server of cache invalidation:', error);
+            });
+            
             if (cleared) {
                 console.log(`[API] COMPREHENSIVE RESET COMPLETE: Successfully cleared all cached data for ${username}'s ${normalizedQuizName} quiz`);
             } else {
@@ -2849,6 +2868,81 @@ export class APIService {
             return cleared;
         } catch (error) {
             console.error(`[API] Error during comprehensive quiz data clearing for ${quizName}:`, error);
+            return false;
+        }
+    }
+
+    /**
+     * NEW: Notify server about cache invalidation for cross-browser sync
+     * This helps other browser sessions know to refresh their cache
+     */
+    async notifyServerCacheInvalidation(username, quizName) {
+        try {
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/invalidate-cache`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    quizName,
+                    timestamp: Date.now()
+                })
+            });
+            
+            if (response.ok) {
+                console.log(`[API] Successfully notified server of cache invalidation for ${username}'s ${quizName}`);
+            } else {
+                console.warn(`[API] Server cache invalidation notification failed with status: ${response.status}`);
+            }
+        } catch (error) {
+            console.warn('[API] Failed to notify server of cache invalidation:', error);
+        }
+    }
+
+    /**
+     * NEW: Check if cache has been invalidated by another browser session
+     * This should be called when a user loads a quiz
+     */
+    async checkCacheInvalidation(username, quizName) {
+        try {
+            const normalizedQuizName = this.normalizeQuizName(quizName);
+            
+            // Check for local invalidation markers
+            const localInvalidationKey = `cache_invalidated_${username}_${normalizedQuizName}`;
+            const localInvalidationTime = localStorage.getItem(localInvalidationKey);
+            
+            // Check server for invalidation notifications
+            const response = await this.fetchWithAuth(`${this.baseUrl}/api/check-cache-invalidation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    quizName: normalizedQuizName,
+                    lastCheck: localInvalidationTime || '0'
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.shouldInvalidate) {
+                    console.log(`[API] Cache invalidation detected for ${username}'s ${normalizedQuizName} - clearing local cache`);
+                    
+                    // Clear the specific quiz cache
+                    this.clearQuizLocalStorage(username, normalizedQuizName);
+                    
+                    // Update local invalidation timestamp
+                    localStorage.setItem(localInvalidationKey, data.invalidationTime.toString());
+                    
+                    return true;
+                }
+            }
+            
+            return false;
+        } catch (error) {
+            console.warn('[API] Error checking cache invalidation:', error);
             return false;
         }
     }

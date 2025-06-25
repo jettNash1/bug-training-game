@@ -4615,22 +4615,36 @@ export class Admin2Dashboard {
                 console.log('Loading auto-reset settings...');
                 
             const response = await this.apiService.getAutoResetSettings();
+                console.log('[DEBUG] API response for auto-reset settings:', response);
+                
                 if (response.success && response.data) {
+                    console.log('[DEBUG] Raw response.data:', response.data);
+                    
                     // Convert from array to object if needed
                     if (Array.isArray(response.data)) {
                         this.autoResetSettings = {};
-                        response.data.forEach(setting => {
+                        response.data.forEach((setting, index) => {
+                            console.log(`[DEBUG] Processing setting ${index}:`, setting);
                             if (setting.quizName) {
                                 this.autoResetSettings[setting.quizName] = setting;
+                                console.log(`[DEBUG] Added setting for ${setting.quizName}:`, setting);
+                            } else {
+                                console.error(`[ERROR] Setting missing quizName:`, setting);
                             }
                         });
                     } else if (typeof response.data === 'object') {
+                console.log('[DEBUG] Response data is already an object');
                 this.autoResetSettings = response.data;
                     } else {
+                        console.error('[ERROR] Response data is not array or object:', typeof response.data, response.data);
                         this.autoResetSettings = {};
                     }
                     
-                    console.log('Auto reset settings loaded:', this.autoResetSettings);
+                    console.log('[DEBUG] Final auto reset settings loaded:', this.autoResetSettings);
+                    
+                    // Check specifically for communication quiz
+                    const commQuiz = this.autoResetSettings['communication'] || this.autoResetSettings['Communication & Collaboration'] || this.autoResetSettings['communication-collaboration'];
+                    console.log('[DEBUG] Communication quiz setting:', commQuiz);
                     
                     // Then call displayAutoResetSettings directly
                     this.displayAutoResetSettings();
@@ -5087,35 +5101,72 @@ export class Admin2Dashboard {
 
     updateCountdowns() {
         const countdownElements = document.querySelectorAll('.countdown[data-quiz]');
-        if (!countdownElements.length) return;
+        if (!countdownElements.length) {
+            console.log('[DEBUG] No countdown elements found');
+            return;
+        }
+
+        console.log(`[DEBUG] Updating ${countdownElements.length} countdown elements`);
 
         countdownElements.forEach(element => {
             const quizName = element.dataset.quiz;
-            if (!quizName || !this.autoResetSettings || !this.autoResetSettings[quizName]) return;
+            console.log(`[DEBUG] Processing countdown for quiz: ${quizName}`);
+            
+            if (!quizName) {
+                console.error('[ERROR] Element missing quiz name:', element);
+                element.textContent = 'Missing quiz name';
+                return;
+            }
+            
+            if (!this.autoResetSettings) {
+                console.error('[ERROR] autoResetSettings is null/undefined');
+                element.textContent = 'Settings not loaded';
+                return;
+            }
+            
+            if (!this.autoResetSettings[quizName]) {
+                console.error(`[ERROR] No settings found for quiz: ${quizName}`, this.autoResetSettings);
+                element.textContent = 'Settings not found';
+                return;
+            }
 
             const settings = this.autoResetSettings[quizName];
+            console.log(`[DEBUG] Settings for ${quizName}:`, settings);
             
             // If nextResetTime is missing but we have resetPeriod and the setting is enabled,
             // calculate the nextResetTime dynamically
             if (!settings.nextResetTime && settings.resetPeriod && settings.enabled) {
-                // Use the second calculateNextResetTime that accepts just resetPeriod
-                const calculatedNextReset = this.calculateNextResetTime(settings.resetPeriod);
-                console.log(`Dynamically calculated next reset for ${quizName}: ${calculatedNextReset}`);
-                
-                // Store the calculated time so we don't recalculate every second
-                settings.nextResetTime = calculatedNextReset;
-                
-                // Update the autoResetSettings object with the calculated time
-                this.autoResetSettings[quizName] = settings;
+                try {
+                    // Use the second calculateNextResetTime that accepts just resetPeriod
+                    const calculatedNextReset = this.calculateNextResetTime(settings.resetPeriod);
+                    console.log(`[DEBUG] Dynamically calculated next reset for ${quizName}: ${calculatedNextReset}`);
+                    
+                    // Store the calculated time so we don't recalculate every second
+                    settings.nextResetTime = calculatedNextReset;
+                    
+                    // Update the autoResetSettings object with the calculated time
+                    this.autoResetSettings[quizName] = settings;
+                } catch (error) {
+                    console.error(`[ERROR] Failed to calculate next reset time for ${quizName}:`, error);
+                    element.textContent = 'Calculation error';
+                    return;
+                }
             }
             
             if (!settings.nextResetTime) {
+                console.log(`[DEBUG] No nextResetTime for ${quizName}, showing 'Not scheduled'`);
                 element.textContent = 'Not scheduled';
                 return;
             }
 
-            const nextResetTime = new Date(settings.nextResetTime);
-            this.updateCountdownDisplay(element, nextResetTime);
+            try {
+                const nextResetTime = new Date(settings.nextResetTime);
+                console.log(`[DEBUG] Calling updateCountdownDisplay for ${quizName} with time: ${nextResetTime}`);
+                this.updateCountdownDisplay(element, nextResetTime);
+            } catch (error) {
+                console.error(`[ERROR] Failed to create Date object for ${quizName}:`, error, 'nextResetTime:', settings.nextResetTime);
+                element.textContent = 'Date error';
+            }
         });
 
         // Ensure we have an interval running to update countdowns every second
@@ -5126,23 +5177,27 @@ export class Admin2Dashboard {
 
     updateCountdownDisplay(countdownElement, nextResetTime) {
         try {
+            const quizName = countdownElement.dataset.quiz;
+            console.log(`[DEBUG] updateCountdownDisplay called for quiz: ${quizName}, nextResetTime:`, nextResetTime);
+            
             // Ensure nextResetTime is a valid Date object
             let resetDate;
             
             if (typeof nextResetTime === 'string') {
                 resetDate = new Date(nextResetTime);
-                console.log(`Converted string date: ${nextResetTime} to Date object: ${resetDate}`);
+                console.log(`[DEBUG] Converted string date: ${nextResetTime} to Date object: ${resetDate}`);
             } else if (nextResetTime instanceof Date) {
                 resetDate = nextResetTime;
+                console.log(`[DEBUG] Already a Date object: ${resetDate}`);
             } else {
-                console.error('Invalid nextResetTime format:', nextResetTime);
-                countdownElement.textContent = 'Invalid date';
+                console.error(`[ERROR] Invalid nextResetTime format for ${quizName}:`, nextResetTime, typeof nextResetTime);
+                countdownElement.textContent = 'Invalid date format';
                 return;
             }
             
             // Check if date is valid
             if (isNaN(resetDate.getTime())) {
-                console.error('Invalid date object:', resetDate);
+                console.error(`[ERROR] Invalid date object for ${quizName}:`, resetDate, 'Original input:', nextResetTime);
                 countdownElement.textContent = 'Invalid date';
                 return;
             }
@@ -5150,14 +5205,14 @@ export class Admin2Dashboard {
             const now = new Date();
             const timeDiff = resetDate - now;
             
-            console.log(`Countdown calculation: nextResetTime=${resetDate}, now=${now}, diff=${timeDiff}ms`);
+            console.log(`[DEBUG] Countdown calculation for ${quizName}: nextResetTime=${resetDate}, now=${now}, diff=${timeDiff}ms`);
 
             if (timeDiff <= 0) {
+                console.log(`[DEBUG] Reset is due now for ${quizName}`);
                 countdownElement.textContent = 'Reset due now!';
                 countdownElement.classList.add('countdown-overdue');
                 
                 // Get the quiz name from the element's data attribute
-                const quizName = countdownElement.dataset.quiz;
                 if (quizName) {
                 // DISABLED: Frontend checking is now handled by backend
                 // this.checkScheduledResets() - removed to prevent duplicate processing
@@ -5190,10 +5245,15 @@ export class Admin2Dashboard {
             }
             countdownText += `${seconds}s`;
 
+            console.log(`[DEBUG] Final countdown text for ${quizName}: ${countdownText}`);
             countdownElement.textContent = countdownText;
         } catch (error) {
-            console.error('Error updating countdown display:', error);
-            countdownElement.textContent = 'Error';
+            const quizName = countdownElement.dataset.quiz;
+            console.error(`[ERROR] Exception in updateCountdownDisplay for ${quizName}:`, error);
+            console.error(`[ERROR] Error stack:`, error.stack);
+            console.error(`[ERROR] Input nextResetTime:`, nextResetTime);
+            console.error(`[ERROR] Element:`, countdownElement);
+            countdownElement.textContent = `Error: ${error.message}`;
         }
     }
 
@@ -5503,44 +5563,7 @@ export class Admin2Dashboard {
     }
     
     // Calculate the next reset time based on the period
-    calculateNextResetTime(resetPeriod) {
-        const now = new Date();
-        
-        // If resetPeriod is a number, it's in minutes
-        if (typeof resetPeriod === 'number') {
-            // Calculate next reset time from now
-            const nextReset = new Date(now.getTime() + (resetPeriod * 60 * 1000));
-            console.log(`Calculated next reset time: ${nextReset.toISOString()} (${resetPeriod} minutes from now)`);
-            return nextReset.toISOString();
-        }
-        
-        // For string-based periods (daily, weekly, monthly)
-        let nextReset = new Date(now);
-        nextReset.setHours(0, 0, 0, 0); // Reset to midnight
-        
-        switch (resetPeriod) {
-            case 'daily':
-                // Next day at midnight
-                nextReset.setDate(nextReset.getDate() + 1);
-                break;
-            case 'weekly':
-                // Next Sunday at midnight
-                const daysUntilSunday = (7 - nextReset.getDay()) % 7;
-                nextReset.setDate(nextReset.getDate() + (daysUntilSunday || 7));
-                break;
-            case 'monthly':
-                // First day of next month
-                nextReset.setMonth(nextReset.getMonth() + 1);
-                nextReset.setDate(1);
-                break;
-            default:
-                // Default to daily
-                nextReset.setDate(nextReset.getDate() + 1);
-        }
-        
-        console.log(`Calculated next reset time: ${nextReset.toISOString()} (${resetPeriod})`);
-        return nextReset.toISOString();
-    }
+    // Duplicate function removed - using the one at line 5034
 
     // Shows edit modal for auto reset settings
     showAutoResetEditModal(quizName) {

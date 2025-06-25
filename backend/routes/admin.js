@@ -10,6 +10,19 @@ const ScheduledReset = require('../models/scheduledReset.model');
 const AutoReset = require('../models/autoReset.model');
 const QuizUser = require('../models/quizUser.model');
 
+// In-memory cache for invalidation tracking
+const cacheInvalidations = new Map();
+
+// Clean up old invalidation records every hour
+setInterval(() => {
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    for (const [key, timestamp] of cacheInvalidations.entries()) {
+        if (timestamp < oneHourAgo) {
+            cacheInvalidations.delete(key);
+        }
+    }
+}, 60 * 60 * 1000);
+
 // Admin token verification
 router.get('/verify-token', async (req, res) => {
     try {
@@ -2024,6 +2037,46 @@ async function processScheduledResets() {
         return { processed: 0 };
     }
 }
+
+// Cache invalidation endpoint for cross-browser synchronization
+router.post('/invalidate-cache', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username, quizName, timestamp } = req.body;
+        
+        if (!username || !quizName) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username and quizName are required'
+            });
+        }
+
+        // Store invalidation record
+        const invalidationKey = `${username}_${quizName}`;
+        cacheInvalidations.set(invalidationKey, timestamp || Date.now());
+        
+        console.log(`[Cache Invalidation] Recorded cache invalidation for ${username}'s ${quizName} quiz`);
+        
+        res.json({
+            success: true,
+            message: 'Cache invalidation recorded',
+            invalidationKey
+        });
+    } catch (error) {
+        console.error('[Cache Invalidation] Error recording cache invalidation:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to record cache invalidation'
+        });
+    }
+});
 
 // Export both the router and the functions for the background task
 module.exports = router;
