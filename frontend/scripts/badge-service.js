@@ -127,16 +127,29 @@ export class BadgeService {
                 
                 // Calculate score percentage - need at least 80% to earn badge
                 let scorePercentage = 0;
+                const TOTAL_QUIZ_QUESTIONS = 15; // Standard number of questions per quiz
+                
                 if (progress.score !== undefined && typeof progress.score === 'number') {
                     // If score is already a percentage (0-100)
                     scorePercentage = progress.score;
                 } else if (progress.questionHistory && progress.questionHistory.length > 0) {
-                    // Calculate from question history
+                    // Calculate from question history - use total expected questions, not just attempted
                     const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
-                    scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
+                    // Only calculate percentage if they've completed the full quiz
+                    if (progress.questionHistory.length === TOTAL_QUIZ_QUESTIONS) {
+                        scorePercentage = (correctAnswers / TOTAL_QUIZ_QUESTIONS) * 100;
+                    } else {
+                        // If quiz is incomplete, show actual progress (questions answered / total)
+                        // This gives a more realistic progress indication
+                        scorePercentage = (progress.questionHistory.length / TOTAL_QUIZ_QUESTIONS) * 100;
+                    }
                 } else if (progress.correctAnswers !== undefined && progress.totalQuestions !== undefined) {
-                    // Calculate from correct/total counts
-                    scorePercentage = (progress.correctAnswers / progress.totalQuestions) * 100;
+                    // Calculate from correct/total counts - only if completed
+                    if (progress.totalQuestions === TOTAL_QUIZ_QUESTIONS) {
+                        scorePercentage = (progress.correctAnswers / progress.totalQuestions) * 100;
+                    } else {
+                        scorePercentage = 0; // Incomplete quiz
+                    }
                 }
                 
                 // Badge is earned only if completed all questions AND achieved 80%+ score
@@ -177,7 +190,9 @@ export class BadgeService {
                     completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || new Date().toISOString()) : null,
                     quizId: quizId,
                     imagePath: imagePath,
-                    scorePercentage: Math.round(scorePercentage)
+                    scorePercentage: Math.round(scorePercentage),
+                    isComplete: hasCompletedAllQuestions,
+                    questionsAnswered: progress.questionHistory ? progress.questionHistory.length : (progress.questionsAnswered || 0)
                 };
             });
 
@@ -377,12 +392,20 @@ export class BadgeService {
             
             // Calculate score percentage
             let scorePercentage = 0;
+            const TOTAL_QUIZ_QUESTIONS = 15; // Standard number of questions per quiz
+            
             if (quizResult && quizResult.score !== undefined) {
                 scorePercentage = quizResult.score;
-            } else if (progress && progress.questionHistory && progress.questionHistory.length > 0) {
-                const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
-                scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
-            }
+                          } else if (progress && progress.questionHistory && progress.questionHistory.length > 0) {
+                  const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                  // Only calculate percentage if they've completed the full quiz
+                  if (progress.questionHistory.length === TOTAL_QUIZ_QUESTIONS) {
+                      scorePercentage = (correctAnswers / TOTAL_QUIZ_QUESTIONS) * 100;
+                  } else {
+                      // If quiz is incomplete, show actual progress (questions answered / total)
+                      scorePercentage = (progress.questionHistory.length / TOTAL_QUIZ_QUESTIONS) * 100;
+                  }
+              }
             
             // Badge is earned only if completed all questions AND achieved 80%+ score
             const isCompleted = hasCompletedAllQuestions && scorePercentage >= 80;
