@@ -275,16 +275,8 @@ class BadgesPage {
                 scoreInfoHtml = `<div class="badge-score">Score: ${badge.scorePercentage}%</div>`;
             }
         } else if (!badge.earned && badge.scorePercentage !== undefined && badge.scorePercentage > 0) {
-            // Check if this is actual quiz progress or just a completion percentage
-            if (badge.isComplete === false && badge.questionsAnswered > 0) {
-                // Show progress as questions answered out of total
-                scoreInfoHtml = `<div class="badge-score-progress">Progress: ${badge.questionsAnswered}/15 questions</div>`;
-            } else if (badge.scorePercentage >= 80 && badge.isComplete) {
-                // They completed with good score but badge logic thinks they didn't earn it
-                scoreInfoHtml = `<div class="badge-score-progress">Completed: ${badge.scorePercentage}%</div>`;
-            } else {
-                scoreInfoHtml = `<div class="badge-score-progress">Progress: ${badge.scorePercentage}% complete</div>`;
-            }
+            // Always show as percentage for consistency
+            scoreInfoHtml = `<div class="badge-score-progress">Progress: ${badge.scorePercentage}% complete</div>`;
         } else if (!badge.earned) {
             scoreInfoHtml = `<div class="badge-score-requirement">Requires: Complete quiz with 80%+ score</div>`;
         }
