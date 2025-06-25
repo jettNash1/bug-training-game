@@ -4833,8 +4833,8 @@ export class Admin2Dashboard {
             });
         });
         
-        // Start countdown update interval
-        this.updateCountdowns();
+        // Start simple countdown updates
+        this.startSimpleCountdowns();
     }
 
     setupAutoResetSettings() {
@@ -5130,197 +5130,137 @@ export class Admin2Dashboard {
         }
     }
 
-    startCountdownUpdates() {
+    // SIMPLIFIED AUTO-RESET SYSTEM - NO MORE RECURSION
+    startSimpleCountdownUpdates() {
         // Clear any existing interval
         if (this.countdownInterval) {
             clearInterval(this.countdownInterval);
         }
 
-        // Update countdowns every second
+        // Update countdowns every second - SIMPLE VERSION
         this.countdownInterval = setInterval(() => {
-            this.updateCountdowns();
+            this.simpleUpdateCountdowns();
         }, 1000);
     }
 
-    updateCountdowns() {
+    simpleUpdateCountdowns() {
         const countdownElements = document.querySelectorAll('.countdown[data-quiz]');
-        if (!countdownElements.length) {
-            console.log('[DEBUG] No countdown elements found');
-            return;
-        }
-
-        console.log(`[DEBUG] Updating ${countdownElements.length} countdown elements`);
+        if (!countdownElements.length) return;
 
         countdownElements.forEach(element => {
             const quizName = element.dataset.quiz;
-            console.log(`[DEBUG] Processing countdown for quiz: ${quizName}`);
-            
-            if (!quizName) {
-                console.error('[ERROR] Element missing quiz name:', element);
-                element.textContent = 'Missing quiz name';
-                return;
-            }
-            
-            if (!this.autoResetSettings) {
-                console.error('[ERROR] autoResetSettings is null/undefined');
-                element.textContent = 'Settings not loaded';
-                return;
-            }
-            
-            if (!this.autoResetSettings[quizName]) {
-                console.error(`[ERROR] No settings found for quiz: ${quizName}`, this.autoResetSettings);
-                element.textContent = 'Settings not found';
+            if (!quizName || !this.autoResetSettings || !this.autoResetSettings[quizName]) {
+                element.textContent = 'Not configured';
                 return;
             }
 
             const settings = this.autoResetSettings[quizName];
-            console.log(`[DEBUG] Settings for ${quizName}:`, settings);
             
-            // If nextResetTime is missing but we have resetPeriod and the setting is enabled,
-            // calculate the nextResetTime dynamically
+            // Calculate next reset time if missing
             if (!settings.nextResetTime && settings.resetPeriod && settings.enabled) {
-                try {
-                    // Validate resetPeriod before calculation
-                    if (!settings.resetPeriod || (typeof settings.resetPeriod !== 'number' && typeof settings.resetPeriod !== 'string')) {
-                        console.error(`[ERROR] Invalid resetPeriod for ${quizName}:`, settings.resetPeriod);
-                        element.textContent = 'Invalid period';
-                        return;
-                    }
-                    
-                    // Use the second calculateNextResetTime that accepts just resetPeriod
-                    const calculatedNextReset = this.calculateNextResetTime(settings.resetPeriod);
-                    console.log(`[DEBUG] Dynamically calculated next reset for ${quizName}: ${calculatedNextReset}`);
-                    
-                    // Validate the calculated result
-                    if (!calculatedNextReset || calculatedNextReset === 'Invalid Date' || calculatedNextReset === null) {
-                        console.error(`[ERROR] Calculation returned invalid result for ${quizName}:`, calculatedNextReset);
-                        element.textContent = 'Calculation failed';
-                        return;
-                    }
-                    
-                    // Store the calculated time so we don't recalculate every second
-                    settings.nextResetTime = calculatedNextReset;
-                    
-                    // Update the autoResetSettings object with the calculated time
+                const nextReset = this.simpleCalculateNextReset(settings.resetPeriod);
+                if (nextReset) {
+                    settings.nextResetTime = nextReset;
                     this.autoResetSettings[quizName] = settings;
-                } catch (error) {
-                    console.error(`[ERROR] Failed to calculate next reset time for ${quizName}:`, error);
-                    element.textContent = 'Calculation error';
-                    return;
                 }
             }
             
             if (!settings.nextResetTime) {
-                console.log(`[DEBUG] No nextResetTime for ${quizName}, showing 'Not scheduled'`);
                 element.textContent = 'Not scheduled';
                 return;
             }
 
-            try {
-                // Validate the nextResetTime before creating Date object
-                if (!settings.nextResetTime || settings.nextResetTime === 'Invalid Date' || settings.nextResetTime === 'undefined') {
-                    console.error(`[ERROR] Invalid nextResetTime for ${quizName}:`, settings.nextResetTime);
-                    element.textContent = 'Invalid time';
-                    return;
-                }
-                
-                const nextResetTime = new Date(settings.nextResetTime);
-                
-                // Check if the Date object is valid
-                if (isNaN(nextResetTime.getTime())) {
-                    console.error(`[ERROR] nextResetTime creates invalid Date for ${quizName}:`, settings.nextResetTime);
-                    element.textContent = 'Invalid date';
-                    return;
-                }
-                
-                console.log(`[DEBUG] Calling updateCountdownDisplay for ${quizName} with time: ${nextResetTime}`);
-                this.updateCountdownDisplay(element, nextResetTime);
-            } catch (error) {
-                console.error(`[ERROR] Failed to create Date object for ${quizName}:`, error, 'nextResetTime:', settings.nextResetTime);
-                element.textContent = 'Date error';
-            }
+            // Simple countdown calculation
+            this.simpleUpdateCountdown(element, settings.nextResetTime, quizName);
         });
+    }
 
-        // Ensure we have an interval running to update countdowns every second
-        if (!this.countdownInterval) {
-            this.countdownInterval = setInterval(() => this.updateCountdowns(), 1000); // Update every second
+    simpleUpdateCountdown(element, nextResetTimeString, quizName) {
+        try {
+            const resetDate = new Date(nextResetTimeString);
+            if (isNaN(resetDate.getTime())) {
+                element.textContent = 'Invalid date';
+                return;
+            }
+
+            const now = new Date();
+            const timeDiff = resetDate - now;
+
+            if (timeDiff <= 0) {
+                // Reset is due - trigger it and reset the countdown
+                element.textContent = 'Resetting...';
+                this.performAutoReset(quizName);
+                return;
+            }
+
+            // Simple time display
+            const totalMinutes = Math.floor(timeDiff / (1000 * 60));
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+            if (hours > 0) {
+                element.textContent = `${hours}h ${minutes}m ${seconds}s`;
+            } else if (minutes > 0) {
+                element.textContent = `${minutes}m ${seconds}s`;
+            } else {
+                element.textContent = `${seconds}s`;
+            }
+        } catch (error) {
+            element.textContent = 'Error';
         }
     }
 
-    updateCountdownDisplay(countdownElement, nextResetTime) {
+    simpleCalculateNextReset(resetPeriod) {
         try {
-            const quizName = countdownElement.dataset.quiz;
-            console.log(`[DEBUG] updateCountdownDisplay called for quiz: ${quizName}, nextResetTime:`, nextResetTime);
-            
-            // Ensure nextResetTime is a valid Date object
-            let resetDate;
-            
-            if (typeof nextResetTime === 'string') {
-                resetDate = new Date(nextResetTime);
-                console.log(`[DEBUG] Converted string date: ${nextResetTime} to Date object: ${resetDate}`);
-            } else if (nextResetTime instanceof Date) {
-                resetDate = nextResetTime;
-                console.log(`[DEBUG] Already a Date object: ${resetDate}`);
-            } else {
-                console.error(`[ERROR] Invalid nextResetTime format for ${quizName}:`, nextResetTime, typeof nextResetTime);
-                countdownElement.textContent = 'Invalid date format';
-                return;
-            }
-            
-            // Check if date is valid
-            if (isNaN(resetDate.getTime())) {
-                console.error(`[ERROR] Invalid date object for ${quizName}:`, resetDate, 'Original input:', nextResetTime);
-                countdownElement.textContent = 'Invalid date';
-                return;
-            }
+            if (typeof resetPeriod !== 'number' || resetPeriod <= 0) return null;
             
             const now = new Date();
-            const timeDiff = resetDate - now;
-            
-            console.log(`[DEBUG] Countdown calculation for ${quizName}: nextResetTime=${resetDate}, now=${now}, diff=${timeDiff}ms`);
-
-            if (timeDiff <= 0) {
-                console.log(`[DEBUG] Reset is due now for ${quizName}`);
-                countdownElement.textContent = 'Reset due now!';
-                countdownElement.classList.add('countdown-overdue');
-                
-                // REMOVED: this.displayAutoResetSettings() - was causing infinite recursion
-                // Backend handles the actual reset processing
-                
-                return;
-            }
-
-            // Remove overdue class if it exists
-            countdownElement.classList.remove('countdown-overdue');
-
-            // Calculate time units
-            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-            // Format countdown text
-            let countdownText = '';
-            if (days > 0) {
-                countdownText += `${days}d `;
-            }
-            if (hours > 0 || days > 0) {
-                countdownText += `${hours}h `;
-            }
-            if (minutes > 0 || hours > 0 || days > 0) {
-                countdownText += `${minutes}m `;
-            }
-            countdownText += `${seconds}s`;
-
-            console.log(`[DEBUG] Final countdown text for ${quizName}: ${countdownText}`);
-            countdownElement.textContent = countdownText;
+            const nextReset = new Date(now.getTime() + (resetPeriod * 60 * 1000));
+            return nextReset.toISOString();
         } catch (error) {
-            const quizName = countdownElement.dataset.quiz;
-            console.error(`[ERROR] Exception in updateCountdownDisplay for ${quizName}:`, error);
-            console.error(`[ERROR] Error stack:`, error.stack);
-            console.error(`[ERROR] Input nextResetTime:`, nextResetTime);
-            console.error(`[ERROR] Element:`, countdownElement);
-            countdownElement.textContent = `Error: ${error.message}`;
+            return null;
+        }
+    }
+
+    async performAutoReset(quizName) {
+        try {
+            console.log(`Auto-reset triggered for ${quizName}`);
+            
+            // Get all users and reset their quiz progress
+            const users = this.users || [];
+            let resetCount = 0;
+            
+            for (const user of users) {
+                try {
+                    // Reset this quiz for this user
+                    const response = await this.apiService.resetQuizProgress(user.username, quizName);
+                    if (response.success) {
+                        resetCount++;
+                    }
+                } catch (error) {
+                    console.error(`Failed to reset ${quizName} for ${user.username}:`, error);
+                }
+            }
+            
+            // Calculate next reset time
+            const settings = this.autoResetSettings[quizName];
+            if (settings && settings.resetPeriod) {
+                const nextReset = this.simpleCalculateNextReset(settings.resetPeriod);
+                if (nextReset) {
+                    settings.nextResetTime = nextReset;
+                    this.autoResetSettings[quizName] = settings;
+                    
+                    // Save the updated next reset time to the backend
+                    await this.apiService.saveAutoResetSetting(quizName, settings.resetPeriod, settings.enabled);
+                }
+            }
+            
+            this.showInfo(`Auto-reset completed for ${this.formatQuizName(quizName)}. Reset ${resetCount} users.`);
+            
+        } catch (error) {
+            console.error(`Auto-reset failed for ${quizName}:`, error);
+            this.showError(`Auto-reset failed for ${this.formatQuizName(quizName)}: ${error.message}`);
         }
     }
 
@@ -6918,6 +6858,140 @@ export class Admin2Dashboard {
             .split('-')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
+    }
+
+    // SIMPLIFIED AUTO-RESET SYSTEM - NO RECURSION
+    startSimpleCountdowns() {
+        // Clear any existing interval
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+        }
+
+        // Update countdowns every second - SIMPLE VERSION
+        this.countdownInterval = setInterval(() => {
+            this.simpleUpdateCountdowns();
+        }, 1000);
+    }
+
+    simpleUpdateCountdowns() {
+        const countdownElements = document.querySelectorAll('.countdown[data-quiz]');
+        if (!countdownElements.length) return;
+
+        countdownElements.forEach(element => {
+            const quizName = element.dataset.quiz;
+            if (!quizName || !this.autoResetSettings || !this.autoResetSettings[quizName]) {
+                element.textContent = 'Not configured';
+                return;
+            }
+
+            const settings = this.autoResetSettings[quizName];
+            
+            // Calculate next reset time if missing
+            if (!settings.nextResetTime && settings.resetPeriod && settings.enabled) {
+                const nextReset = this.simpleCalculateNextReset(settings.resetPeriod);
+                if (nextReset) {
+                    settings.nextResetTime = nextReset;
+                    this.autoResetSettings[quizName] = settings;
+                }
+            }
+            
+            if (!settings.nextResetTime) {
+                element.textContent = 'Not scheduled';
+                return;
+            }
+
+            // Simple countdown calculation
+            this.simpleUpdateCountdown(element, settings.nextResetTime, quizName);
+        });
+    }
+
+    simpleUpdateCountdown(element, nextResetTimeString, quizName) {
+        try {
+            const resetDate = new Date(nextResetTimeString);
+            if (isNaN(resetDate.getTime())) {
+                element.textContent = 'Invalid date';
+                return;
+            }
+
+            const now = new Date();
+            const timeDiff = resetDate - now;
+
+            if (timeDiff <= 0) {
+                // Reset is due - trigger it and reset the countdown
+                element.textContent = 'Resetting...';
+                this.performAutoReset(quizName);
+                return;
+            }
+
+            // Simple time display
+            const totalMinutes = Math.floor(timeDiff / (1000 * 60));
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+            if (hours > 0) {
+                element.textContent = `${hours}h ${minutes}m ${seconds}s`;
+            } else if (minutes > 0) {
+                element.textContent = `${minutes}m ${seconds}s`;
+            } else {
+                element.textContent = `${seconds}s`;
+            }
+        } catch (error) {
+            element.textContent = 'Error';
+        }
+    }
+
+    simpleCalculateNextReset(resetPeriod) {
+        try {
+            if (typeof resetPeriod !== 'number' || resetPeriod <= 0) return null;
+            
+            const now = new Date();
+            const nextReset = new Date(now.getTime() + (resetPeriod * 60 * 1000));
+            return nextReset.toISOString();
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async performAutoReset(quizName) {
+        try {
+            console.log(`Auto-reset triggered for ${quizName}`);
+            
+            // Get all users and reset their quiz progress
+            const users = this.users || [];
+            let resetCount = 0;
+            
+            for (const user of users) {
+                try {
+                    // Reset this quiz for this user
+                    const response = await this.apiService.resetQuizProgress(user.username, quizName);
+                    if (response.success) {
+                        resetCount++;
+                    }
+                } catch (error) {
+                    console.error(`Failed to reset ${quizName} for ${user.username}:`, error);
+                }
+            }
+            
+            // Calculate next reset time
+            const settings = this.autoResetSettings[quizName];
+            if (settings && settings.resetPeriod) {
+                const nextReset = this.simpleCalculateNextReset(settings.resetPeriod);
+                if (nextReset) {
+                    settings.nextResetTime = nextReset;
+                    this.autoResetSettings[quizName] = settings;
+                    
+                    // Save the updated next reset time to the backend
+                    await this.apiService.saveAutoResetSetting(quizName, settings.resetPeriod, settings.enabled);
+                }
+            }
+            
+            this.showInfo(`Auto-reset completed for ${this.formatQuizName(quizName)}. Reset ${resetCount} users.`);
+            
+        } catch (error) {
+            console.error(`Auto-reset failed for ${quizName}:`, error);
+            this.showError(`Auto-reset failed for ${this.formatQuizName(quizName)}: ${error.message}`);
+        }
     }
 }
 
