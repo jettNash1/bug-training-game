@@ -2861,11 +2861,11 @@ export class APIService {
                 })
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                return data;
+            if (response.success) {
+                console.log(`[API] Successfully saved quiz progress to server`);
+                return response;
             } else {
-                console.error(`[API] Failed to save quiz progress to server: ${response.status}`);
+                console.error(`[API] Failed to save quiz progress to server:`, response.message || 'Unknown error');
                 // Still return success since localStorage save worked
                 return { success: true, message: 'Saved to local storage only' };
             }
