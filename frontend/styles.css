@@ -2274,11 +2274,36 @@ select:disabled {
     justify-content: center;
 }
 
-/* Make the Last Active stat span the full width and center */
+/* Make the Last Active stat span the full width */
 .user-stats.expanded-stats .stat:last-child {
     grid-column: 1 / -1;
-    max-width: 300px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
+}
+
+/* Color coding for quiz status stats */
+.user-stats.expanded-stats .stat:nth-child(3) {
+    /* Quizzes Passed - Green */
+    background-color: #C8E6C9 !important;
+    border-left: 4px solid #4bb543;
+}
+
+.user-stats.expanded-stats .stat:nth-child(4) {
+    /* Quizzes Failed - Red */
+    background-color: rgba(255, 68, 68, 0.1) !important;
+    border-left: 4px solid #ff4444;
+}
+
+.user-stats.expanded-stats .stat:nth-child(5) {
+    /* Quizzes In Progress - Light Orange */
+    background-color: #FFF8E7 !important;
+    border-left: 4px solid #FFA000;
+}
+
+.user-stats.expanded-stats .stat:nth-child(6) {
+    /* Quizzes Not Started - Light Gray */
+    background-color: #fff !important;
+    border-left: 4px solid #e0e0e0;
 }
 
 .user-stats.expanded-stats .stat-label {
@@ -2347,7 +2372,7 @@ select:disabled {
     }
     
     .user-stats.expanded-stats .stat:last-child {
-        max-width: 250px;
+        max-width: 100%;
     }
 }
 
@@ -2358,7 +2383,7 @@ select:disabled {
     }
     
     .user-stats.expanded-stats .stat:last-child {
-        max-width: 200px;
+        max-width: 100%;
     }
     
     .users-list.row-view .user-stats.expanded-stats {
