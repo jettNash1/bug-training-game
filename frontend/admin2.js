@@ -7125,6 +7125,3 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 }); 
-
-// Initialize the dashboard
-await dashboard.init2();
