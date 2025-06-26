@@ -1685,11 +1685,12 @@ export class APIService {
             // Create a Date object in the local timezone
             const localDate = new Date(resetDateTime);
             
-            // Store the timezone offset in minutes
+            // Store the timezone offset in minutes (for storage purposes)
             const timezoneOffsetMinutes = localDate.getTimezoneOffset();
             
-            // Convert to UTC time for storage
-            const utcTime = new Date(localDate.getTime() - (timezoneOffsetMinutes * 60000));
+            // FIXED: getTimezoneOffset() returns minutes BEHIND UTC, so we ADD it to get UTC
+            // Example: if local is UTC+1, getTimezoneOffset() = -60, so we add (-60) to get UTC
+            const utcTime = new Date(localDate.getTime() + (timezoneOffsetMinutes * 60000));
             
             console.log(`Creating scheduled reset:
                 Local time entered: ${localDate.toLocaleString()}

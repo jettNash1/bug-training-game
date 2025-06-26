@@ -6953,10 +6953,22 @@ export class Admin2Dashboard {
         // Check each cached schedule
         for (const schedule of this.cachedSchedules) {
             try {
-                // Convert resetDateTime to Date object considering timezone
-                const resetDateTime = new Date(schedule.resetDateTime);
+                // Convert resetDateTime from UTC to local time for comparison
+                // The schedule.resetDateTime is stored in UTC, so we need to convert it back
+                const resetDateTimeUTC = new Date(schedule.resetDateTime);
                 
-                // Check if reset time has passed
+                // Apply the timezone offset to get the intended local time
+                // Note: timezoneOffset is stored as getTimezoneOffset() value (minutes behind UTC)
+                const resetDateTime = new Date(resetDateTimeUTC.getTime() - ((schedule.timezoneOffset || 0) * 60000));
+                
+                console.log(`[Scheduled Reset Debug] Schedule for ${schedule.username}'s ${schedule.quizName}:`);
+                console.log(`  - UTC stored time: ${resetDateTimeUTC.toISOString()}`);
+                console.log(`  - Timezone offset: ${schedule.timezoneOffset} minutes`);
+                console.log(`  - Converted local time: ${resetDateTime.toISOString()}`);
+                console.log(`  - Current time: ${currentTime.toISOString()}`);
+                console.log(`  - Is due: ${resetDateTime <= currentTime}`);
+                
+                // Check if reset time has passed (comparing local times)
                 if (resetDateTime <= currentTime) {
                     console.log(`[Scheduled Reset] Processing due reset for ${schedule.username}'s ${schedule.quizName} quiz`);
                     
