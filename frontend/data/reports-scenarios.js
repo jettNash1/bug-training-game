@@ -155,7 +155,6 @@ export const reportsScenarios = {
                         text: 'Review all comments, address each point, resolve comments after fixing and discuss if clarification needed',
                         outcome: 'Perfect! This ensures thorough review process.',
                         experience: 20,
-                        tool: 'Peer Review'
                     },
                     {
                         text: 'Respond to feedback that is considered an improvement on what is currently stated',
@@ -184,7 +183,6 @@ export const reportsScenarios = {
                         text: 'Include a matrix with accurate versions, consistent formatting, and relevant environment details',
                         outcome: 'Excellent! This provides clear environment context.',
                         experience: 20,
-                        tool: 'Environment Documentation'
                     },
                     {
                         text: 'Incorporate a matrix with device names listed for each environment',
@@ -213,7 +211,6 @@ export const reportsScenarios = {
                         text: 'List most functionally impactive issues, include blocking issues separately, hyperlink all references',
                         outcome: 'Perfect! This provides organised issue overview.',
                         experience: 20,
-                        tool: 'Issue Documentation'
                     },
                     {
                         text: 'List issues by tester preference based on experience of the project',
@@ -242,7 +239,6 @@ export const reportsScenarios = {
                         text: 'Set up template first day, add draft notes daily, compile and refine at week end',
                         outcome: 'Excellent! This ensures comprehensive coverage.',
                         experience: 20,
-                        tool: 'Report Management'
                     },
                     {
                         text: 'Document everything from the week on the last working day',
@@ -271,7 +267,6 @@ export const reportsScenarios = {
                         text: 'Use clear language, avoid jargon, focus on business impact, maintain professional tone',
                         outcome: 'Perfect! This ensures wide accessibility.',
                         experience: 20,
-                        tool: 'Stakeholder Management'
                     },
                     {
                         text: 'Use technical terms so developers can pinpoint and debug root causes',
@@ -305,7 +300,6 @@ export const reportsScenarios = {
                         text: 'Discuss the change with the Project Manager, adapt templates while maintaining key information and ensure consistent transition',
                         outcome: 'Perfect! This ensures proper format adaptation.',
                         experience: 25,
-                        tool: 'Format Management'
                     },
                     {
                         text: 'Use both the current format and the new requested format on data you see fit for purpose',
@@ -334,7 +328,6 @@ export const reportsScenarios = {
                         text: 'Verify source data, cross-reference scripts, document discrepancies, consult the project manager if needed',
                         outcome: 'Excellent! This ensures accurate reporting.',
                         experience: 25,
-                        tool: 'Data Analysis'
                     },
                     {
                         text: 'Adjust the formulas within the script to fit the numbers stated in the report',
@@ -363,7 +356,6 @@ export const reportsScenarios = {
                         text: 'Create clear environment matrix, document specific behaviours, highlight key differences',
                         outcome: 'Perfect! This provides comprehensive environment coverage.',
                         experience: 25,
-                        tool: 'Environment Analysis'
                     },
                     {
                         text: 'Group all environment data together and report as one metric',
@@ -392,7 +384,6 @@ export const reportsScenarios = {
                         text: 'Immediately notify project manager, document thoroughly in report, highlight business impact',
                         outcome: 'Excellent! This ensures proper critical issue handling.',
                         experience: 25,
-                        tool: 'Critical Issue Management'
                     },
                     {
                         text: 'Include the issues within the report and submit this at the agreed time',
@@ -421,7 +412,6 @@ export const reportsScenarios = {
                         text: 'Review content, verify metrics, check formatting, validate links, run spell check, read aloud',
                         outcome: 'Perfect! This ensures comprehensive quality check.',
                         experience: 25,
-                        tool: 'Quality Assurance'
                     },
                     {
                         text: 'Run the report through a spellchecker to make sure a professional standard is maintained',

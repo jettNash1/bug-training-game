@@ -38,7 +38,6 @@ export class FullyScriptedQuiz extends BaseQuiz {
             experience: 0,
             questionHistory: [],
             currentScenario: 0,
-            tools: []
         };
 
         // Load scenarios from our data file
@@ -227,7 +226,6 @@ export class FullyScriptedQuiz extends BaseQuiz {
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
                 this.player.experience = 0;
-                this.player.tools = [];
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
                 console.log('[FullyScriptedQuiz] No previous progress, starting fresh');
@@ -599,14 +597,10 @@ export class FullyScriptedQuiz extends BaseQuiz {
                     <p>${outcomeMessage}</p>
                     <p class="result">${selectedAnswer.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
                     ${timedOut ? '<p class="timeout-warning">Remember to answer within the time limit!</p>' : ''}
-                    ${selectedAnswer.tool && !timedOut ? `<p class="tool-gained">You've gained the <strong>${selectedAnswer.tool}</strong> tool!</p>` : ''}
                     <button id="continue-btn" class="submit-button">Continue</button>
                 `;
                 
-                // If this answer added a tool and wasn't timed out, add it to player's tools
-                if (selectedAnswer.tool && !timedOut && !this.player.tools.includes(selectedAnswer.tool)) {
-                    this.player.tools.push(selectedAnswer.tool);
-                }
+
                 
                 // Add event listener to continue button
                 const continueBtn = outcomeContent.querySelector('#continue-btn');
@@ -759,52 +753,25 @@ export class FullyScriptedQuiz extends BaseQuiz {
             const recommendations = document.getElementById('recommendations');
             if (recommendations) {
                 let recommendationsHTML = '';
-                let toolsToReview = new Set();
                 
                 if (scorePercentage >= 90) {
                     recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated excellent knowledge of fully scripted testing principles!</p>';
                 } else if (scorePercentage >= 70) {
                     recommendationsHTML = '<p>👍 Good job! Here are some areas to review:</p><ul>';
-                    // Find areas where the user made mistakes and collect tools
                     const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
                     incorrectQuestions.forEach(q => {
                         recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
-                        // Get the correct answer's tool if it exists
-                        const correctAnswer = q.scenario.options.find(o => o.outcome.startsWith('Correct!'));
-                        if (correctAnswer && correctAnswer.tool) {
-                            toolsToReview.add(correctAnswer.tool);
-                        }
                     });
                     recommendationsHTML += '</ul>';
-                    
-                    if (toolsToReview.size > 0) {
-                        recommendationsHTML += '<p>Focus on these key tools:</p><ul>';
-                        toolsToReview.forEach(tool => {
-                            recommendationsHTML += `<li>${tool}</li>`;
-                        });
-                        recommendationsHTML += '</ul>';
-                    }
+
                 } else {
                     recommendationsHTML = '<p>📚 Here are key areas for improvement in fully scripted testing:</p><ul>';
-                    // Find areas where the user made mistakes and collect tools
                     const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
                     incorrectQuestions.forEach(q => {
                         recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
-                        // Get the correct answer's tool if it exists
-                        const correctAnswer = q.scenario.options.find(o => o.outcome.startsWith('Correct!'));
-                        if (correctAnswer && correctAnswer.tool) {
-                            toolsToReview.add(correctAnswer.tool);
-                        }
                     });
                     recommendationsHTML += '</ul>';
                     
-                    if (toolsToReview.size > 0) {
-                        recommendationsHTML += '<p>Essential tools to master:</p><ul>';
-                        toolsToReview.forEach(tool => {
-                            recommendationsHTML += `<li>${tool}</li>`;
-                        });
-                        recommendationsHTML += '</ul>';
-                    }
                 }
                 
                 recommendations.innerHTML = recommendationsHTML;
@@ -835,7 +802,7 @@ export class FullyScriptedQuiz extends BaseQuiz {
             experience: 0,
             questionHistory: [],
             currentScenario: 0,
-            tools: []
+            : []
         };
         
         // Save reset progress

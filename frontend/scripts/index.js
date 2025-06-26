@@ -436,7 +436,6 @@ class IndexPage {
                     if (progress) {
                         combinedData.questionsAnswered = progress.questionsAnswered || 0;
                         combinedData.status = progress.status || 'not-started';
-                        combinedData.tools = progress.tools || [];
                         combinedData.questionHistory = progress.questionHistory || [];
                         
                         if (progress.scorePercentage !== undefined) {

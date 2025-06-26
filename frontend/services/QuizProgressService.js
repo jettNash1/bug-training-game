@@ -305,7 +305,6 @@ export class QuizProgressService {
                         status: 'not-started',
                         scorePercentage: 0,
                         currentScenario: 0,
-                        tools: [],
                         questionHistory: []
                     }
                 };
@@ -368,7 +367,6 @@ export class QuizProgressService {
                 questionsAnswered: progress.questionsAnswered || 0,
                 status: progress.status || 'in-progress',
                 scorePercentage: typeof progress.scorePercentage === 'number' ? progress.scorePercentage : 0,
-                tools: progress.tools || [],
                 questionHistory: progress.questionHistory || [],
                 currentScenario: progress.currentScenario || 0,
                 randomizedScenarios: progress.randomizedScenarios || {},

@@ -742,7 +742,6 @@ export class APIService {
                         status: 'not-started',
                         scorePercentage: 0,
                         currentScenario: 0,
-                        tools: [],
                         questionHistory: []
                     }
                 };
@@ -780,7 +779,6 @@ export class APIService {
                 status: apiData.status || 'not-started',
                 scorePercentage: typeof apiData.scorePercentage === 'number' ? apiData.scorePercentage : 0,
                 currentScenario: apiData.currentScenario || questionsAnswered || 0,
-                tools: apiData.tools || [],
                 questionHistory: apiData.questionHistory || [],
                 randomizedScenarios: apiData.randomizedScenarios || {}
             };
@@ -841,12 +839,7 @@ export class APIService {
                     progress[field] = 0; // Reset to safe default
                 }
             }
-            
-            // Final validation of the progress object
-            if (!Array.isArray(progress.tools)) {
-                console.warn(`[API] Invalid tools array, resetting to empty array`);
-                progress.tools = [];
-            }
+        
             
             if (!Array.isArray(progress.questionHistory)) {
                 console.warn(`[API] Invalid questionHistory array, resetting to empty array`);
@@ -891,7 +884,6 @@ export class APIService {
                     status: 'not-started',
                     scorePercentage: 0,
                     currentScenario: 0,
-                    tools: [],
                     questionHistory: []
                 }
             };

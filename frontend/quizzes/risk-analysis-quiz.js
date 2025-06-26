@@ -38,7 +38,6 @@ export class RiskAnalysisQuiz extends BaseQuiz {
             experience: 0,
             questionHistory: [],
             currentScenario: 0,
-            tools: []
         };
 
         // Load scenarios from our data file
@@ -227,7 +226,6 @@ export class RiskAnalysisQuiz extends BaseQuiz {
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
                 this.player.experience = 0;
-                this.player.tools = [];
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
                 console.log('[RiskAnalysisQuiz] No previous progress, starting fresh');
@@ -599,14 +597,10 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                     <p>${outcomeMessage}</p>
                     <p class="result">${selectedAnswer.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
                     ${timedOut ? '<p class="timeout-warning">Remember to answer within the time limit!</p>' : ''}
-                    ${selectedAnswer.tool && !timedOut ? `<p class="tool-gained">You've gained the <strong>${selectedAnswer.tool}</strong> tool!</p>` : ''}
                     <button id="continue-btn" class="submit-button">Continue</button>
                 `;
                 
-                // If this answer added a tool and wasn't timed out, add it to player's tools
-                if (selectedAnswer.tool && !timedOut && !this.player.tools.includes(selectedAnswer.tool)) {
-                    this.player.tools.push(selectedAnswer.tool);
-                }
+
                 
                 // Add event listener to continue button
                 const continueBtn = outcomeContent.querySelector('#continue-btn');
@@ -767,10 +761,7 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                     // Find areas where the user made mistakes
                     const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
                     incorrectQuestions.forEach(q => {
-                        // Add tool recommendation if available
-                        const toolRec = q.selectedAnswer.tool ? 
-                            `<br>Consider using the ${q.selectedAnswer.tool} to improve in this area.` : '';
-                        recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}${toolRec}</li>`;
+                        recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
                     });
                     recommendationsHTML += '</ul>';
                 } else {
@@ -789,9 +780,7 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                     Object.entries(groupedByLevel).forEach(([level, questions]) => {
                         recommendationsHTML += `<li><strong>${level} Level Areas:</strong><ul>`;
                         questions.forEach(q => {
-                            const toolRec = q.selectedAnswer.tool ?
-                                `<br>Consider using the ${q.selectedAnswer.tool} to improve in this area.` : '';
-                            recommendationsHTML += `<li>${q.scenario.title}: ${q.scenario.description}${toolRec}</li>`;
+                            recommendationsHTML += `<li>${q.scenario.title}: ${q.scenario.description}</li>`;
                         });
                         recommendationsHTML += '</ul></li>';
                     });
@@ -826,7 +815,6 @@ export class RiskAnalysisQuiz extends BaseQuiz {
             experience: 0,
             questionHistory: [],
             currentScenario: 0,
-            tools: []
         };
         
         // Save reset progress

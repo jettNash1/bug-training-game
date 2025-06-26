@@ -133,13 +133,12 @@ export class QuizUser {
         }
     }
 
-    async saveQuizResult(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null) {
+    async saveQuizResult(quizName, score, experience = 0, questionHistory = [], questionsAnswered = null) {
         quizName = this.normalizeQuizName(quizName);
         const quizData = {
             quizName,
             score: Math.round(score),
             experience: Math.round(experience || score),
-            tools: tools || [],
             questionHistory: questionHistory || [],
             questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
             completedAt: new Date().toISOString()
@@ -163,7 +162,6 @@ export class QuizUser {
                 // Also update the quiz progress
                 const progressData = {
                     experience: quizData.experience,
-                    tools: quizData.tools,
                     questionHistory: quizData.questionHistory,
                     questionsAnswered: quizData.questionsAnswered,
                     currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
@@ -353,7 +351,7 @@ export class QuizUser {
         }
     }
 
-    async updateQuizScore(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null, status = 'in-progress') {
+    async updateQuizScore(quizName, score, experience = 0, questionHistory = [], questionsAnswered = null, status = 'in-progress') {
         quizName = this.normalizeQuizName(quizName);
         try {
             if (!this.api) {
@@ -369,7 +367,6 @@ export class QuizUser {
                 score: Math.round(score),
                 scorePercentage: Math.round(score), // Ensure scorePercentage is included
                 experience: Math.round(experience || score),
-                tools: tools || [],
                 questionHistory: questionHistory || [],
                 questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
                 completedAt: new Date().toISOString(),
@@ -395,7 +392,6 @@ export class QuizUser {
                     // Also update the quiz progress
                     const progressData = {
                         experience: quizData.experience,
-                        tools: quizData.tools,
                         questionHistory: quizData.questionHistory,
                         questionsAnswered: quizData.questionsAnswered,
                         currentScenario: quizData.questionsAnswered % 5,

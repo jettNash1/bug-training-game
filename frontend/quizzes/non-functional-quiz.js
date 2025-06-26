@@ -38,7 +38,6 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
             experience: 0,
             questionHistory: [],
             currentScenario: 0,
-            tools: []
         };
 
         // Load scenarios from our data file
@@ -227,7 +226,6 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
                 this.player.experience = 0;
-                this.player.tools = [];
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
                 console.log('[NonFunctionalQuiz] No previous progress, starting fresh');
@@ -599,14 +597,9 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
                     <p>${outcomeMessage}</p>
                     <p class="result">${selectedAnswer.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
                     ${timedOut ? '<p class="timeout-warning">Remember to answer within the time limit!</p>' : ''}
-                    ${selectedAnswer.tool && !timedOut ? `<p class="tool-gained">You've gained the <strong>${selectedAnswer.tool}</strong> tool!</p>` : ''}
                     <button id="continue-btn" class="submit-button">Continue</button>
                 `;
                 
-                // If this answer added a tool and wasn't timed out, add it to player's tools
-                if (selectedAnswer.tool && !timedOut && !this.player.tools.includes(selectedAnswer.tool)) {
-                    this.player.tools.push(selectedAnswer.tool);
-                }
                 
                 // Add event listener to continue button
                 const continueBtn = outcomeContent.querySelector('#continue-btn');
@@ -766,10 +759,7 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
                     // Find areas where the user made mistakes
                     const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
                     incorrectQuestions.forEach(q => {
-                        // Get the tool used for this scenario if available
-                        const tool = q.scenario.options?.find(o => o.tool)?.tool;
-                        const toolText = tool ? ` (${tool})` : '';
-                        recommendationsHTML += `<li>Review ${q.scenario.title}${toolText}: ${q.scenario.description}</li>`;
+                        recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
                     });
                     recommendationsHTML += '</ul><p>Focus on understanding verification priorities, environment management, and documentation practices.</p>';
                 } else {
@@ -777,10 +767,7 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
                     // Find areas where the user made mistakes
                     const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
                     incorrectQuestions.forEach(q => {
-                        // Get the tool used for this scenario if available
-                        const tool = q.scenario.options?.find(o => o.tool)?.tool;
-                        const toolText = tool ? ` (${tool})` : '';
-                        recommendationsHTML += `<li>Review ${q.scenario.title}${toolText}: ${q.scenario.description}</li>`;
+                        recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
                     });
                     recommendationsHTML += '</ul><p>Consider reviewing basic verification concepts like prioritization, environment matching, and evidence capture before attempting advanced scenarios.</p>';
                 }
@@ -813,7 +800,6 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
             experience: 0,
             questionHistory: [],
             currentScenario: 0,
-            tools: []
         };
         
         // Save reset progress

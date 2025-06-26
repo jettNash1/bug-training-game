@@ -263,15 +263,6 @@
     margin: 1rem 0;
 }
 
-.tool-gained {
-    background: #e9f7fe;
-    padding: 10px;
-    border-radius: 5px;
-    border-left: 4px solid #4dabf7;
-    margin: 10px 0;
-    font-weight: bold;
-    color: #2980b9;
-}
 
 #outcome-text {
     font-size: 1.1rem;
@@ -291,10 +282,6 @@
     margin-bottom: 0.5rem;
 }
 
-#tool-gained {
-    font-size: 1.1rem;
-    color: #3498db;
-}
 
 .hidden {
     display: none !important;

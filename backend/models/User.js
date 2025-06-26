@@ -16,9 +16,6 @@ const quizResultSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    tools: [{
-        type: String
-    }],
     questionHistory: [{
         type: mongoose.Schema.Types.Mixed
     }],

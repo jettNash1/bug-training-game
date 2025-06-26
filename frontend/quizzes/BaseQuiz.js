@@ -14,7 +14,6 @@ export class BaseQuiz {
             experience: 0,
             questionHistory: [],
             currentScenario: 0,
-            tools: []
         };
         
         this.quizName = this.config.quizName || 'unnamed-quiz';
@@ -222,7 +221,6 @@ export class BaseQuiz {
             
             // Sanitize and validate data to prevent invalid values
             progressData.experience = !isNaN(parseFloat(progressData.experience)) ? parseFloat(progressData.experience) : 0;
-            progressData.tools = Array.isArray(progressData.tools) ? progressData.tools : [];
             progressData.questionHistory = Array.isArray(progressData.questionHistory) ? 
                 progressData.questionHistory : [];
             
@@ -251,7 +249,6 @@ export class BaseQuiz {
 
             // Update the player state with the loaded progress data
             this.player.experience = progressData.experience;
-            this.player.tools = progressData.tools;
             this.player.questionHistory = progressData.questionHistory;
             this.player.currentScenario = progressData.currentScenario;
             
@@ -301,7 +298,6 @@ export class BaseQuiz {
                 currentScenario: this.player.currentScenario,
                 status: status,
                 scorePercentage: this.calculateScore(),
-                tools: this.player.tools,
                 questionHistory: this.player.questionHistory,
                 lastUpdated: new Date().toISOString()
             };

@@ -2968,7 +2968,7 @@ export class Admin2Dashboard {
                             if (match && match[1]) {
                                 correctAnswer = match[1];
                             } else {
-                                correctAnswer = item.selectedAnswer?.tool || 'Correct answer not available';
+                                //Nothing
                             }
                         } else if (isPassed) {
                             correctAnswer = item.selectedAnswer?.text || '';

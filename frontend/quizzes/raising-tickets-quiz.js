@@ -38,7 +38,6 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             experience: 0,
             questionHistory: [],
             currentScenario: 0,
-            tools: []
         };
 
         // Load scenarios from our data file
@@ -227,7 +226,6 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
                 this.player.experience = 0;
-                this.player.tools = [];
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
                 console.log('[RaisingTicketsQuiz] No previous progress, starting fresh');
@@ -599,15 +597,10 @@ export class RaisingTicketsQuiz extends BaseQuiz {
                     <p>${outcomeMessage}</p>
                     <p class="result">${selectedAnswer.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
                     ${timedOut ? '<p class="timeout-warning">Remember to answer within the time limit!</p>' : ''}
-                    ${selectedAnswer.tool && !timedOut ? `<p class="tool-gained">You've gained the <strong>${selectedAnswer.tool}</strong> tool!</p>` : ''}
                     <button id="continue-btn" class="submit-button">Continue</button>
                 `;
                 
-                // If this answer added a tool and wasn't timed out, add it to player's tools
-                if (selectedAnswer.tool && !timedOut && !this.player.tools.includes(selectedAnswer.tool)) {
-                    this.player.tools.push(selectedAnswer.tool);
-                }
-                
+
                 // Add event listener to continue button
                 const continueBtn = outcomeContent.querySelector('#continue-btn');
                 if (continueBtn) {
@@ -767,14 +760,10 @@ export class RaisingTicketsQuiz extends BaseQuiz {
                     // Find areas where the user made mistakes
                     const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
                     incorrectQuestions.forEach(q => {
-                        // Get the tool associated with the correct answer
-                        const correctOption = q.scenario.options.find(opt => opt.isCorrect);
-                        const tool = correctOption?.tool;
+                        
                         
                         recommendationsHTML += `<li>Review ${q.scenario.title} (${q.scenario.level}): ${q.scenario.description}`;
-                        if (tool) {
-                            recommendationsHTML += ` - Practice using the ${tool}`;
-                        }
+
                         recommendationsHTML += '</li>';
                     });
                     recommendationsHTML += '</ul>';
@@ -783,14 +772,8 @@ export class RaisingTicketsQuiz extends BaseQuiz {
                     // Find areas where the user made mistakes
                     const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
                     incorrectQuestions.forEach(q => {
-                        // Get the tool associated with the correct answer
-                        const correctOption = q.scenario.options.find(opt => opt.isCorrect);
-                        const tool = correctOption?.tool;
-
                         recommendationsHTML += `<li>Study ${q.scenario.title} (${q.scenario.level}): ${q.scenario.description}`;
-                        if (tool) {
-                            recommendationsHTML += ` - Learn to use the ${tool}`;
-                        }
+
                         recommendationsHTML += '</li>';
                     });
                     recommendationsHTML += '</ul>';
@@ -824,7 +807,6 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             experience: 0,
             questionHistory: [],
             currentScenario: 0,
-            tools: []
         };
         
         // Save reset progress

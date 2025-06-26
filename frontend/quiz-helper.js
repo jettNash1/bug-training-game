@@ -517,7 +517,6 @@ export class BaseQuiz {
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
                 this.player.experience = 0;
-                this.player.tools = [];
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
                 this.randomizedScenarios = {};
@@ -821,7 +820,6 @@ export class BaseQuiz {
             
             // Update player state
             this.player.experience = progressData.experience || 0;
-            this.player.tools = progressData.tools || [];
             this.player.questionHistory = progressData.questionHistory || [];
             this.player.currentScenario = progressData.currentScenario || 0;
 
@@ -847,7 +845,6 @@ export class BaseQuiz {
                 experience: this.player.experience,
                 questionHistory: this.player.questionHistory,
                 currentScenario: this.player.currentScenario,
-                tools: this.player.tools,
                 status: status,
                 lastUpdated: new Date().toISOString()
             };
@@ -927,9 +924,6 @@ export class BaseQuiz {
 
         // Update experience
         this.player.experience += selectedOption.experience;
-        if (selectedOption.tool && !this.player.tools.includes(selectedOption.tool)) {
-            this.player.tools.push(selectedOption.tool);
-        }
 
         // Show outcome
         this.showOutcome(selectedOption);
@@ -979,11 +973,6 @@ export class BaseQuiz {
                     `Experience: ${option.experience}`;
             }
             
-            // Update tool display if applicable
-            const toolGained = document.getElementById('tool-gained');
-            if (toolGained) {
-                toolGained.textContent = option.tool ? `Tool acquired: ${option.tool}` : '';
-            }
         }
 
         // Update progress display
@@ -1110,7 +1099,6 @@ export class BaseQuiz {
                 this.quizName,
                 score,
                 this.player.experience,
-                this.player.tools,
                 this.player.questionHistory
             );
 
@@ -1424,18 +1412,6 @@ export class BaseQuiz {
             resultElement.className = isCorrect ? 'correct' : 'incorrect';
         }
         
-        // Show tool acquired if present
-        const toolElement = document.getElementById('tool-gained');
-        if (toolElement) {
-            if (selectedAnswer.tool) {
-                toolElement.textContent = `Tool acquired: ${selectedAnswer.tool}`;
-                if (this.player && !this.player.tools.includes(selectedAnswer.tool)) {
-                    this.player.tools.push(selectedAnswer.tool);
-                }
-            } else {
-                toolElement.textContent = '';
-            }
-        }
     }
 
     /**
@@ -1573,7 +1549,6 @@ export class BaseQuiz {
             
             // Update player state
             this.player.experience = progressData.experience || 0;
-            this.player.tools = progressData.tools || [];
             this.player.questionHistory = progressData.questionHistory || [];
             this.player.currentScenario = progressData.currentScenario || 0;
 
@@ -1827,7 +1802,6 @@ export class QuizPlayer {
     constructor(username) {
         this.username = username;
         this.questionHistory = [];
-        this.tools = [];
         this.currentScenario = null;
     }
 

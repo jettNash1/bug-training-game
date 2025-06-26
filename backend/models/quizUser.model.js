@@ -11,7 +11,6 @@ const quizUserSchema = new mongoose.Schema({
         of: {
             score: Number,
             experience: Number,
-            tools: [String],
             questionHistory: [{
                 scenario: Object,
                 selectedAnswer: Object,

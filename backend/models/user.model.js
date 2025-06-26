@@ -46,7 +46,6 @@ const userSchema = new mongoose.Schema({
         type: Map,
         of: {
             experience: Number,
-            tools: [String],
             currentScenario: Number,
             questionHistory: Array,
             lastUpdated: Date,

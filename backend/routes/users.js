@@ -168,7 +168,7 @@ router.get('/:username/quiz-results', async (req, res) => {
 // Save quiz results (protected route)
 router.post('/quiz-results', auth, async (req, res) => {
     try {
-        const { quizName, score, experience, tools, questionHistory } = req.body;
+        const { quizName, score, experience, questionHistory } = req.body;
         const user = await User.findById(req.user.id);
         
         if (!user) {
@@ -179,7 +179,6 @@ router.post('/quiz-results', auth, async (req, res) => {
             quizName,
             score: Math.round(score),
             experience: Math.round(experience || score),
-            tools: tools || [],
             questionHistory: questionHistory || [],
             completedAt: new Date()
         };
@@ -293,7 +292,6 @@ router.post('/quiz-progress', auth, async (req, res) => {
         // Ensure all required fields are present with consistent types
         const updatedProgress = {
             experience: parseInt(progress.experience || 0, 10),
-            tools: Array.isArray(progress.tools) ? progress.tools : [],
             questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : [],
             questionsAnswered: parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10),
             currentScenario: progress.currentScenario !== undefined ? 
@@ -328,7 +326,6 @@ router.post('/quiz-progress', auth, async (req, res) => {
                 quizName,
                 score: updatedProgress.scorePercentage || Math.round((updatedProgress.experience / 300) * 100), // Use scorePercentage if available
                 experience: updatedProgress.experience,
-                tools: updatedProgress.tools,
                 questionHistory: updatedProgress.questionHistory,
                 questionsAnswered: updatedProgress.questionsAnswered,
                 currentScenario: updatedProgress.currentScenario,
@@ -400,7 +397,6 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
         const responseData = progress ? {
             // Ensure consistent types and data structure with POST route
             experience: parseInt(progress.experience || 0, 10),
-            tools: Array.isArray(progress.tools) ? progress.tools : [],
             questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : [],
             questionsAnswered: parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10),
             currentScenario: parseInt(progress.currentScenario || 0, 10),
@@ -409,7 +405,6 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
             lastUpdated: progress.lastUpdated || new Date().toISOString()
         } : {
             experience: 0,
-            tools: [],
             questionHistory: [],
             questionsAnswered: 0,
             currentScenario: 0,
