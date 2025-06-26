@@ -1674,13 +1674,11 @@ export class APIService {
                 throw new Error('Missing required fields: username, quizName, and resetDateTime are required');
             }
 
-            // Create a Date object in the local timezone
-            const localDate = new Date(resetDateTime);
-            // Store the timezone offset in minutes (for storage purposes)
-            const timezoneOffsetMinutes = localDate.getTimezoneOffset();
+            // Treat the selected time as UTC by appending 'Z'
+            const resetDateTimeUTC = resetDateTime + 'Z'; // e.g., "2025-06-26T11:36:00Z"
+            const timezoneOffsetMinutes = 0; // Since we're treating it as UTC
 
-            // Do NOT manually shift to UTC, just use toISOString()
-            console.log(`Creating scheduled reset (NO manual UTC shift):\n    Local time entered: ${localDate.toLocaleString()}\n    UTC time for storage: ${localDate.toISOString()}\n    Timezone offset: ${timezoneOffsetMinutes} minutes`);
+            console.log(`Creating scheduled reset (treating selected time as UTC):\n    Time sent: ${resetDateTimeUTC}\n    Timezone offset: ${timezoneOffsetMinutes} minutes`);
 
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/schedules`, {
                 method: 'POST',
@@ -1690,7 +1688,7 @@ export class APIService {
                 body: JSON.stringify({
                     username,
                     quizName,
-                    resetDateTime: localDate.toISOString(), // <-- just use toISOString()
+                    resetDateTime: resetDateTimeUTC,
                     timezoneOffset: timezoneOffsetMinutes
                 })
             });
@@ -2652,7 +2650,7 @@ export class APIService {
             const localInvalidationTime = localStorage.getItem(localInvalidationKey);
             
             // Check server for invalidation notifications
-            const response = await this.fetchWithAuth(`${this.baseUrl}/api/check-cache-invalidation`, {
+            const response = await this.fetchWithAuth(`${this.baseUrl}/check-cache-invalidation`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2852,7 +2850,7 @@ export class APIService {
             console.log(`[API] Saved quiz progress for ${normalizedQuizName} with key: ${storageKey}`);
 
             // Save to server
-            const response = await this.fetchWithAuth(`${this.baseUrl}/api/quiz-progress`, {
+            const response = await this.fetchWithAuth(`${this.baseUrl}/quiz-progress`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
