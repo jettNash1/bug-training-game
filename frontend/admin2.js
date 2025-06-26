@@ -5145,6 +5145,9 @@ export class Admin2Dashboard {
     }
 
     simpleUpdateCountdowns() {
+        // Check for due scheduled resets every second (reuse auto-reset countdown system)
+        this.checkScheduledResetsCountdown();
+        
         const countdownElements = document.querySelectorAll('.countdown[data-quiz]');
         if (!countdownElements.length) return;
 
@@ -6788,6 +6791,9 @@ export class Admin2Dashboard {
     }
 
     simpleUpdateCountdowns() {
+        // Check for due scheduled resets every second (reuse auto-reset countdown system)
+        this.checkScheduledResetsCountdown();
+        
         const countdownElements = document.querySelectorAll('.countdown[data-quiz]');
         if (!countdownElements.length) return;
 
@@ -6919,6 +6925,76 @@ export class Admin2Dashboard {
         } finally {
             // Always clear the reset lock
             delete this[resetKey];
+        }
+    }
+
+    async checkScheduledResetsCountdown() {
+        // Use cached schedules to avoid constant API calls
+        if (!this.cachedSchedules) {
+            this.cachedSchedules = [];
+            this.lastScheduleCheck = 0;
+        }
+
+        const now = Date.now();
+        // Refresh cached schedules every 30 seconds
+        if (now - this.lastScheduleCheck > 30000) {
+            try {
+                const response = await this.apiService.getScheduledResets();
+                this.cachedSchedules = response.data || [];
+                this.lastScheduleCheck = now;
+            } catch (error) {
+                console.error('Error fetching scheduled resets for countdown:', error);
+                return;
+            }
+        }
+
+        const currentTime = new Date();
+        
+        // Check each cached schedule
+        for (const schedule of this.cachedSchedules) {
+            try {
+                // Convert resetDateTime to Date object considering timezone
+                const resetDateTime = new Date(schedule.resetDateTime);
+                
+                // Check if reset time has passed
+                if (resetDateTime <= currentTime) {
+                    console.log(`[Scheduled Reset] Processing due reset for ${schedule.username}'s ${schedule.quizName} quiz`);
+                    
+                    // Prevent duplicate processing
+                    const processKey = `scheduled_${schedule.id}`;
+                    if (this[processKey]) {
+                        continue; // Already processing this schedule
+                    }
+                    this[processKey] = true;
+                    
+                    // Reset the specific quiz for the specific user
+                    const resetResponse = await this.apiService.resetQuizProgress(schedule.username, schedule.quizName);
+                    
+                    if (resetResponse.success) {
+                        console.log(`[Scheduled Reset] Successfully reset ${schedule.quizName} for ${schedule.username}`);
+                        
+                        // Delete the completed schedule
+                        await this.apiService.cancelScheduledReset(schedule.id);
+                        
+                        // Remove from cached schedules
+                        this.cachedSchedules = this.cachedSchedules.filter(s => s.id !== schedule.id);
+                        
+                        // Refresh the schedule display
+                        await this.loadScheduledResets();
+                        
+                        this.showInfo(`Scheduled reset completed: ${this.formatQuizName(schedule.quizName)} for ${schedule.username}`);
+                    } else {
+                        console.error(`[Scheduled Reset] Failed to reset ${schedule.quizName} for ${schedule.username}:`, resetResponse.message);
+                        this.showError(`Scheduled reset failed: ${resetResponse.message}`);
+                    }
+                    
+                    // Clear the processing flag
+                    delete this[processKey];
+                }
+            } catch (error) {
+                console.error(`[Scheduled Reset] Error processing schedule ${schedule.id}:`, error);
+                this.showError(`Scheduled reset error: ${error.message}`);
+            }
         }
     }
 }

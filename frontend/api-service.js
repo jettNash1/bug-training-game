@@ -1825,87 +1825,10 @@ export class APIService {
     }
     
     async checkAndProcessScheduledResets() {
-        try {
-            console.log('Checking scheduled resets');
-            
-            // First, get all scheduled resets
-            const response = await this.getScheduledResets();
-            const schedules = response.data || [];
-            
-            if (!schedules.length) {
-                console.log('No scheduled resets found');
-                return { success: true, processed: 0, total: 0 };
-            }
-            
-            console.log(`Found ${schedules.length} scheduled resets`);
-            
-            // Keep track of which schedule IDs were processed
-            const processedIds = [];
-            // Keep track of which quiz names were reset
-            const processedQuizzes = new Set();
-            
-            const now = new Date();
-            
-            // Process each scheduled reset
-            for (const schedule of schedules) {
-                try {
-                    // Convert reset time to local time using the stored offset
-                    const resetTime = new Date(new Date(schedule.resetDateTime).getTime() + ((schedule.timezoneOffset || 0) * 60000));
-                    
-                    console.log(`Schedule for ${schedule.username}'s ${schedule.quizName} quiz - Reset time: ${resetTime.toLocaleString()}, Current time: ${now.toLocaleString()}`);
-                    
-                    // If the reset time has passed (compare in local time)
-                    if (resetTime <= now) {
-                        console.log(`Processing scheduled reset for ${schedule.username}'s ${schedule.quizName} quiz`);
-                        
-                        // Call API to reset the quiz using the correct endpoint
-                        const resetResponse = await this.fetchWithAdminAuth(
-                            `${this.baseUrl}/admin/users/${schedule.username}/quiz-progress/${schedule.quizName}/reset`,
-                            {
-                                method: 'POST'
-                            }
-                        );
-                        
-                        if (resetResponse.success) {
-                            console.log(`Successfully reset quiz progress for ${schedule.username}'s ${schedule.quizName} quiz`);
-                            processedIds.push(schedule.id);
-                            processedQuizzes.add(schedule.quizName);
-                            
-                            // Delete the schedule after successful reset
-                            await this.cancelScheduledReset(schedule.id);
-                        } else {
-                            console.error(`Failed to reset quiz progress for ${schedule.username}'s ${schedule.quizName} quiz:`, resetResponse);
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error processing schedule for ${schedule.username}'s ${schedule.quizName} quiz:`, error);
-                }
-            }
-            
-            // If any schedules were processed, emit a custom event
-            if (processedIds.length > 0) {
-                console.log(`Processed ${processedIds.length} scheduled resets`);
-                // Dispatch a custom event that the dashboard can listen for
-                window.dispatchEvent(new CustomEvent('scheduledResetsProcessed', {
-                    detail: {
-                        processedIds,
-                        processedQuizzes: Array.from(processedQuizzes)
-                    }
-                }));
-            }
-            
-            return {
-                success: true,
-                processed: processedIds.length,
-                total: schedules.length,
-                processedIds,
-                processedQuizzes: Array.from(processedQuizzes)
-            };
-            
-        } catch (error) {
-            console.error('Error checking scheduled resets:', error);
-            return { success: false, message: error.message };
-        }
+        // DEPRECATED: Scheduled resets are now handled by the admin dashboard countdown system
+        // This method is kept for compatibility but no longer processes resets
+        console.log('[DEPRECATED] checkAndProcessScheduledResets: Scheduled resets now handled by admin dashboard countdown system');
+        return { success: true, processed: 0, total: 0, message: 'Handled by dashboard countdown system' };
     }
 
     // Guide settings methods

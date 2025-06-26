@@ -282,72 +282,8 @@ if (process.env.NODE_ENV === 'production') {
     }, 30000); // Check every 30 seconds
 }
 
-// CRITICAL FIX: Add scheduled task to process auto resets and scheduled resets
-// Use singleton pattern to prevent multiple intervals
-let resetTaskInterval = null;
-
-function startResetTask() {
-    if (resetTaskInterval) {
-        console.log('[Reset Task] Task already running, skipping duplicate');
-        return;
-    }
-    
-    console.log('[Reset Task] Starting background reset task...');
-    console.log('[Reset Task] Current time:', new Date().toISOString());
-    
-    // Immediate check to see what's in the database
-    const ScheduledReset = require('./models/scheduledReset.model');
-    ScheduledReset.find({}).then(schedules => {
-        console.log(`[Reset Task] Found ${schedules.length} total scheduled resets in database:`);
-        schedules.forEach(s => {
-            console.log(`  - ${s.username} | ${s.quizName} | ${s.resetDateTime} | ${s.status}`);
-        });
-    }).catch(err => {
-        console.error('[Reset Task] Error checking scheduled resets:', err);
-    });
-    
-    resetTaskInterval = setInterval(async () => {
-        try {
-            const now = new Date();
-            console.log(`[Reset Task] Checking for due resets at ${now.toISOString()}`);
-            
-            // Import the admin route functions
-            const { processScheduledResets, checkAutoResets } = require('./routes/admin');
-            
-            // First check if there are any pending scheduled resets
-            const ScheduledReset = require('./models/scheduledReset.model');
-            const pendingSchedules = await ScheduledReset.find({ 
-                status: 'pending',
-                resetDateTime: { $lte: now }
-            });
-            
-            console.log(`[Reset Task] Found ${pendingSchedules.length} pending scheduled resets due for processing`);
-            
-            if (pendingSchedules.length > 0) {
-                console.log('[Reset Task] Due scheduled resets:', pendingSchedules.map(s => ({
-                    username: s.username,
-                    quiz: s.quizName,
-                    resetTime: s.resetDateTime,
-                    status: s.status
-                })));
-            }
-            
-            // Process both types of resets
-            const [scheduledResults, autoResults] = await Promise.all([
-                processScheduledResets(),
-                checkAutoResets()
-            ]);
-            
-            // Always log the results for debugging
-            console.log(`[Reset Task] Results - Scheduled: ${scheduledResults?.processed || 0}, Auto: ${autoResults?.processed || 0}`);
-            
-        } catch (error) {
-            console.error('[Reset Task] Error processing resets:', error);
-        }
-    }, 60000); // Check every minute
-}
-
-// Reset task will be started after MongoDB connection is established
+// Scheduled resets are now handled by frontend countdown system using existing auto-reset intervals
+// This eliminates the need for separate background tasks
 
 // Routes
 const userRoutes = require('./routes/users');
