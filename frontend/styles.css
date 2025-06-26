@@ -2259,6 +2259,7 @@ select:disabled {
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 0.75rem;
     margin-top: 1rem;
+    margin-bottom: 1rem;
 }
 
 .user-stats.expanded-stats .stat {
@@ -2271,6 +2272,13 @@ select:disabled {
     border-radius: 8px;
     min-height: 60px;
     justify-content: center;
+}
+
+/* Make the Last Active stat span the full width and center */
+.user-stats.expanded-stats .stat:last-child {
+    grid-column: 1 / -1;
+    max-width: 300px;
+    margin: 0 auto;
 }
 
 .user-stats.expanded-stats .stat-label {
@@ -2337,12 +2345,20 @@ select:disabled {
     .user-stats.expanded-stats .stat-value {
         font-size: 1rem;
     }
+    
+    .user-stats.expanded-stats .stat:last-child {
+        max-width: 250px;
+    }
 }
 
 @media (max-width: 768px) {
     .user-stats.expanded-stats {
         grid-template-columns: repeat(2, 1fr);
         gap: 0.5rem;
+    }
+    
+    .user-stats.expanded-stats .stat:last-child {
+        max-width: 200px;
     }
     
     .users-list.row-view .user-stats.expanded-stats {
@@ -2364,6 +2380,10 @@ select:disabled {
     .user-stats.expanded-stats .stat {
         min-height: 50px;
         padding: 0.25rem;
+    }
+    
+    .user-stats.expanded-stats .stat:last-child {
+        max-width: 100%;
     }
     
     .users-list.row-view .user-stats.expanded-stats {
