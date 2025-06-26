@@ -1676,19 +1676,12 @@ export class APIService {
 
             // Create a Date object in the local timezone
             const localDate = new Date(resetDateTime);
-            
             // Store the timezone offset in minutes (for storage purposes)
             const timezoneOffsetMinutes = localDate.getTimezoneOffset();
-            
-            // FIXED: getTimezoneOffset() returns minutes BEHIND UTC, so we ADD it to get UTC
-            // Example: if local is UTC+1, getTimezoneOffset() = -60, so we add (-60) to get UTC
-            const utcTime = new Date(localDate.getTime() + (timezoneOffsetMinutes * 60000));
-            
-            console.log(`Creating scheduled reset:
-                Local time entered: ${localDate.toLocaleString()}
-                UTC time for storage: ${utcTime.toISOString()}
-                Timezone offset: ${timezoneOffsetMinutes} minutes`);
-            
+
+            // Do NOT manually shift to UTC, just use toISOString()
+            console.log(`Creating scheduled reset (NO manual UTC shift):\n    Local time entered: ${localDate.toLocaleString()}\n    UTC time for storage: ${localDate.toISOString()}\n    Timezone offset: ${timezoneOffsetMinutes} minutes`);
+
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/schedules`, {
                 method: 'POST',
                 headers: {
@@ -1697,7 +1690,7 @@ export class APIService {
                 body: JSON.stringify({
                     username,
                     quizName,
-                    resetDateTime: utcTime.toISOString(),
+                    resetDateTime: localDate.toISOString(), // <-- just use toISOString()
                     timezoneOffset: timezoneOffsetMinutes
                 })
             });
