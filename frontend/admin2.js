@@ -2052,6 +2052,22 @@ export class Admin2Dashboard {
                     <strong>Options:</strong>
                     <ul class="options-list">
                         ${scenario.options.map((option, index) => {
+                            return `
+                            <li class="option-item" data-index="${index}" data-correct="${option.correct}">
+                                <span class="option-icon">${option.correct ? '✓' : '✗'}</span>
+                                <span class="option-text">${option.text}</span>
+                            </li>
+                        `;
+                        }).join('')}
+                    </ul>
+                </div>
+            </div>
+            `;
+        }).join('')}
+    }
+
+
+
 import { APIService } from './api-service.js';
 import { QUIZ_CATEGORIES } from './quiz-list.js';
 import { QuizProgressService } from './services/QuizProgressService.js';
@@ -9180,6 +9196,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 }); 
 
-    // Initialize the dashboard
-    await dashboard.init2();
-}); // Close document.addEventListener('DOMContentLoaded')
+// Initialize the dashboard
+await dashboard.init2();
