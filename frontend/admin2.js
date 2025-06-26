@@ -9178,6 +9178,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return result;
         };
     }
+}); 
 
-
-});
+    // Initialize the dashboard
+    await dashboard.init2();
+}); // Close document.addEventListener('DOMContentLoaded')

@@ -764,11 +764,7 @@ export class CMSTestingQuiz extends BaseQuiz {
                     Object.entries(groupedByLevel).forEach(([level, questions]) => {
                         recommendationsHTML += `<li><strong>${level} Level Areas:</strong><ul>`;
                         questions.forEach(q => {
-                            const tool = q.scenario.options.find(opt => opt.tool)?.tool;
                             recommendationsHTML += `<li>${q.scenario.title}: ${q.scenario.description}`;
-                            if (tool) {
-                                recommendationsHTML += `<br><em>Suggested Tool: ${tool}</em>`;
-                            }
                             recommendationsHTML += '</li>';
                         });
                         recommendationsHTML += '</ul></li>';
@@ -790,12 +786,8 @@ export class CMSTestingQuiz extends BaseQuiz {
                     Object.entries(groupedByLevel).forEach(([level, questions]) => {
                         recommendationsHTML += `<li><strong>${level} Level Areas:</strong><ul>`;
                         questions.forEach(q => {
-                            const tool = q.scenario.options.find(opt => opt.tool)?.tool;
                             recommendationsHTML += `<li>${q.scenario.title}: ${q.scenario.description}<br>
                                 <em>Focus on: ${q.selectedAnswer.outcome}</em>`;
-                            if (tool) {
-                                recommendationsHTML += `<br><em>Recommended Tool: ${tool}</em>`;
-                            }
                             recommendationsHTML += '</li>';
                         });
                         recommendationsHTML += '</ul></li>';

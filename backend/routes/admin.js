@@ -547,8 +547,7 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
                         selectedAnswer: {
                             text: record.selectedOption || "Time's up - No answer selected",
                             outcome: record.outcome || "You did not answer in time.",
-                            experience: Number(record.experience) || 0,
-                            tool: ''
+                            experience: Number(record.experience) || 0
                         },
                         correctAnswer: null,
                         status: 'failed',
@@ -588,8 +587,7 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
                     selectedAnswer: {
                         text: selectedAnswer.text || '',
                         outcome: selectedAnswer.outcome || '',
-                        experience: Number(selectedAnswer.experience) || 0,
-                        tool: selectedAnswer.tool || ''
+                        experience: Number(selectedAnswer.experience) || 0
                     },
                     correctAnswer: correctAnswer ? {
                         text: correctAnswer.text || '',
