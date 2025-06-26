@@ -201,6 +201,18 @@ mongoose.connect(process.env.MONGODB_URI, mongooseOptions)
             console.log('MongoDB connected - starting background reset task...');
             startResetTask();
             
+            // --- BEGIN: Scheduled Reset Interval ---
+            const { processScheduledResets } = require('./routes/admin');
+            setInterval(async () => {
+                try {
+                    const result = await processScheduledResets();
+                    console.log('[Scheduled Reset Interval] Result:', result);
+                } catch (err) {
+                    console.error('[Scheduled Reset Interval] Error:', err);
+                }
+            }, 60 * 1000); // Every 60 seconds
+            // --- END: Scheduled Reset Interval ---
+            
         } catch (error) {
             console.error('Error creating indexes or initializing settings:', error);
             // Continue even if index creation fails
