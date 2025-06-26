@@ -2057,15 +2057,16 @@ export class Admin2Dashboard {
                                 <span class="option-icon">${option.correct ? '✓' : '✗'}</span>
                                 <span class="option-text">${option.text}</span>
                             </li>
-                        `;
+                            `;
                         }).join('')}
                     </ul>
                 </div>
             </div>
             `;
-        }).join('')}
+        }).join('');
     }
 
+}
 
 
 import { APIService } from './api-service.js';
@@ -4307,7 +4308,7 @@ export class Admin2Dashboard {
                                         quizResult?.questionHistory?.length ||
                                         quizProgress?.questionsAnswered || 
                                         quizProgress?.questionHistory?.length || 0;
-                    const experience = quizResult?.experience || quizProgress?.experience || 0;
+                const experience = quizResult?.experience || quizProgress?.experience || 0;
                     
                     // Calculate score from question history if available
                     let score = 0;
