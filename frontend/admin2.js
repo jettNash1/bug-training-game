@@ -667,28 +667,56 @@ export class Admin2Dashboard {
         filteredUsers.forEach(user => {
             const lastActive = this.getLastActiveDate(user);
             
-            // Calculate total questions answered across all quizzes
-            let totalQuestionsAnswered = 0;
-            let totalXP = 0;
+            // Calculate number of visible quizzes for this user
+            const hiddenQuizzes = user.hiddenQuizzes || [];
+            const visibleQuizzes = this.quizTypes ? this.quizTypes.filter(quizType => {
+                const quizLower = quizType.toLowerCase();
+                return !hiddenQuizzes.includes(quizLower);
+            }) : [];
+            const assignedQuizzes = visibleQuizzes.length;
             
-            if (this.quizTypes && Array.isArray(this.quizTypes)) {
-                this.quizTypes.forEach(quizType => {
+            // Calculate quiz completion statistics
+            let quizzesPassed = 0;
+            let quizzesCompleted = 0;
+            
+            if (visibleQuizzes && Array.isArray(visibleQuizzes)) {
+                visibleQuizzes.forEach(quizType => {
                     if (typeof quizType === 'string') {
-                        const progress = user.quizProgress?.[quizType.toLowerCase()];
-                        const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+                        const quizLower = quizType.toLowerCase();
+                        const progress = user.quizProgress?.[quizLower];
+                        const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
                         
-                        // Prioritize values from quiz results over progress
-                        const questionsAnswered = result?.questionsAnswered || 
-                                               result?.questionHistory?.length ||
-                                               progress?.questionsAnswered || 
-                                               progress?.questionHistory?.length || 0;
+                        // Check if quiz is completed (15/15 questions)
+                        let questionsAnswered = 0;
+                        let scorePercentage = 0;
+                        let isCompleted = false;
                         
-                        totalQuestionsAnswered += questionsAnswered;
+                        // Prioritize quiz results over progress
+                        if (result) {
+                            questionsAnswered = result.questionsAnswered || 0;
+                            scorePercentage = result.score || 0;
+                        } else if (progress) {
+                            questionsAnswered = progress.questionsAnswered || 
+                                              (progress.questionHistory ? progress.questionHistory.length : 0);
+                            
+                            // Calculate score from progress
+                            if (progress.score !== undefined) {
+                                scorePercentage = progress.score;
+                            } else if (progress.questionHistory && progress.questionHistory.length > 0) {
+                                const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                                scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
+                            }
+                        }
                         
-                        // Get experience and ensure it's a multiple of 5
-                        let xp = progress?.experience || result?.experience || 0;
-                        xp = Math.round(xp / 5) * 5;
-                        totalXP += xp;
+                        isCompleted = questionsAnswered >= 15;
+                        
+                        if (isCompleted) {
+                            if (scorePercentage >= 80) {
+                                quizzesPassed++;
+                            } else {
+                                quizzesCompleted++;
+                            }
+                        }
                     }
                 });
             }
@@ -696,16 +724,16 @@ export class Admin2Dashboard {
             // Use the same calculation as the details overlay for overall progress
             const overallProgress = this.calculateQuestionsAnsweredPercent(user);
             const overallProgressDisplay = `${overallProgress.toFixed(1)}%`;
-            
-            // console.log(`User ${user.username}: questions=${totalQuestionsAnswered}, progress=${overallProgressDisplay}`);
 
             const card = document.createElement('div');
             card.className = 'user-card';
             
-            // Set a data attribute on the card to store the username and progress for easy reference
+            // Set data attributes for the new metrics
             card.setAttribute('data-username', user.username);
             card.setAttribute('data-progress', overallProgressDisplay);
-            card.setAttribute('data-questions', totalQuestionsAnswered.toString());
+            card.setAttribute('data-passed', quizzesPassed.toString());
+            card.setAttribute('data-completed', quizzesCompleted.toString());
+            card.setAttribute('data-assigned', assignedQuizzes.toString());
             
             if (isRowView) {
                 card.innerHTML = `
@@ -726,12 +754,16 @@ export class Admin2Dashboard {
                         </div>
                         <div class="user-stats">
                             <div class="stat">
-                                <span class="stat-label">Questions Answered:</span>
-                                <span class="stat-value">${totalQuestionsAnswered}</span>
+                                <span class="stat-label">Quizzes Passed:</span>
+                                <span class="stat-value">${quizzesPassed}</span>
                             </div>
                             <div class="stat">
-                                <span class="stat-label">Overall Progress:</span>
-                                <span class="stat-value total-progress-value">${overallProgressDisplay}</span>
+                                <span class="stat-label">Quizzes Completed:</span>
+                                <span class="stat-value">${quizzesCompleted}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Assigned Quizzes:</span>
+                                <span class="stat-value">${assignedQuizzes}</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -806,35 +838,50 @@ export class Admin2Dashboard {
                 const userStats = document.createElement('div');
                 userStats.className = 'user-stats';
                 
-                // Questions Answered stat
-                const questionsStat = document.createElement('div');
-                questionsStat.className = 'stat';
+                // Quizzes Passed stat
+                const passedStat = document.createElement('div');
+                passedStat.className = 'stat';
                 
-                const questionsLabel = document.createElement('span');
-                questionsLabel.className = 'stat-label';
-                questionsLabel.textContent = 'Questions Answered:';
+                const passedLabel = document.createElement('span');
+                passedLabel.className = 'stat-label';
+                passedLabel.textContent = 'Quizzes Passed:';
                 
-                const questionsValue = document.createElement('span');
-                questionsValue.className = 'stat-value';
-                questionsValue.textContent = totalQuestionsAnswered.toString();
+                const passedValue = document.createElement('span');
+                passedValue.className = 'stat-value';
+                passedValue.textContent = quizzesPassed.toString();
                 
-                questionsStat.appendChild(questionsLabel);
-                questionsStat.appendChild(questionsValue);
+                passedStat.appendChild(passedLabel);
+                passedStat.appendChild(passedValue);
                 
-                // Overall Progress stat
-                const progressStat = document.createElement('div');
-                progressStat.className = 'stat';
+                // Quizzes Completed stat
+                const completedStat = document.createElement('div');
+                completedStat.className = 'stat';
                 
-                const progressLabel = document.createElement('span');
-                progressLabel.className = 'stat-label';
-                progressLabel.textContent = 'Overall Progress:';
+                const completedLabel = document.createElement('span');
+                completedLabel.className = 'stat-label';
+                completedLabel.textContent = 'Quizzes Completed:';
                 
-                const progressValue = document.createElement('span');
-                progressValue.className = 'stat-value total-progress-value';
-                progressValue.textContent = overallProgressDisplay;
+                const completedValue = document.createElement('span');
+                completedValue.className = 'stat-value';
+                completedValue.textContent = quizzesCompleted.toString();
                 
-                progressStat.appendChild(progressLabel);
-                progressStat.appendChild(progressValue);
+                completedStat.appendChild(completedLabel);
+                completedStat.appendChild(completedValue);
+                
+                // Assigned Quizzes stat
+                const assignedStat = document.createElement('div');
+                assignedStat.className = 'stat';
+                
+                const assignedLabel = document.createElement('span');
+                assignedLabel.className = 'stat-label';
+                assignedLabel.textContent = 'Assigned Quizzes:';
+                
+                const assignedValue = document.createElement('span');
+                assignedValue.className = 'stat-value';
+                assignedValue.textContent = assignedQuizzes.toString();
+                
+                assignedStat.appendChild(assignedLabel);
+                assignedStat.appendChild(assignedValue);
                 
                 // Last Active stat
                 const lastActiveStat = document.createElement('div');
@@ -851,8 +898,9 @@ export class Admin2Dashboard {
                 lastActiveStat.appendChild(lastActiveLabel);
                 lastActiveStat.appendChild(lastActiveValue);
                 
-                userStats.appendChild(questionsStat);
-                userStats.appendChild(progressStat);
+                userStats.appendChild(passedStat);
+                userStats.appendChild(completedStat);
+                userStats.appendChild(assignedStat);
                 userStats.appendChild(lastActiveStat);
                 
                 cardContent.appendChild(userHeader);
