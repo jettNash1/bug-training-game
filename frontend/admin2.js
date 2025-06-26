@@ -2846,6 +2846,14 @@ export class Admin2Dashboard {
                         this.apiService.clearQuizLocalStorage(username, quizType);
                         console.log(`[Admin] Cleared localStorage cache for ${username}'s ${quizType} quiz`);
                         
+                        // CRITICAL: Notify server about cache invalidation for cross-browser synchronization
+                        try {
+                            await this.apiService.notifyServerCacheInvalidation(username, quizType);
+                            console.log(`[Admin] Notified server of cache invalidation for ${username}'s ${quizType}`);
+                        } catch (invalidationError) {
+                            console.warn(`[Admin] Failed to notify server of cache invalidation for ${username}'s ${quizType}:`, invalidationError);
+                        }
+                        
                         successCount++;
                     } else {
                         failureCount++;
@@ -2911,6 +2919,14 @@ export class Admin2Dashboard {
             // This prevents old cached progress from being restored when the user next visits the quiz
             this.apiService.clearQuizLocalStorage(username, quizType);
             console.log(`[Admin] Cleared localStorage cache for ${username}'s ${quizType} quiz`);
+            
+            // CRITICAL: Notify server about cache invalidation for cross-browser synchronization
+            try {
+                await this.apiService.notifyServerCacheInvalidation(username, quizType);
+                console.log(`[Admin] Notified server of cache invalidation for ${username}'s ${quizType}`);
+            } catch (invalidationError) {
+                console.warn(`[Admin] Failed to notify server of cache invalidation for ${username}'s ${quizType}:`, invalidationError);
+            }
 
             // Update the local user data to reflect the reset
             const user = this.users.find(u => u.username === username);
@@ -3808,6 +3824,14 @@ export class Admin2Dashboard {
                                             // This prevents old cached progress from being restored when the user next visits the quiz
                                             this.apiService.clearQuizLocalStorage(username, setting.quizName);
                                             console.log(`[Admin] Cleared localStorage cache for ${username}'s ${setting.quizName} quiz`);
+                                            
+                                            // CRITICAL: Notify server about cache invalidation for cross-browser synchronization
+                                            try {
+                                                await this.apiService.notifyServerCacheInvalidation(username, setting.quizName);
+                                                console.log(`[Admin] Notified server of cache invalidation for ${username}'s ${setting.quizName}`);
+                                            } catch (invalidationError) {
+                                                console.warn(`[Admin] Failed to notify server of cache invalidation for ${username}'s ${setting.quizName}:`, invalidationError);
+                                            }
                                             
                                             successCount++;
                                             console.log(`Reset ${username}'s ${setting.quizName} quiz`);
@@ -5400,6 +5424,14 @@ export class Admin2Dashboard {
                         // This prevents old cached progress from being restored when the user next visits the quiz
                         this.apiService.clearQuizLocalStorage(username, quizName);
                         console.log(`[Admin] Cleared localStorage cache for ${username}'s ${quizName} quiz`);
+                        
+                        // CRITICAL: Notify server about cache invalidation for cross-browser synchronization
+                        try {
+                            await this.apiService.notifyServerCacheInvalidation(username, quizName);
+                            console.log(`[Admin] Notified server of cache invalidation for ${username}'s ${quizName}`);
+                        } catch (invalidationError) {
+                            console.warn(`[Admin] Failed to notify server of cache invalidation for ${username}'s ${quizName}:`, invalidationError);
+                        }
                         
                         successCount++;
                         console.log(`Reset ${username}'s ${quizName} quiz`);

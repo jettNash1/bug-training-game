@@ -384,6 +384,19 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
             totalResets: userResetCount + quizUserResetCount
         });
         
+        // CRITICAL: Record cache invalidation for cross-browser synchronization
+        const invalidationKey = `${username}_${quizName.toLowerCase()}`;
+        const invalidationTime = Date.now();
+        cacheInvalidations.set(invalidationKey, invalidationTime);
+        console.log(`[Cache Invalidation] Recorded invalidation for ${invalidationKey} at ${invalidationTime}`);
+        
+        // Also record for all quiz variations to ensure all cached versions are invalidated
+        quizVariations.forEach(variant => {
+            const variantKey = `${username}_${variant}`;
+            cacheInvalidations.set(variantKey, invalidationTime);
+        });
+        console.log(`[Cache Invalidation] Recorded invalidation for ${quizVariations.length} quiz variations`);
+        
         res.json({ 
             success: true,
             message: `Comprehensive quiz progress reset for user ${username} (${userResetCount + quizUserResetCount} items cleared)`,
@@ -452,6 +465,12 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
         // Save the updated user document
         await user.save();
         console.log('Successfully reset quiz score for:', { username, quizName });
+        
+        // CRITICAL: Record cache invalidation for cross-browser synchronization
+        const invalidationKey = `${username}_${quizName.toLowerCase()}`;
+        const invalidationTime = Date.now();
+        cacheInvalidations.set(invalidationKey, invalidationTime);
+        console.log(`[Cache Invalidation] Recorded score reset invalidation for ${invalidationKey} at ${invalidationTime}`);
         
         res.json({ 
             success: true,
@@ -2046,6 +2065,14 @@ async function processScheduledResets() {
                     await quizUser.save();
                 }
                 
+                // CRITICAL: Record cache invalidation for cross-browser synchronization
+                const invalidationTime = Date.now();
+                quizVariations.forEach(variant => {
+                    const invalidationKey = `${schedule.username}_${variant.toLowerCase()}`;
+                    cacheInvalidations.set(invalidationKey, invalidationTime);
+                });
+                console.log(`[Scheduled Reset] Recorded cache invalidation for ${schedule.username}'s ${schedule.quizName} quiz`);
+                
                 // Mark schedule as completed and then delete it
                 console.log(`[Scheduled Reset] Successfully reset ${schedule.quizName} for ${schedule.username}`);
                 
@@ -2170,6 +2197,14 @@ router.post('/auto-reset/:quizName', auth, async (req, res) => {
                 if (userModified) {
                     await user.save();
                     resetCount++;
+                    
+                    // CRITICAL: Record cache invalidation for cross-browser synchronization
+                    const invalidationTime = Date.now();
+                    quizVariations.forEach(variant => {
+                        const invalidationKey = `${user.username}_${variant.toLowerCase()}`;
+                        cacheInvalidations.set(invalidationKey, invalidationTime);
+                    });
+                    console.log(`[Batch Auto-Reset] Recorded cache invalidation for ${user.username}'s ${quizName} quiz`);
                 }
                 
                 // Also check QuizUser model
@@ -2214,6 +2249,12 @@ router.post('/auto-reset/:quizName', auth, async (req, res) => {
 
 
 // Export both the router and the functions for the background task
+// Export the cache invalidations Map for use in other modules
+function getCacheInvalidations() {
+    return cacheInvalidations;
+}
+
 module.exports = router;
+module.exports.getCacheInvalidations = getCacheInvalidations;
 module.exports.checkAutoResets = checkAutoResets;
 module.exports.processScheduledResets = processScheduledResets; 

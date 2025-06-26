@@ -266,22 +266,37 @@ router.post('/check-cache-invalidation', auth, async (req, res) => {
         // Check if there's a cache invalidation record for this user/quiz combination
         const invalidationKey = `${username}_${quizName}`;
         
-        // Access the cache invalidations from the admin module
-        // We need to implement a way to share this data between modules
-        // For now, we'll use a simple approach
+        // Import the cache invalidations from the admin module
+        const { getCacheInvalidations } = require('./admin');
+        const cacheInvalidations = getCacheInvalidations();
         
         const lastCheckTime = parseInt(lastCheck) || 0;
         const currentTime = Date.now();
         
-        // For this implementation, we'll check if there's a recent invalidation marker
-        // This is a simplified approach - in production you might want to use Redis or a database
+        // Check if there's an invalidation record for this user/quiz that's newer than lastCheck
+        const invalidationTime = cacheInvalidations.get(invalidationKey);
         
-        res.json({
-            success: true,
-            shouldInvalidate: false, // Will be updated when we have proper invalidation tracking
-            invalidationTime: currentTime,
-            message: 'Cache invalidation check completed'
+        console.log(`[Cache Invalidation Check] Checking for ${invalidationKey}:`, {
+            invalidationTime,
+            lastCheckTime,
+            shouldInvalidate: invalidationTime && invalidationTime > lastCheckTime
         });
+        
+        if (invalidationTime && invalidationTime > lastCheckTime) {
+            res.json({
+                success: true,
+                shouldInvalidate: true,
+                invalidationTime: invalidationTime,
+                message: 'Cache invalidation detected'
+            });
+        } else {
+            res.json({
+                success: true,
+                shouldInvalidate: false,
+                invalidationTime: currentTime,
+                message: 'No cache invalidation found'
+            });
+        }
     } catch (error) {
         console.error('[Cache Invalidation Check] Error:', error);
         res.status(500).json({
