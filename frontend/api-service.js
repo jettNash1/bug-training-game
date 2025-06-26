@@ -2850,7 +2850,7 @@ export class APIService {
             console.log(`[API] Saved quiz progress for ${normalizedQuizName} with key: ${storageKey}`);
 
             // Save to server
-            const response = await this.fetchWithAuth(`${this.baseUrl}/quiz-progress`, {
+            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

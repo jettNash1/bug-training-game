@@ -304,6 +304,9 @@ app.use('/api/users', userRoutes);
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
+const apiRoutes = require('./routes/api');
+app.use('/api', apiRoutes);
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
