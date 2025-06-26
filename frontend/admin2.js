@@ -3448,41 +3448,73 @@ export class Admin2Dashboard {
             const quizName = document.getElementById('scheduleQuiz').value;
             const resetDate = document.getElementById('scheduleDate').value;
             const resetTime = document.getElementById('scheduleTime').value;
-            
+
             // Validate inputs
             if (!username || !quizName || !resetDate || !resetTime) {
                 this.showError('Please fill in all fields');
                 return;
             }
-            
+
             // Create datetime string and preserve the local time exactly as entered
             const resetDateTime = `${resetDate}T${resetTime}:00`;
-            
-            console.log(`Scheduling reset - Local time entered: ${resetDate} ${resetTime}`);
-            
+            const localDate = new Date(resetDateTime);
+            const now = new Date();
+
+            // Validate that the scheduled time is in the future
+            if (isNaN(localDate.getTime())) {
+                this.showError('Invalid date or time format.');
+                return;
+            }
+            if (localDate <= now) {
+                this.showError('Scheduled reset time must be in the future.');
+                return;
+            }
+
+            // Log the payload for debugging
+            const timezoneOffsetMinutes = localDate.getTimezoneOffset();
+            const utcTime = new Date(localDate.getTime() + (timezoneOffsetMinutes * 60000));
+            console.log('[Scheduled Reset Debug] Payload:', {
+                username,
+                quizName,
+                localDateTime: resetDateTime,
+                utcDateTime: utcTime.toISOString(),
+                timezoneOffset: timezoneOffsetMinutes
+            });
+
             // Show loading state
             const submitBtn = document.querySelector('.submit-btn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Scheduling...';
-            
+
             // Use the API service to create the schedule
-            const response = await this.apiService.createScheduledReset(username, quizName, resetDateTime);
-            
-            if (response.success) {
+            let response;
+            try {
+                response = await this.apiService.createScheduledReset(username, quizName, resetDateTime);
+            } catch (apiError) {
+                // Try to extract backend error message
+                let errorMsg = apiError && apiError.message ? apiError.message : 'Failed to create schedule.';
+                if (apiError && apiError.response && apiError.response.message) {
+                    errorMsg = apiError.response.message;
+                }
+                this.showError(`Failed to create schedule: ${errorMsg}`);
+                console.error('Error creating schedule:', apiError);
+                return;
+            }
+
+            if (response && response.success) {
                 // Reset form
                 document.getElementById('scheduleForm').reset();
-                
+
                 // Show success message with local time
                 this.showSuccess(`Reset scheduled for ${this.formatQuizName(quizName)} at ${resetTime} on ${resetDate}`);
-                
+
                 // Refresh the schedules list
                 this.loadScheduledResets();
             } else {
-                throw new Error(response.message || 'Failed to schedule reset');
+                const errorMsg = (response && response.message) ? response.message : 'Failed to schedule reset';
+                this.showError(`Failed to create schedule: ${errorMsg}`);
+                console.error('Error creating schedule:', response);
             }
-        } catch (error) {
-            console.error('Error creating schedule:', error);
-            this.showError(`Failed to create schedule: ${error.message}`);
         } finally {
             // Reset button state
             const submitBtn = document.querySelector('.submit-btn');
