@@ -2794,7 +2794,7 @@ export class APIService {
                 message: error.message || 'Failed to get user progress',
                 data: { quizProgress: {}, quizResults: [] }
             };
-        }
+        } 
     }
 
     // Add this new method to get a completely unique and consistent storage key for each quiz
