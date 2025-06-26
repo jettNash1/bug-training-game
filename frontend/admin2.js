@@ -6030,7 +6030,15 @@ export class Admin2Dashboard {
                 
                 // Add overall stats
                 const overallProgress = this.calculateQuestionsAnsweredPercent(user).toFixed(1);
-                const totalQuestions = this.quizTypes.reduce((total, quizType) => {
+                
+                // Calculate total questions based on visible quizzes only
+                const hiddenQuizzes = user.hiddenQuizzes || [];
+                const visibleQuizTypes = this.quizTypes.filter(quizType => {
+                    const quizLower = quizType.toLowerCase();
+                    return !hiddenQuizzes.includes(quizLower);
+                });
+                
+                const totalQuestions = visibleQuizTypes.reduce((total, quizType) => {
                     const quizLower = quizType.toLowerCase();
                     const progress = user.quizProgress?.[quizLower];
                     const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
@@ -6045,7 +6053,7 @@ export class Admin2Dashboard {
                 
                 const lastActive = this.formatDate(this.getLastActiveDate(user));
                 
-                csvContent += `${overallProgress}%,${totalQuestions}/${this.quizTypes.length * 15},${lastActive}\n`;
+                csvContent += `${overallProgress}%,${totalQuestions}/${visibleQuizTypes.length * 15},${lastActive}\n`;
             });
             
             // Create a download link for the CSV file
@@ -6522,16 +6530,25 @@ export class Admin2Dashboard {
         }
     }
 
-    // Helper method to calculate percentage of total questions answered (out of 375)
+    // Helper method to calculate percentage of total questions answered (based on visible quizzes only)
     calculateQuestionsAnsweredPercent(user) {
         if (!user) return 0;
 
-        let totalQuestionsAnswered = 0;
-        const totalPossibleQuestions = 375; // 25 quizzes * 15 questions
+        // Get user's quiz visibility settings
+        const hiddenQuizzes = user.hiddenQuizzes || [];
         
-        // Sum up questions answered across all quizzes
-        if (this.quizTypes && Array.isArray(this.quizTypes)) {
-            this.quizTypes.forEach(quizType => {
+        // Determine visible quizzes (those NOT in hiddenQuizzes)
+        const visibleQuizTypes = this.quizTypes ? this.quizTypes.filter(quizType => {
+            const quizLower = quizType.toLowerCase();
+            return !hiddenQuizzes.includes(quizLower);
+        }) : [];
+        
+        let totalQuestionsAnswered = 0;
+        const totalPossibleQuestions = visibleQuizTypes.length * 15; // 15 questions per visible quiz
+        
+        // Sum up questions answered across visible quizzes only
+        if (visibleQuizTypes && Array.isArray(visibleQuizTypes)) {
+            visibleQuizTypes.forEach(quizType => {
                 if (typeof quizType === 'string') {
                     const progress = user.quizProgress?.[quizType.toLowerCase()];
                     const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
@@ -6547,7 +6564,12 @@ export class Admin2Dashboard {
             });
         }
 
-        // Calculate progress as percentage of total possible questions
+        // Calculate progress as percentage of total possible questions from visible quizzes
+        // Handle edge case where user has no visible quizzes
+        if (totalPossibleQuestions === 0) {
+            return 0;
+        }
+        
         return (totalQuestionsAnswered / totalPossibleQuestions) * 100;
     }
 
@@ -7124,34 +7146,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     const updateAverageCompletionStat = (dashboardInstance) => {
         const averageCompletionElement = document.getElementById('averageCompletion');
         if (!averageCompletionElement) return;
-        let totalQuestions = 0;
+        
+        let totalCompletion = 0;
         let totalUsers = 0;
+        
         if (dashboardInstance.users && Array.isArray(dashboardInstance.users)) {
             dashboardInstance.users.forEach(user => {
-                let userQuestions = 0;
-                if (dashboardInstance.quizTypes && Array.isArray(dashboardInstance.quizTypes)) {
-                    dashboardInstance.quizTypes.forEach(quizType => {
-                        if (typeof quizType === 'string') {
-                            const progress = user.quizProgress?.[quizType.toLowerCase()];
-                            const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
-                            const questionsAnswered = result?.questionsAnswered || 
-                                result?.questionHistory?.length ||
-                                progress?.questionsAnswered || 
-                                progress?.questionHistory?.length || 0;
-                            userQuestions += questionsAnswered;
-                        }
-                    });
-                }
-                totalQuestions += userQuestions;
+                // Use the same per-user calculation method that considers visible quizzes
+                const userProgress = dashboardInstance.calculateQuestionsAnsweredPercent(user);
+                totalCompletion += userProgress;
                 totalUsers++;
             });
         }
+        
         if (totalUsers > 0) {
-            const avgQuestions = totalQuestions / totalUsers;
-            const totalPossibleQuestions = 375;
-            const avgPercentage = (avgQuestions / totalPossibleQuestions) * 100;
+            const avgPercentage = totalCompletion / totalUsers;
             averageCompletionElement.textContent = `${avgPercentage.toFixed(1)}%`;
-            console.log(`Updated Average Completion stat to ${avgPercentage.toFixed(1)}%`);
+            // console.log(`Updated Average Completion stat to ${avgPercentage.toFixed(1)}%`);
         }
     };
 
