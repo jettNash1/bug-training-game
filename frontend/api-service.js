@@ -58,7 +58,7 @@ export class APIService {
         try {
             // Skip auth check on admin login page
             if (window.location.pathname.includes('admin-login.html')) {
-                // console.log('On admin login page, skipping admin auth check');
+                console.log('On admin login page, skipping admin auth check');
                 throw new Error('Cannot fetch with admin auth on login page');
             }
             
@@ -87,11 +87,11 @@ export class APIService {
                 credentials: 'include'
             };
             
-            // console.log('Fetching with admin auth:', {
-            //     url: fullUrl,
-            //     hasToken: !!adminToken,
-            //     method: mergedOptions.method
-            // });
+            console.log('Fetching with admin auth:', {
+                url: fullUrl,
+                hasToken: !!adminToken,
+                method: mergedOptions.method
+            });
             
             // Perform the fetch
             const response = await fetch(fullUrl, mergedOptions);
@@ -249,7 +249,7 @@ export class APIService {
             // Store the admin token in localStorage
             if (data.token) {
                 localStorage.setItem('adminToken', data.token);
-                // console.log('Admin token stored successfully');
+                console.log('Admin token stored successfully');
             } else {
                 console.warn('No admin token received from server');
             }
@@ -419,7 +419,7 @@ export class APIService {
             });
 
             const text = await response.text();
-            // console.log('Token verification response:', text);
+            console.log('Token verification response:', text);
 
             let data;
             try {
@@ -448,7 +448,7 @@ export class APIService {
             });
 
             const text = await response.text();
-            // console.log('Token refresh response:', text);
+            console.log('Token refresh response:', text);
 
             let data;
             try {
@@ -488,7 +488,7 @@ export class APIService {
                 `${this.baseUrl.replace(/\/api$/, '')}${url}` : 
                 `${this.baseUrl}/${url.replace(/^api\//, '')}`;
             
-            // console.log(`[API] Fetching with auth: ${fullUrl}`);
+            console.log(`[API] Fetching with auth: ${fullUrl}`);
             
             // Add signal to options if not already present
             const fetchOptions = {

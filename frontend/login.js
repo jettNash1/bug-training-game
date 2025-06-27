@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Registration response:', response);
                 
                 if (response.success && response.token) {
-                    // console.log('Registration successful, storing tokens...');
+                    console.log('Registration successful, storing tokens...');
                     // Store tokens first
                     setAuthToken(response.token);
                     setRefreshToken(response.refreshToken);
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     await new Promise(resolve => setTimeout(resolve, 100));
                     
                     // Then redirect
-                    // console.log('Tokens stored, redirecting to index...');
+                    console.log('Tokens stored, redirecting to index...');
                     window.location.replace('/');
                 } else {
                     console.log('Registration failed:', response);

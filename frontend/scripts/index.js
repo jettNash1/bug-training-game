@@ -2,7 +2,7 @@ import { APIService } from '../api-service.js';
 import { QuizUser } from '../QuizUser.js';
 import { QuizProgressService } from '../services/QuizProgressService.js';
 import { QuizList } from '../quiz-list.js';
-import { checkAuth, refreshAuthState } from '../auth.js';
+import { checkAuth } from '../auth.js';
 import { cacheManager } from './cache-manager.js';
 
 function normalizeQuizName(quizName) {
@@ -1169,20 +1169,21 @@ class IndexPage {
 // Initialize the index page when the DOM is loaded
 let indexPage;
 document.addEventListener('DOMContentLoaded', async () => {
-    // Optimized authentication check - only verify if we don't have cached auth state
+    // CRITICAL: Check authentication BEFORE showing any content
+    // This prevents unauthenticated users from seeing the page before redirect
     try {
-        // console.log('[Index] Checking authentication before initializing...');
+        console.log('[Index] Checking authentication before initializing...');
         const isAuthenticated = await checkAuth();
         
         if (!isAuthenticated) {
-            // console.log('[Index] User not authenticated, redirect should have occurred');
+            console.log('[Index] User not authenticated, redirect should have occurred');
             // If checkAuth returns false, it should have already redirected
             // But as a failsafe, we'll ensure no content is shown
             document.body.style.display = 'none';
             return;
         }
         
-        // console.log('[Index] User authenticated, proceeding with initialization');
+        console.log('[Index] User authenticated, proceeding with initialization');
         
         // Remove auth checking overlay and show authenticated content
         const authCheckElement = document.getElementById('authCheck');
