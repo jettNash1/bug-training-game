@@ -388,14 +388,6 @@ export class Admin2Dashboard {
             });
         }
 
-        // Account type filter
-        const accountTypeSelect = document.getElementById('accountType');
-        if (accountTypeSelect) {
-            accountTypeSelect.addEventListener('change', () => {
-                this.updateUsersList();
-            });
-        }
-
         // Export buttons
         const exportDetailedBtn = document.getElementById('exportDetailedCSV');
         const exportSimpleBtn = document.getElementById('exportSimpleCSV');
@@ -419,8 +411,6 @@ export class Admin2Dashboard {
                 this.exportCustomData();
             });
         }
-
-        // Note: Export section initialization is handled in the main switch case above
 
         // Badges section
         document.getElementById('badgesUserDropdown')?.addEventListener('change', (e) => {
@@ -753,17 +743,6 @@ export class Admin2Dashboard {
                     <div class="row-content">
                         <div class="user-info">
                             <span class="username">${user.username}</span>
-                            <span class="account-type-badge" style="
-                                background-color: #e3f2fd;
-                                color: #1976d2;
-                                padding: 4px 12px;
-                                border-radius: 20px;
-                                font-size: 0.85rem;
-                                font-weight: 500;
-                                display: inline-flex;
-                                align-items: center;
-                                margin-left: 8px;
-                            ">Regular</span>
                         </div>
                         <div class="user-stats expanded-stats">
                             <div class="stat">
@@ -823,21 +802,7 @@ export class Admin2Dashboard {
                 username.className = 'username';
                 username.textContent = user.username;
                 
-                const accountTypeBadge = document.createElement('span');
-                accountTypeBadge.className = 'account-type-badge';
-                accountTypeBadge.textContent = 'Regular';
-                accountTypeBadge.style.backgroundColor = '#e3f2fd';
-                accountTypeBadge.style.color = '#1976d2';
-                accountTypeBadge.style.padding = '4px 12px';
-                accountTypeBadge.style.borderRadius = '20px';
-                accountTypeBadge.style.fontSize = '0.85rem';
-                accountTypeBadge.style.fontWeight = '500';
-                accountTypeBadge.style.display = 'inline-flex';
-                accountTypeBadge.style.alignItems = 'center';
-                accountTypeBadge.style.marginLeft = '8px';
-                
                 userHeader.appendChild(username);
-                userHeader.appendChild(accountTypeBadge);
                 
                 const progressContainer = document.createElement('div');
                 progressContainer.className = 'progress-container';
@@ -2310,10 +2275,6 @@ export class Admin2Dashboard {
                         <div class="info-row">
                             <div class="info-label">Username:</div>
                             <div class="info-value">${username}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Account Type:</div>
-                            <div class="info-value">${user.userType === 'admin' ? 'Admin Account' : 'Standard Account'}</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Overall Progress:</div>
@@ -6486,7 +6447,7 @@ export class Admin2Dashboard {
             const selectedUsers = this.users.filter(user => selectedUsernames.includes(user.username));
 
             // Create CSV header
-            const headers = ['Username', 'Email', 'Account Type', 'Last Active', ...selectedQuizzes.map(quiz => this.formatQuizName(quiz))];
+            const headers = ['Username', 'Email', 'Last Active', ...selectedQuizzes.map(quiz => this.formatQuizName(quiz))];
             
             // Create CSV content
             const csvRows = [headers];
@@ -6495,7 +6456,6 @@ export class Admin2Dashboard {
                 const row = [
                     user.username || '',
                     user.email || '',
-                    user.accountType || 'user',
                     this.formatDate(this.getLastActiveDate(user))
                 ];
 
