@@ -197,7 +197,7 @@ export const functionalInterviewScenarios = {
                     {
                         text: 'Establish detailed risk tracking protocols across multiple project phases',
                         outcome: 'Tracking comes after identification.',
-                        experience: 5,
+                        experience: 0,
                     }
                 ]
             },
@@ -420,7 +420,7 @@ export const functionalInterviewScenarios = {
                     {
                         text: 'Verifying user interface design matches submitted documentation',
                         outcome: 'While content proofing includes some UI elements, copy proofing specifically focuses on text content.',
-                        experience: 5,
+                        experience: 0,
                     },
                     {
                         text: 'Testing cross-browser compatibility with supported environments',

@@ -81,7 +81,7 @@ export const exploratoryTestingScenarios = {
                     {
                         text: 'Record brief notes and expand them after the session',
                         outcome: 'This is a good approach, but could be more comprehensive during testing.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -137,7 +137,7 @@ export const exploratoryTestingScenarios = {
                     {
                         text: 'Using different inputs and workflows',
                         outcome: 'This is valuable but not as focused as boundary testing for finding specific issues.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
