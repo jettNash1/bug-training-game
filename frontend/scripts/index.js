@@ -734,18 +734,27 @@ class IndexPage {
             return;
         }
         
-        // Check if badges button already exists
+        // Check if buttons already exist
         if (headerRightSection.querySelector('a[href="badges.html"]')) {
             return;
         }
+        
+        // Create the info button
+        const infoButton = document.createElement('a');
+        infoButton.href = 'info.html';
+        infoButton.className = 'info-button';
+        infoButton.innerHTML = '<i class="fa-solid fa-info-circle"></i> Info';
+        infoButton.setAttribute('aria-label', 'View system information and help');
         
         // Create the badges button with styling to match the logout button but in blue
         const badgesButton = document.createElement('a');
         badgesButton.href = 'badges.html';
         badgesButton.className = 'badges-button';
         badgesButton.innerHTML = '<i class="fa-solid fa-award"></i> Badges';
+        badgesButton.setAttribute('aria-label', 'View your earned badges');
         
-        // Insert before the logout button
+        // Insert buttons before the logout button (info first, then badges)
+        headerRightSection.insertBefore(infoButton, logoutButton);
         headerRightSection.insertBefore(badgesButton, logoutButton);
         
         // Add Font Awesome if not already included
@@ -756,13 +765,12 @@ class IndexPage {
             document.head.appendChild(fontAwesome);
         }
         
-        // Add the CSS for the badges button to match the layout in the screenshot
-        if (!document.getElementById('badges-button-style')) {
+        // Add the CSS for both buttons to match the layout
+        if (!document.getElementById('header-buttons-style')) {
             const style = document.createElement('style');
-            style.id = 'badges-button-style';
+            style.id = 'header-buttons-style';
             style.textContent = `
-                .badges-button {
-                    background-color: var(--primary-color, #4a90e2);
+                .info-button, .badges-button {
                     color: white;
                     border-radius: 4px;
                     padding: 8px 16px;
@@ -776,12 +784,25 @@ class IndexPage {
                     font-size: 14px;
                 }
                 
+                .info-button {
+                    background-color: #28a745;
+                }
+                
+                .info-button:hover {
+                    background-color: #218838;
+                    color: white;
+                }
+                
+                .badges-button {
+                    background-color: var(--primary-color, #4a90e2);
+                }
+                
                 .badges-button:hover {
                     background-color: var(--primary-color-dark, #3a80d2);
                     color: white;
                 }
                 
-                .badges-button i {
+                .info-button i, .badges-button i {
                     margin-right: 6px;
                 }
             `;
@@ -827,35 +848,44 @@ class IndexPage {
 
     // Helper method to add the badge to a specific element
     addBadgeToElement(element) {
-        // Check if badges button already exists
+        // Check if buttons already exist
         if (element.querySelector('a[href="badges.html"]')) {
             return;
         }
+        
+        // Create the info button
+        const infoButton = document.createElement('a');
+        infoButton.href = 'info.html';
+        infoButton.className = 'info-button';
+        infoButton.innerHTML = '<i class="fa-solid fa-info-circle"></i> Info';
+        infoButton.setAttribute('aria-label', 'View system information and help');
         
         // Create the badges button
         const badgesButton = document.createElement('a');
         badgesButton.href = 'badges.html';
         badgesButton.className = 'badges-button';
         badgesButton.innerHTML = '<i class="fa-solid fa-award"></i> Badges';
+        badgesButton.setAttribute('aria-label', 'View your earned badges');
         
         // Find the logout button if it exists in this element
         const logoutButton = element.querySelector('a.logout-button, button.logout-button, a[onclick*="handleLogout"]');
         
         if (logoutButton) {
-            // Insert before the logout button
+            // Insert before the logout button (info first, then badges)
+            element.insertBefore(infoButton, logoutButton);
             element.insertBefore(badgesButton, logoutButton);
         } else {
-            // Add to the beginning of the element
+            // Add to the beginning of the element (info first, then badges)
             element.prepend(badgesButton);
+            element.prepend(infoButton);
         }
         
         // Ensure styles are added
-        if (!document.getElementById('badges-button-style')) {
+        if (!document.getElementById('header-buttons-style')) {
             const style = document.createElement('style');
-            style.id = 'badges-button-style';
+            style.id = 'header-buttons-style';
             style.textContent = `
-                .badges-button {
-                    background-color: var(--primary-color, #4a90e2);
+                .info-button, .badges-button {
                     color: white;
                     border-radius: 4px;
                     padding: 8px 16px;
@@ -869,12 +899,25 @@ class IndexPage {
                     font-size: 14px;
                 }
                 
+                .info-button {
+                    background-color: #28a745;
+                }
+                
+                .info-button:hover {
+                    background-color: #218838;
+                    color: white;
+                }
+                
+                .badges-button {
+                    background-color: var(--primary-color, #4a90e2);
+                }
+                
                 .badges-button:hover {
                     background-color: var(--primary-color-dark, #3a80d2);
                     color: white;
                 }
                 
-                .badges-button i {
+                .info-button i, .badges-button i {
                     margin-right: 6px;
                 }
             `;

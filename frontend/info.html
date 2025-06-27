@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Information - QA Learning Hub</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="apple-touch-icon" href="assets/favicon.png">
+    <link rel="stylesheet" href="styles.css?v=1.0.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .info-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .info-section {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .info-section h2 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 0.5rem;
+        }
+        
+        .progress-color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .color-example {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+        }
+        
+        .color-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 1rem;
+            border: 1px solid #ccc;
+        }
+        
+        .not-started .color-indicator {
+            background-color: #fff;
+        }
+        
+        .in-progress .color-indicator {
+            background-color: #FFF8E7;
+        }
+        
+        .completed-partial .color-indicator {
+            background-color: #FFE0B2;
+        }
+        
+        .completed-perfect .color-indicator {
+            background-color: #C8E6C9;
+        }
+        
+        .quiz-mechanics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        .mechanic-card {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #4a90e2;
+        }
+        
+        .mechanic-card h3 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .icon-text {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .icon-text i {
+            margin-right: 0.5rem;
+            color: #4a90e2;
+            width: 20px;
+        }
+        
+        .help-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .help-section h2 {
+            color: white;
+            border-bottom-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .contact-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .back-to-hub {
+            display: inline-flex;
+            align-items: center;
+            background: #28a745;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+            margin-bottom: 2rem;
+        }
+        
+        .back-to-hub:hover {
+            background: #218838;
+            color: white;
+        }
+        
+        .back-to-hub i {
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .info-container {
+                margin: 1rem auto;
+            }
+            
+            .info-section {
+                padding: 1.5rem;
+            }
+            
+            .progress-color-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .quiz-mechanics {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="logo">
+            <img src="assets/zoonou-logo-converted.svg" alt="Zoonou Logo" width="32" height="32">
+            <h1>QA Learning Hub</h1>
+        </div>
+        <div class="user-menu">
+            <a href="info.html" class="info-button" aria-label="View system information and help">
+                <i class="fa-solid fa-info-circle"></i> Info
+            </a>
+            <a href="badges.html" class="badges-button" aria-label="View your earned badges">
+                <i class="fa-solid fa-award"></i> Badges
+            </a>
+            <button class="logout-button" onclick="window.location.href='index.html'" aria-label="Back to Hub">
+                <i class="fa-solid fa-home"></i> Hub
+            </button>
+        </div>
+    </header>
+
+    <main class="info-container">
+        <a href="index.html" class="back-to-hub">
+            <i class="fa-solid fa-arrow-left"></i>
+            Back to Learning Hub
+        </a>
+
+        <div class="info-section">
+            <h2><i class="fa-solid fa-palette"></i> Progress Color Guide</h2>
+            <p>Each quiz on your dashboard shows its progress using different background colors:</p>
+            
+            <div class="progress-color-grid">
+                <div class="color-example not-started">
+                    <div class="color-indicator"></div>
+                    <div>
+                        <strong>Not Started</strong><br>
+                        <small>You haven't begun this quiz yet</small>
+                    </div>
+                </div>
+                
+                <div class="color-example in-progress">
+                    <div class="color-indicator"></div>
+                    <div>
+                        <strong>In Progress</strong><br>
+                        <small>You've answered some questions</small>
+                    </div>
+                </div>
+                
+                <div class="color-example completed-partial">
+                    <div class="color-indicator"></div>
+                    <div>
+                        <strong>Completed (Below 80%)</strong><br>
+                        <small>Quiz finished but score under 80%</small>
+                    </div>
+                </div>
+                
+                <div class="color-example completed-perfect">
+                    <div class="color-indicator"></div>
+                    <div>
+                        <strong>Completed (80% or Higher)</strong><br>
+                        <small>Quiz passed with excellent score!</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h2><i class="fa-solid fa-question-circle"></i> How Quizzes Work</h2>
+            
+            <div class="quiz-mechanics">
+                <div class="mechanic-card">
+                    <h3><i class="fa-solid fa-list-ol"></i> Question Format</h3>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Each quiz has exactly <strong>15 questions</strong></span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-bullseye"></i>
+                        <span>Each question has <strong>one correct answer</strong></span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-layers"></i>
+                        <span>Questions progress through <strong>3 difficulty levels</strong></span>
+                    </div>
+                </div>
+                
+                <div class="mechanic-card">
+                    <h3><i class="fa-solid fa-graduation-cap"></i> Scoring System</h3>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-percentage"></i>
+                        <span>Score calculated as percentage of correct answers</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-trophy"></i>
+                        <span><strong>80% or higher</strong> is considered passing</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-redo"></i>
+                        <span>You can retake quizzes to improve your score</span>
+                    </div>
+                </div>
+                
+                <div class="mechanic-card">
+                    <h3><i class="fa-solid fa-save"></i> Progress Saving</h3>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-cloud-upload"></i>
+                        <span>Progress is <strong>automatically saved</strong> after each question</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-play"></i>
+                        <span>You can <strong>resume</strong> where you left off</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-sync"></i>
+                        <span>No need to complete in one session</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h2><i class="fa-solid fa-clock"></i> Timer System</h2>
+            <p>Understanding how the quiz timer works:</p>
+            
+            <div class="quiz-mechanics">
+                <div class="mechanic-card">
+                    <h3><i class="fa-solid fa-stopwatch"></i> Default Timer</h3>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-cog"></i>
+                        <span>Default time limit set by administrators</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-eye-slash"></i>
+                        <span>Some quizzes may have timers disabled</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-bell"></i>
+                        <span>Timer shows in top-right during questions</span>
+                    </div>
+                </div>
+                
+                <div class="mechanic-card">
+                    <h3><i class="fa-solid fa-pause"></i> Timer Persistence</h3>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-bookmark"></i>
+                        <span><strong>Timer state is saved</strong> if you leave mid-question</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-play"></i>
+                        <span>Timer resumes from where you left off</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-window-restore"></i>
+                        <span>Works across browser tabs and sessions</span>
+                    </div>
+                </div>
+                
+                <div class="mechanic-card">
+                    <h3><i class="fa-solid fa-exclamation-triangle"></i> Time Expiry</h3>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-times-circle"></i>
+                        <span>When timer reaches <strong>0</strong>, question is marked incorrect</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-random"></i>
+                        <span>Random answer selected if none chosen</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-forward"></i>
+                        <span>Quiz automatically proceeds to next question</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h2><i class="fa-solid fa-award"></i> Badges System</h2>
+            <p>Earn badges to showcase your achievements:</p>
+            
+            <div class="quiz-mechanics">
+                <div class="mechanic-card">
+                    <h3><i class="fa-solid fa-medal"></i> How to Earn Badges</h3>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-target"></i>
+                        <span>Complete quizzes with <strong>80% or higher</strong> score</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-star"></i>
+                        <span>Each quiz has its own unique badge</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-instant"></i>
+                        <span>Badges are awarded <strong>immediately</strong> upon completion</span>
+                    </div>
+                </div>
+                
+                <div class="mechanic-card">
+                    <h3><i class="fa-solid fa-collection"></i> Badge Collection</h3>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-eye"></i>
+                        <span>View all your badges on the <strong>Badges page</strong></span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-calendar"></i>
+                        <span>Badges show the <strong>date earned</strong></span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-share"></i>
+                        <span>Share your achievements with others</span>
+                    </div>
+                </div>
+                
+                <div class="mechanic-card">
+                    <h3><i class="fa-solid fa-redo-alt"></i> Retaking Quizzes</h3>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-repeat"></i>
+                        <span>You can <strong>retake</strong> quizzes to improve scores</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-arrow-up"></i>
+                        <span>Higher scores <strong>replace</strong> previous attempts</span>
+                    </div>
+                    <div class="icon-text">
+                        <i class="fa-solid fa-lock-open"></i>
+                        <span>Badge eligibility updates with new scores</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section help-section">
+            <h2><i class="fa-solid fa-life-ring"></i> Need Help?</h2>
+            
+            <div class="contact-info">
+                <h3><i class="fa-solid fa-undo"></i> Quiz Reset Requests</h3>
+                <p>If you've failed a quiz and want to start over completely, contact an administrator to request a quiz reset. This will:</p>
+                <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                    <li>Clear all your progress for that specific quiz</li>
+                    <li>Remove any failing score</li>
+                    <li>Allow you to start fresh with a clean slate</li>
+                </ul>
+            </div>
+            
+            <div class="contact-info">
+                <h3><i class="fa-solid fa-envelope"></i> Technical Support</h3>
+                <p>For technical issues, questions about the system, or quiz content feedback:</p>
+                <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                    <li>Contact your system administrator</li>
+                    <li>Provide details about the specific quiz or issue</li>
+                    <li>Include any error messages you encountered</li>
+                </ul>
+            </div>
+            
+        </div>
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="index.html" class="back-to-hub">
+                <i class="fa-solid fa-arrow-left"></i>
+                Return to Learning Hub
+            </a>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <p>&copy; 2024 Zoonou. All rights reserved.</p>
+    </footer>
+</body>
+</html> 
