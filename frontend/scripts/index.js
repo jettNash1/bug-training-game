@@ -2,7 +2,7 @@ import { APIService } from '../api-service.js';
 import { QuizUser } from '../QuizUser.js';
 import { QuizProgressService } from '../services/QuizProgressService.js';
 import { QuizList } from '../quiz-list.js';
-import { checkAuth } from '../auth.js';
+import { checkAuth, clearAuthenticationCache } from '../auth.js';
 import { cacheManager } from './cache-manager.js';
 
 function normalizeQuizName(quizName) {

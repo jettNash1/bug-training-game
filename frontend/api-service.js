@@ -8,6 +8,10 @@ export class APIService {
         this.scheduledResetInterval = null;
         // DISABLED: Scheduled reset checking is now handled by backend
         // this.startScheduledResetCheck() - removed to prevent duplicate processing
+        
+        // Request deduplication cache
+        this.requestCache = new Map();
+        this.cacheTimeout = 5000; // 5 seconds
     }
     
     startScheduledResetCheck() {
@@ -24,10 +28,54 @@ export class APIService {
         }
     }
     
+    // Helper method for request deduplication
+    async deduplicatedRequest(cacheKey, requestFunction) {
+        const now = Date.now();
+        
+        // Check if we have a cached result that's still valid
+        if (this.requestCache.has(cacheKey)) {
+            const cached = this.requestCache.get(cacheKey);
+            if (now - cached.timestamp < this.cacheTimeout) {
+                // console.log(`Using cached result for ${cacheKey}`);
+                return cached.result;
+            }
+        }
+        
+        // Check if request is already in progress
+        if (this.requestCache.has(`${cacheKey}_pending`)) {
+            const pendingPromise = this.requestCache.get(`${cacheKey}_pending`);
+            // console.log(`Waiting for pending request: ${cacheKey}`);
+            return await pendingPromise;
+        }
+        
+        // Execute the request and cache the promise
+        const requestPromise = requestFunction();
+        this.requestCache.set(`${cacheKey}_pending`, requestPromise);
+        
+        try {
+            const result = await requestPromise;
+            
+            // Cache the successful result
+            this.requestCache.set(cacheKey, {
+                result: result,
+                timestamp: now
+            });
+            
+            // Remove the pending flag
+            this.requestCache.delete(`${cacheKey}_pending`);
+            
+            return result;
+        } catch (error) {
+            // Remove the pending flag on error
+            this.requestCache.delete(`${cacheKey}_pending`);
+            throw error;
+        }
+    }
+
     // Helper method to get the API base URL with fallback logic
     getApiBaseUrl() {
         const currentOrigin = window.location.origin;
-        console.log('Current origin:', currentOrigin);
+        // console.log('Current origin:', currentOrigin);
         
         // For S3 website, always use the Render API
         if (currentOrigin === 'http://learning-hub.s3-website.eu-west-2.amazonaws.com') {
@@ -38,7 +86,7 @@ export class APIService {
         // For Render website
         if (window.location.hostname.includes('render.com') || 
             window.location.hostname === 'bug-training-game.onrender.com') {
-            console.log('Using Render API from Render website');
+            // console.log('Using Render API from Render website');
             return 'https://bug-training-game-api.onrender.com/api';
         }
         
@@ -1022,61 +1070,66 @@ export class APIService {
     }
 
     async getUserData() {
-        try {
-            console.log('Fetching user data from:', `${this.baseUrl}/users/data?includeQuizDetails=true`);
-            
-            const data = await this.fetchWithAuth(`${this.baseUrl}/users/data?includeQuizDetails=true`);
-            console.log('User data response:', data);
-            
-            if (!data || !data.success || !data.data) {
-                console.error('User data response indicates failure:', data);
-                throw new Error(data?.message || 'Failed to get user data');
-            }
-
-            // Ensure quiz arrays are lowercase for consistent comparison
-            const allowedQuizzes = (data.data.allowedQuizzes || []).map(quiz => quiz.toLowerCase());
-            const hiddenQuizzes = (data.data.hiddenQuizzes || []).map(quiz => quiz.toLowerCase());
-
-            console.log('User data from API:', {
-                username: data.data.username,
-                userType: data.data.userType,
-                allowedQuizzes,
-                hiddenQuizzes
-            });
-
-            return {
-                success: true,
-                data: {
-                    username: data.data.username,
-                    userType: data.data.userType || 'regular',
-                    allowedQuizzes,
-                    hiddenQuizzes,
-                    quizResults: data.data.quizResults || [],
-                    quizProgress: data.data.quizProgress || {}
+        const username = localStorage.getItem('username');
+        const cacheKey = `getUserData_${username}`;
+        
+        return this.deduplicatedRequest(cacheKey, async () => {
+            try {
+                console.log('Fetching user data from:', `${this.baseUrl}/users/data?includeQuizDetails=true`);
+                
+                const data = await this.fetchWithAuth(`${this.baseUrl}/users/data?includeQuizDetails=true`);
+                console.log('User data response:', data);
+                
+                if (!data || !data.success || !data.data) {
+                    console.error('User data response indicates failure:', data);
+                    throw new Error(data?.message || 'Failed to get user data');
                 }
-            };
-        } catch (error) {
-            console.error('Error fetching user data:', error);
-            
-            // Add fallback behavior for development/testing
-            if (window.location.hostname.includes('localhost') || 
-                window.location.hostname.includes('127.0.0.1')) {
-                console.warn('Using fallback user data for development');
+
+                // Ensure quiz arrays are lowercase for consistent comparison
+                const allowedQuizzes = (data.data.allowedQuizzes || []).map(quiz => quiz.toLowerCase());
+                const hiddenQuizzes = (data.data.hiddenQuizzes || []).map(quiz => quiz.toLowerCase());
+
+                console.log('User data from API:', {
+                    username: data.data.username,
+                    userType: data.data.userType,
+                    allowedQuizzes,
+                    hiddenQuizzes
+                });
+
                 return {
                     success: true,
                     data: {
-                        username: 'test_user',
-                        userType: 'regular',
-                        allowedQuizzes: [],
-                        hiddenQuizzes: [],
-                        quizResults: [],
-                        quizProgress: {}
+                        username: data.data.username,
+                        userType: data.data.userType || 'regular',
+                        allowedQuizzes,
+                        hiddenQuizzes,
+                        quizResults: data.data.quizResults || [],
+                        quizProgress: data.data.quizProgress || {}
                     }
                 };
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                
+                // Add fallback behavior for development/testing
+                if (window.location.hostname.includes('localhost') || 
+                    window.location.hostname.includes('127.0.0.1')) {
+                    console.warn('Using fallback user data for development');
+                    return {
+                        success: true,
+                        data: {
+                            username: 'test_user',
+                            userType: 'regular',
+                            allowedQuizzes: [],
+                            hiddenQuizzes: [],
+                            quizResults: [],
+                            quizProgress: {}
+                        }
+                    };
+                }
+                
+                throw error;
             }
-            
-            throw error;
-        }
+        });
     }
 
     async getUserBadgesByAdmin(username) {
@@ -1974,9 +2027,12 @@ export class APIService {
 
     // Guide settings methods for quiz UI
     async fetchGuideSettings(quizName) {
-        console.log(`[API] Fetching guide settings${quizName ? ` for quiz: ${quizName}` : ''}`);
+        const cacheKey = `fetchGuideSettings_${quizName || 'all'}`;
         
-        try {
+        return this.deduplicatedRequest(cacheKey, async () => {
+            console.log(`[API] Fetching guide settings${quizName ? ` for quiz: ${quizName}` : ''}`);
+            
+            try {
             // Create a shorter timeout for guide settings
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
@@ -2011,16 +2067,12 @@ export class APIService {
                         settings: data.data
                     });
                     
-                    // Validate each guide setting
+                    // Validate each guide setting (reduced logging)
                     if (data.data && typeof data.data === 'object') {
-                        Object.entries(data.data).forEach(([quiz, setting]) => {
-                            console.log(`[API] Guide setting for ${quiz}:`, {
-                                hasUrl: !!setting?.url,
-                                url: setting?.url,
-                                enabled: setting?.enabled,
-                                isValid: !!(setting?.url && setting?.enabled)
-                            });
-                        });
+                        const validSettings = Object.entries(data.data).filter(([quiz, setting]) => 
+                            setting?.url && setting?.enabled
+                        );
+                        // console.log(`[API] Found ${validSettings.length} valid guide settings out of ${Object.keys(data.data).length} total`);
                     }
                     
                     // Save to localStorage for backup (if possible)
@@ -2076,6 +2128,7 @@ export class APIService {
                 source: 'error-fallback'
             };
         }
+        });
     }
 
     // Auto-reset settings methods
@@ -2879,6 +2932,11 @@ export class APIService {
      * EMERGENCY: Force clear ALL cache for a specific user
      * This can be called from browser console: window.apiService.forceClearAllUserCache('username')
      */
+    // Clear request cache (useful after login/logout)
+    clearRequestCache() {
+        this.requestCache.clear();
+    }
+
     forceClearAllUserCache(username) {
         if (!username) {
             console.error('[API] Username required for cache clearing');

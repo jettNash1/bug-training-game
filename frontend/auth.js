@@ -3,6 +3,37 @@ import { config } from './config.js';
 // Add this at the top with other imports
 const ADMIN_PATHS = ['/pages/admin-login.html', '/pages/admin2.html'];
 
+// Simple auth result cache to prevent redundant calls
+let authCache = {
+    result: null,
+    timestamp: 0,
+    ttl: 30000 // 30 seconds cache
+};
+
+// Function to check if cache is valid
+function isAuthCacheValid() {
+    return authCache.result !== null && 
+           (Date.now() - authCache.timestamp) < authCache.ttl;
+}
+
+// Function to cache auth result
+function cacheAuthResult(result) {
+    authCache = {
+        result: result,
+        timestamp: Date.now(),
+        ttl: 30000
+    };
+}
+
+// Function to clear auth cache
+function clearAuthCache() {
+    authCache = {
+        result: null,
+        timestamp: 0,
+        ttl: 30000
+    };
+}
+
 // Token management functions
 export const getAuthToken = () => localStorage.getItem('token');
 export const getRefreshToken = () => localStorage.getItem('refreshToken');
@@ -12,6 +43,7 @@ export const clearTokens = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('username');
+    clearAuthCache(); // Clear cache when tokens are cleared
 };
 
 // Add admin token management functions
@@ -20,7 +52,13 @@ export const setAdminToken = (token) => localStorage.setItem('adminToken', token
 export const clearAdminToken = () => localStorage.removeItem('adminToken');
 
 // Auth check function
-export async function checkAuth() {
+export async function checkAuth(skipCache = false) {
+    // Return cached result if valid and not skipping cache
+    if (!skipCache && isAuthCacheValid()) {
+        // console.log('Using cached auth result:', authCache.result);
+        return authCache.result;
+    }
+
     const currentPath = window.location.pathname;
     
     // Handle admin authentication
@@ -178,7 +216,9 @@ export async function checkAuth() {
                             if (refreshData.token) {
                                 setAuthToken(refreshData.token);
                                 updateHeader(username);
-                                return true;
+                                const result = true;
+                                cacheAuthResult(result);
+                                return result;
                             }
                         }
                     } catch (refreshError) {
@@ -190,7 +230,9 @@ export async function checkAuth() {
                 if (document.referrer.includes('login.html')) {
                     console.log('Coming from login page, assuming token is valid');
                     updateHeader(username);
-                    return true;
+                    const result = true;
+                    cacheAuthResult(result);
+                    return result;
                 }
 
                 // Otherwise clear tokens and redirect
@@ -205,14 +247,18 @@ export async function checkAuth() {
             if (data.success && data.valid) {
                 console.log('Token verified successfully');
                 updateHeader(username);
-                return true;
+                const result = true;
+                cacheAuthResult(result);
+                return result;
             }
 
             // If verification failed but we're coming from login, give it one chance
             if (document.referrer.includes('login.html')) {
                 console.log('Coming from login page, assuming token is valid');
                 updateHeader(username);
-                return true;
+                const result = true;
+                cacheAuthResult(result);
+                return result;
             }
 
             // Otherwise clear tokens and redirect
@@ -226,7 +272,9 @@ export async function checkAuth() {
             if (document.referrer.includes('login.html')) {
                 console.log('Coming from login page, assuming token is valid');
                 updateHeader(username);
-                return true;
+                const result = true;
+                cacheAuthResult(result);
+                return result;
             }
             
             clearTokens();
@@ -300,4 +348,9 @@ document.addEventListener('DOMContentLoaded', () => {
             authCheckInProgress = false;
         });
 });
+
+// Export function to clear auth cache (useful after login)
+export function clearAuthenticationCache() {
+    clearAuthCache();
+}
  
