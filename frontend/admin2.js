@@ -684,11 +684,7 @@ export class Admin2Dashboard {
             let quizzesNotStarted = 0;
             
             if (visibleQuizzes && Array.isArray(visibleQuizzes)) {
-                if (user.username === 'allquizcol') {
-                    console.log(`[DEBUG allquizcol] Processing visible quizzes:`, visibleQuizzes);
-                    console.log(`[DEBUG allquizcol] User quiz results:`, user.quizResults);
-                    console.log(`[DEBUG allquizcol] User quiz progress keys:`, user.quizProgress ? Object.keys(user.quizProgress) : 'none');
-                }
+                // Removed debug logging
                 
                 visibleQuizzes.forEach(quizType => {
                     if (typeof quizType === 'string') {
@@ -696,13 +692,7 @@ export class Admin2Dashboard {
                         const progress = user.quizProgress?.[quizLower];
                         const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
                         
-                        if (user.username === 'allquizcol') {
-                            console.log(`[DEBUG allquizcol] Checking quiz ${quizType} (${quizLower}):`, {
-                                hasProgress: !!progress,
-                                hasResult: !!result,
-                                resultQuizName: result?.quizName
-                            });
-                        }
+                        // Progress and result checking logic
                         
                         // Get questions answered and score
                         let questionsAnswered = 0;
@@ -713,39 +703,30 @@ export class Admin2Dashboard {
                             questionsAnswered = result.questionsAnswered || 0;
                             scorePercentage = result.score || 0;
                             
-                            // Debug logging for specific user
-                            if (user.username === 'allquizcol') {
-                                console.log(`[DEBUG allquizcol] Quiz result found for ${quizType}:`, {
-                                    quizName: result.quizName,
-                                    questionsAnswered,
-                                    rawScore: result.score,
-                                    scorePercentage,
-                                    completedAt: result.completedAt
-                                });
-                            }
+                            // Quiz result data processed
                         } else if (progress) {
                             questionsAnswered = progress.questionsAnswered || 
                                               (progress.questionHistory ? progress.questionHistory.length : 0);
                             
-                            // Calculate score from progress
-                            if (progress.score !== undefined) {
+                            // Calculate score from progress - handle both old and new field names
+                            if (progress.scorePercentage !== undefined) {
+                                scorePercentage = progress.scorePercentage;
+                            } else if (progress.score !== undefined) {
                                 scorePercentage = progress.score;
                             } else if (progress.questionHistory && progress.questionHistory.length > 0) {
                                 const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
                                 scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
+                            } else if (progress.correctAnswers !== undefined && questionsAnswered > 0) {
+                                // Fallback: use correctAnswers field if available
+                                scorePercentage = Math.round((progress.correctAnswers / questionsAnswered) * 100);
+                            } else if (progress.experience !== undefined && questionsAnswered >= 15) {
+                                // For completed quizzes, calculate score from experience (max 300 = 100%)
+                                scorePercentage = Math.min(100, Math.round((progress.experience / 300) * 100));
+                            } else {
+                                // Default to 0 if no score data available
+                                scorePercentage = 0;
                             }
-                            
-                            // Debug logging for specific user
-                            if (user.username === 'allquizcol') {
-                                console.log(`[DEBUG allquizcol] Quiz progress found for ${quizType}:`, {
-                                    questionsAnswered,
-                                    rawScore: progress.score,
-                                    scorePercentage,
-                                    questionHistory: progress.questionHistory ? progress.questionHistory.length : 0
-                                });
-                            }
-                        } else if (user.username === 'allquizcol') {
-                            console.log(`[DEBUG allquizcol] No result or progress found for ${quizType}`);
+                            // Quiz progress data processed
                         }
                         
                         // Categorize quiz status
@@ -754,27 +735,15 @@ export class Admin2Dashboard {
                             quizzesCompleted++;
                             if (scorePercentage >= 80) {
                                 quizzesPassed++;
-                                if (user.username === 'allquizcol') {
-                                    console.log(`[DEBUG allquizcol] ${quizType} PASSED - Score: ${scorePercentage}%`);
-                                }
                             } else {
                                 quizzesFailed++;
-                                if (user.username === 'allquizcol') {
-                                    console.log(`[DEBUG allquizcol] ${quizType} FAILED - Score: ${scorePercentage}%`);
-                                }
                             }
                         } else if (questionsAnswered > 0) {
                             // Quiz is in progress (>0 but <15)
                             quizzesInProgress++;
-                            if (user.username === 'allquizcol') {
-                                console.log(`[DEBUG allquizcol] ${quizType} IN PROGRESS - Questions: ${questionsAnswered}/15`);
-                            }
                         } else {
                             // Quiz not started (0/15)
                             quizzesNotStarted++;
-                            if (user.username === 'allquizcol') {
-                                console.log(`[DEBUG allquizcol] ${quizType} NOT STARTED`);
-                            }
                         }
                     }
                 });
