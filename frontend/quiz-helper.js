@@ -1810,10 +1810,21 @@ export class BaseQuiz {
                 if (quizHeader) {
                     // Insert after the back link but before progress info
                     const backLink = quizHeader.querySelector('.back-link');
-                    if (backLink && backLink.nextSibling) {
-                        quizHeader.insertBefore(quizNameElement, backLink.nextSibling);
+                    const progressSection = quizHeader.querySelector('.quiz-progress, .quiz-header-progress');
+                    
+                    if (backLink && progressSection) {
+                        // Insert between back link and progress section
+                        quizHeader.insertBefore(quizNameElement, progressSection);
+                    } else if (backLink) {
+                        // Insert after back link
+                        if (backLink.nextSibling) {
+                            quizHeader.insertBefore(quizNameElement, backLink.nextSibling);
+                        } else {
+                            quizHeader.appendChild(quizNameElement);
+                        }
                     } else {
-                        quizHeader.appendChild(quizNameElement);
+                        // Insert at the beginning of the header
+                        quizHeader.insertBefore(quizNameElement, quizHeader.firstChild);
                     }
                 } else {
                     // Fallback: insert at the beginning of the quiz container
@@ -1828,6 +1839,17 @@ export class BaseQuiz {
             const formattedName = this.formatQuizName(this.quizName);
             quizNameElement.textContent = formattedName;
             quizNameElement.setAttribute('aria-label', `Current quiz: ${formattedName}`);
+            
+            // Add special styling for long quiz names (>20 characters or >2 words with long words)
+            const isLongName = formattedName.length > 20 || 
+                             (formattedName.split(' ').length > 2 && formattedName.split(' ').some(word => word.length > 8));
+            
+            if (isLongName) {
+                quizNameElement.classList.add('long-name');
+                console.log(`[BaseQuiz] Applied long-name styling for: ${formattedName}`);
+            } else {
+                quizNameElement.classList.remove('long-name');
+            }
             
             console.log(`[BaseQuiz] Displayed quiz name: ${formattedName}`);
         } catch (error) {
