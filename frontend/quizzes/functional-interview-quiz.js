@@ -196,7 +196,7 @@ export class FunctionalInterviewQuiz extends BaseQuiz {
     async startGame() {
         if (this.isLoading) return;
         
-        console.log('[Functional Interview Quiz] Starting game...');
+        console.log('[FunctionalInterviewQuiz] Starting game...');
         
         try {
             this.isLoading = true;
