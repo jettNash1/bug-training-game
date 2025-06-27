@@ -1766,7 +1766,7 @@ export class APIService {
                             id: response.data._id || response.data.id || Date.now().toString(),
                             username,
                             quizName,
-                            resetDateTime: localDate.toISOString(), // Store the local time in localStorage
+                            resetDateTime: resetDateTimeUTC, // Store the UTC time in localStorage
                             timezoneOffset: timezoneOffsetMinutes,
                             createdAt: new Date().toISOString()
                         };
