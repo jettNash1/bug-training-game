@@ -6540,46 +6540,7 @@ export class Admin2Dashboard {
                 container.setupGuideItemEventListeners();
             } else {
                 console.warn('setupGuideItemEventListeners function not found on container');
-                // If we can't find the setup function on the container, we need to reattach the 
-                // edit button event listeners manually
-                const editButtons = container.querySelectorAll('.edit-guide-btn');
-                editButtons.forEach(button => {
-                    button.addEventListener('click', async () => {
-                        const quizName = button.getAttribute('data-quiz');
-                        if (quizName && this.guideSettings[quizName]) {
-                            const currentUrl = this.guideSettings[quizName].url || '';
-                            const currentEnabled = this.guideSettings[quizName].enabled || false;
-                            
-                            // Simple URL prompt approach - guaranteed to work
-                            const newUrl = prompt(`Edit URL for ${this.formatQuizName(quizName)}:`, currentUrl);
-                            if (newUrl === null) return; // User canceled
-                            
-                            if (!newUrl.trim()) {
-                                alert('Please enter a URL');
-                                return;
-                            }
-                            
-                            try {
-                                // Validate URL format
-                                new URL(newUrl);
-                            } catch (e) {
-                                alert('Please enter a valid URL (include http:// or https://)');
-                                return;
-                            }
-                            
-                            // Simple confirm for enabled state - store result but don't show another message yet
-                            const newEnabled = confirm(`Enable guide for ${this.formatQuizName(quizName)}?`);
-                            
-                            try {
-                                // Use a separate method that doesn't show the initial loading message
-                                await this.saveGuideSettingsWithoutInitialMessage(quizName, newUrl, newEnabled);
-                            } catch (error) {
-                                console.error('Error during guide edit:', error);
-                                this.showInfo('Failed to save guide settings', 'error');
-                            }
-                        }
-                    });
-                });
+                // Fallback will be handled by the primary setup function
             }
         }
         
@@ -6600,17 +6561,67 @@ export class Admin2Dashboard {
     }
 
     async saveGuideSettingsWithoutInitialMessage(quiz, url, enabled) {
+        // Store original state for rollback
+        const originalSettings = this.guideSettings ? { ...this.guideSettings } : {};
+        
         try {
+            // Normalize quiz name
             const normalizedQuiz = this.quizProgressService && typeof this.quizProgressService.normalizeQuizName === 'function'
                 ? this.quizProgressService.normalizeQuizName(quiz)
                 : quiz;
-            // ... existing code ...
+            console.log(`Saving guide setting for ${normalizedQuiz} (normalized from ${quiz}): url=${url}, enabled=${enabled}`);
+
+            // Update in-memory state optimistically
+            if (!this.guideSettings) {
+                this.guideSettings = {};
+            }
             this.guideSettings[normalizedQuiz] = { url, enabled };
-            // ... existing code ...
+            
+            // Update localStorage immediately for persistence
+            try {
+                localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
+                console.log(`Updated guide settings in localStorage (${Object.keys(this.guideSettings).length} guides)`);
+            } catch (e) {
+                console.warn(`Failed to save guide settings to localStorage: ${e.message}`);
+            }
+
+            // Make the API call
             const response = await this.apiService.saveGuideSetting(normalizedQuiz, url, enabled);
-            // ... existing code ...
+
+            if (response.success) {
+                console.log('Guide setting saved successfully to database:', response);
+                
+                // Refresh the UI
+                this.refreshGuideSettingsList(true);
+                
+                // Show success message
+                this.showInfo(`Guide settings for ${this.formatQuizName(quiz)} saved successfully!`);
+                
+                return true;
+            } else {
+                throw new Error(response.message || 'Failed to save guide settings to database');
+            }
         } catch (error) {
-            // ... existing code ...
+            console.error('Error saving guide settings to database:', error);
+            
+            // Rollback in-memory state
+            this.guideSettings = originalSettings;
+            
+            // Rollback localStorage
+            try {
+                localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
+                console.log('Rolled back guide settings in localStorage after API failure');
+            } catch (e) {
+                console.warn(`Failed to rollback localStorage: ${e.message}`);
+            }
+            
+            // Refresh UI to show rollback
+            this.refreshGuideSettingsList(true);
+            
+            // Show error with helpful context
+            this.showInfo(`Failed to save guide settings for ${this.formatQuizName(quiz)}. Settings have been restored to previous state. Please check your connection and try again.`, 'error');
+            
+            throw error;
         }
     }
 
