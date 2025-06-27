@@ -24,7 +24,7 @@ export const testerMindsetScenarios = {
             {
                 text: 'Analyse historical test results of older releases of the same project',
                 outcome: 'While helpful, previous results don\'t replace understanding of current project context.',
-                experience: 5
+                experience: 0
             }
         ]
     },
@@ -108,7 +108,7 @@ export const testerMindsetScenarios = {
             {
                 text: 'Create brief descriptions for all the issues raised to make sure project time management can be met.',
                 outcome: 'More detail would help developers understand and fix issues.',
-                experience: 5
+                experience: 0
             }
         ]
     },
@@ -309,7 +309,7 @@ intermediate: [
             {
                 text: 'Focus only on finding bugs within the required scope of the project',
                 outcome: 'Understanding the system and user journey paths are also important in exploratory testing.',
-                experience: 5
+                experience: 0
             }
         ]
     },

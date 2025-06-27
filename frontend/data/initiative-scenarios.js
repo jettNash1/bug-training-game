@@ -53,7 +53,7 @@ export const initiativeScenarios = {
                     {
                         text: 'Clean up only your own workstation and surrounding area',
                         outcome: 'While helpful, this doesn\'t show full initiative for team needs.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -81,7 +81,7 @@ export const initiativeScenarios = {
                     {
                         text: 'Document solutions to your own frequently asked questions and share these with the team',
                         outcome: 'While helpful, this doesn\'t address team-wide needs.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -132,7 +132,7 @@ export const initiativeScenarios = {
                     {
                         text: 'Ask colleagues if they need help with any outstanding tasks they might have',
                         outcome: 'While helpful, proactively identifying tasks shows more initiative.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Use the time for personal tasks',
@@ -164,7 +164,7 @@ export const initiativeScenarios = {
                     {
                         text: 'Leave basic notes about current and outstanding tasks for the project',
                         outcome: 'While helpful, this doesn\'t provide full context needed for a handover.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Tell them to check existing documentation to familiarise themselves with the project',
@@ -225,7 +225,7 @@ export const initiativeScenarios = {
                     {
                         text: 'Wait for the next scheduled client meeting to raise any questions regarding the project',
                         outcome: 'Proactive communication is more preferable than waiting as this could cause project bottle necks.',
-                        experience: 5
+                        experience: 0
                     }
                 ]
             },
@@ -276,7 +276,7 @@ export const initiativeScenarios = {
                     {
                         text: 'Check to see if you have access to the operational project details',
                         outcome: 'While helpful, this misses opportunities for fuller preparation.',
-                        experience: 5
+                        experience: 0
                     },
                     {
                         text: 'Ask colleagues for details on the project and what is needed for test execution',

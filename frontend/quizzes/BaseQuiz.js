@@ -184,6 +184,64 @@ export class BaseQuiz {
     }
         
     /**
+     * Format quiz name from kebab-case to Title Case
+     * @param {string} quizName - The quiz name to format
+     * @returns {string} Formatted quiz name
+     */
+    formatQuizName(quizName) {
+        if (!quizName) return '';
+        return quizName
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+    
+    /**
+     * Display the quiz name in the UI
+     * This method should be called when the quiz starts to show the quiz name to the user
+     */
+    displayQuizName() {
+        try {
+            // Create or update quiz name display element
+            let quizNameElement = document.getElementById('quiz-name-display');
+            
+            if (!quizNameElement) {
+                // Create the quiz name display element if it doesn't exist
+                quizNameElement = document.createElement('div');
+                quizNameElement.id = 'quiz-name-display';
+                quizNameElement.className = 'quiz-name-display';
+                
+                // Find the quiz header to insert the name display
+                const quizHeader = document.querySelector('.quiz-header');
+                if (quizHeader) {
+                    // Insert after the back link but before progress info
+                    const backLink = quizHeader.querySelector('.back-link');
+                    if (backLink && backLink.nextSibling) {
+                        quizHeader.insertBefore(quizNameElement, backLink.nextSibling);
+                    } else {
+                        quizHeader.appendChild(quizNameElement);
+                    }
+                } else {
+                    // Fallback: insert at the beginning of the quiz container
+                    const quizContainer = document.querySelector('.quiz-container');
+                    if (quizContainer) {
+                        quizContainer.insertBefore(quizNameElement, quizContainer.firstChild);
+                    }
+                }
+            }
+            
+            // Set the quiz name content
+            const formattedName = this.formatQuizName(this.quizName);
+            quizNameElement.textContent = formattedName;
+            quizNameElement.setAttribute('aria-label', `Current quiz: ${formattedName}`);
+            
+            console.log(`[BaseQuiz] Displayed quiz name: ${formattedName}`);
+        } catch (error) {
+            console.error('[BaseQuiz] Error displaying quiz name:', error);
+        }
+    }
+        
+    /**
      * Loads quiz progress from the most reliable source.
      * This method uses the QuizProgressService for consistent progress handling.
      */

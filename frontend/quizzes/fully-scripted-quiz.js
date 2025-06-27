@@ -201,6 +201,9 @@ export class FullyScriptedQuiz extends BaseQuiz {
         try {
             this.isLoading = true;
             
+            // Display the quiz name
+            this.displayQuizName();
+            
             // Show loading indicator
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
@@ -802,7 +805,6 @@ export class FullyScriptedQuiz extends BaseQuiz {
             experience: 0,
             questionHistory: [],
             currentScenario: 0,
-            : []
         };
         
         // Save reset progress

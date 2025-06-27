@@ -10,25 +10,21 @@ export const automationInterviewScenarios = {
                             text: 'Introduce standard practices, encourage collaboration, and provide workshops on different automation topics',
                             outcome: 'Perfect! This provides a comprehensive approach to team development.',
                             experience: 15,
-                            isCorrect: true
                         },
                         {
                             text: 'Take an unguided approach and allow them to do their own research',
                             outcome: 'Teams need structured guidance and support for effective learning.',
                             experience: -10,
-                            isCorrect: false
                         },
                         {
                             text: 'Ensure team members only learn a specific framework/set of technologies',
                             outcome: 'Teams benefit from broader knowledge across different automation tools and approaches.',
                             experience: -5,
-                            isCorrect: false
                         },
                         {
                             text: 'Prioritise team members that show a greater understanding of automation',
                             outcome: 'All team members should receive equal opportunity for growth and development.',
                             experience: -10,
-                            isCorrect: false
                         }
                     ]
                 },

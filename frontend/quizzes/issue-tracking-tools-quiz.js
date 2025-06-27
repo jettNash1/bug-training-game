@@ -202,6 +202,9 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         try {
             this.isLoading = true;
             
+            // Display the quiz name
+            this.displayQuizName();
+            
             // Show loading indicator
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {

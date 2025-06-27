@@ -11,25 +11,21 @@ export const CMSTestingScenarios = {
                         text: 'It allows users to create, manage, and modify digital content without specialised technical knowledge',
                         outcome: 'Perfect! This is the core purpose of a content management system.',
                         experience: 15,
-                        isCorrect: true,
                     },
                     {
                         text: 'To write code to display content on the front end of a website',
                         outcome: 'content management system is for content management by non-technical users.',
                         experience: -5,
-                        isCorrect: false
                     },
                     {
                         text: 'It is used for file storage that can be accessed and downloaded for use on external websites',
                         outcome: 'content management system has broader content management capabilities including, publishing content and Search Engine Optimisation management.',
                         experience: -10,
-                        isCorrect: false
                     },
                     {
                         text: 'For website hosting through content management system features management',
                         outcome: 'Content management system manages content across different platforms.',
                         experience: 0,
-                        isCorrect: false
                     }
                 ]
             },
