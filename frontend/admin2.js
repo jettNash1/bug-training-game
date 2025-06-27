@@ -637,6 +637,16 @@ export class Admin2Dashboard {
                     return this.calculateQuestionsAnsweredPercent(b) - this.calculateQuestionsAnsweredPercent(a);
                 case 'progress-low':
                     return this.calculateQuestionsAnsweredPercent(a) - this.calculateQuestionsAnsweredPercent(b);
+                case 'assigned-high':
+                    // Calculate assigned quizzes for each user
+                    const aAssigned = this.calculateAssignedQuizzes(a);
+                    const bAssigned = this.calculateAssignedQuizzes(b);
+                    return bAssigned - aAssigned;
+                case 'assigned-low':
+                    // Calculate assigned quizzes for each user
+                    const aAssignedLow = this.calculateAssignedQuizzes(a);
+                    const bAssignedLow = this.calculateAssignedQuizzes(b);
+                    return aAssignedLow - bAssignedLow;
                 case 'last-active':
                     return this.getLastActiveDate(b) - this.getLastActiveDate(a);
                 default:
@@ -6672,6 +6682,22 @@ export class Admin2Dashboard {
     calculateAverageScore(user) {
         if (!user) return 0;
         return this.calculateQuestionsAnsweredPercent(user);
+    }
+
+    // Helper method to calculate assigned quizzes for a user
+    calculateAssignedQuizzes(user) {
+        if (!user) return 0;
+        
+        // Get user's quiz visibility settings
+        const hiddenQuizzes = user.hiddenQuizzes || [];
+        
+        // Determine visible quizzes (those NOT in hiddenQuizzes)
+        const visibleQuizzes = this.quizTypes ? this.quizTypes.filter(quizType => {
+            const quizLower = quizType.toLowerCase();
+            return !hiddenQuizzes.includes(quizLower);
+        }) : [];
+        
+        return visibleQuizzes.length;
     }
 
     // Add methods from AdminDashboard base class
