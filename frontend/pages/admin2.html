@@ -55,6 +55,93 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* Info Panel Styles */
+        .info-panel {
+            display: grid;
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .info-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #007bff;
+        }
+        
+        .info-card h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .info-card h3 i {
+            color: #007bff;
+            width: 20px;
+        }
+        
+        .info-content h4 {
+            color: #495057;
+            margin: 1rem 0 0.5rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .info-content p {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+        }
+        
+        .info-content ul {
+            margin: 0.5rem 0 1rem 1.5rem;
+            padding: 0;
+        }
+        
+        .info-content li {
+            color: #495057;
+            line-height: 1.5;
+            margin-bottom: 0.4rem;
+        }
+        
+        .info-content li strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .section-description {
+            color: #6c757d;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        /* Responsive design for info panel */
+        @media (min-width: 768px) {
+            .info-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 767px) {
+            .info-card {
+                padding: 1rem;
+            }
+            
+            .info-card h3 {
+                font-size: 1.2rem;
+            }
+            
+            .info-content h4 {
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -84,6 +171,12 @@
                             <button>
                                 <i class="fas fa-users"></i>
                                 <span>Users</span>
+                            </button>
+                        </li>
+                        <li class="menu-item" data-section="info-section">
+                            <button>
+                                <i class="fas fa-info-circle"></i>
+                                <span>Info</span>
                             </button>
                         </li>
                         <li class="menu-item" data-section="settings-section">
@@ -193,6 +286,224 @@
 
                             <div id="usersList" class="users-list grid-view">
                                 <!-- User cards will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Section -->
+                    <div id="info-section" class="content-section">
+                        <h2><i class="fas fa-info-circle"></i> Admin Panel Guide</h2>
+                        <p class="section-description">Comprehensive guide to using all features in the Admin Dashboard.</p>
+
+                        <div class="info-panel">
+                            <div class="info-card">
+                                <h3><i class="fas fa-users"></i> User Management</h3>
+                                <div class="info-content">
+                                    <h4>Overview</h4>
+                                    <p>The Users section provides comprehensive tools for managing learners and tracking their progress across all quizzes.</p>
+                                    
+                                    <h4>Key Features</h4>
+                                    <ul>
+                                        <li><strong>Statistics Dashboard:</strong> View total users, daily active users, and overall progress metrics</li>
+                                        <li><strong>User Search & Filtering:</strong> Find users by username, sort by progress or activity</li>
+                                        <li><strong>View Options:</strong> Switch between grid and row views for user display</li>
+                                        <li><strong>User Details:</strong> Click any user to see detailed quiz progress, scores, and activity history</li>
+                                        <li><strong>Progress Management:</strong> Reset individual quiz progress or all progress for a user</li>
+                                        <li><strong>Account Deletion:</strong> Remove user accounts when necessary</li>
+                                    </ul>
+                                    
+                                    <h4>User Card Information</h4>
+                                    <ul>
+                                        <li><strong>Progress Bar:</strong> Shows percentage of quizzes completed</li>
+                                        <li><strong>Last Active:</strong> When the user last interacted with the system</li>
+                                        <li><strong>Quiz Status Colors:</strong> White (not started), light cream (in progress), light orange (completed but below 80%), light green (80%+ pass)</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
+                                <h3><i class="fas fa-cog"></i> Settings</h3>
+                                <div class="info-content">
+                                    <h4>Quiz Timer Settings</h4>
+                                    <p>Configure time limits for quiz questions to ensure consistent testing conditions.</p>
+                                    <ul>
+                                        <li><strong>Global Default:</strong> Set the default timer for all quizzes</li>
+                                        <li><strong>Per-Quiz Timers:</strong> Override the default for specific quizzes</li>
+                                        <li><strong>Timer Persistence:</strong> Timers are saved if users leave mid-question</li>
+                                        <li><strong>Auto-Fail:</strong> Questions are marked incorrect when time expires</li>
+                                    </ul>
+
+                                    <h4>Guide Settings</h4>
+                                    <p>Manage external guide links that appear as buttons on quiz pages.</p>
+                                    <ul>
+                                        <li><strong>Enable/Disable:</strong> Turn guide buttons on or off for each quiz</li>
+                                        <li><strong>URL Configuration:</strong> Set the destination URL for guide buttons</li>
+                                        <li><strong>Real-time Updates:</strong> Changes appear immediately for users</li>
+                                        <li><strong>Bulk Operations:</strong> Enable/disable multiple guides at once</li>
+                                    </ul>
+
+                                    <h4>Auto-Reset Settings</h4>
+                                    <p>Configure automatic quiz resets that run at regular intervals.</p>
+                                    <ul>
+                                        <li><strong>Reset Periods:</strong> Set daily, weekly, or custom intervals</li>
+                                        <li><strong>Quiz-Specific:</strong> Different reset schedules for different quizzes</li>
+                                        <li><strong>Countdown Displays:</strong> See time remaining until next reset</li>
+                                        <li><strong>Manual Triggers:</strong> Force immediate resets when needed</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
+                                <h3><i class="fas fa-user-plus"></i> Create Account</h3>
+                                <div class="info-content">
+                                    <h4>Account Creation</h4>
+                                    <p>Create new user accounts with customized quiz visibility.</p>
+                                    <ul>
+                                        <li><strong>Username & Password:</strong> Set secure login credentials</li>
+                                        <li><strong>Quiz Visibility:</strong> Select which quizzes the user can access</li>
+                                        <li><strong>Category-Based Selection:</strong> Choose quizzes by functional area</li>
+                                        <li><strong>Bulk Selection:</strong> Enable/disable entire categories at once</li>
+                                        <li><strong>Custom Access:</strong> Fine-tune access for specific learning paths</li>
+                                    </ul>
+                                    
+                                    <h4>Quiz Categories</h4>
+                                    <ul>
+                                        <li><strong>Core Testing:</strong> Fundamental QA skills and mindset</li>
+                                        <li><strong>Test Types:</strong> Different testing approaches and methodologies</li>
+                                        <li><strong>Process & Management:</strong> Test planning, reporting, and team coordination</li>
+                                        <li><strong>Tools & Technology:</strong> Automation, CMS testing, and technical skills</li>
+                                        <li><strong>Specialized Testing:</strong> Mobile, performance, security, and accessibility</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
+                                <h3><i class="fas fa-calendar-alt"></i> Schedule</h3>
+                                <div class="info-content">
+                                    <h4>Manual Scheduled Resets</h4>
+                                    <p>Schedule one-time quiz resets for specific users at precise dates and times.</p>
+                                    <ul>
+                                        <li><strong>User Selection:</strong> Choose from all registered users</li>
+                                        <li><strong>Quiz Selection:</strong> Pick specific quizzes to reset</li>
+                                        <li><strong>Date & Time:</strong> Set exact reset timing</li>
+                                        <li><strong>Timezone Handling:</strong> Automatic conversion to user's local time</li>
+                                        <li><strong>Schedule Management:</strong> View, edit, or cancel scheduled resets</li>
+                                    </ul>
+
+                                    <h4>Use Cases</h4>
+                                    <ul>
+                                        <li><strong>Retesting:</strong> Allow users to retake failed assessments</li>
+                                        <li><strong>Training Cycles:</strong> Reset progress for new training periods</li>
+                                        <li><strong>Issue Resolution:</strong> Clear problematic progress states</li>
+                                        <li><strong>Batch Operations:</strong> Coordinate resets across multiple users</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
+                                <h3><i class="fas fa-tasks"></i> Quiz Questions</h3>
+                                <div class="info-content">
+                                    <h4>Question Management</h4>
+                                    <p>View and manage the question bank for all quizzes in the system.</p>
+                                    <ul>
+                                        <li><strong>Question Browser:</strong> Browse questions by quiz and difficulty level</li>
+                                        <li><strong>Content Review:</strong> View question text, answers, and explanations</li>
+                                        <li><strong>Difficulty Levels:</strong> Questions are organized into three tiers</li>
+                                        <li><strong>Answer Key:</strong> See correct answers and explanations</li>
+                                        <li><strong>Usage Statistics:</strong> Track which questions are being used</li>
+                                    </ul>
+
+                                    <h4>Question Organization</h4>
+                                    <ul>
+                                        <li><strong>By Quiz:</strong> Questions grouped by subject area</li>
+                                        <li><strong>By Difficulty:</strong> Progressive complexity from basic to advanced</li>
+                                        <li><strong>Randomization:</strong> Questions are selected randomly during quizzes</li>
+                                        <li><strong>Pool Management:</strong> Ensure sufficient questions for fair testing</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
+                                <h3><i class="fas fa-file-export"></i> Export</h3>
+                                <div class="info-content">
+                                    <h4>Data Export Options</h4>
+                                    <p>Export user progress and system data for analysis and reporting.</p>
+                                    
+                                    <h4>Export Types</h4>
+                                    <ul>
+                                        <li><strong>All User Data:</strong> Complete export of all users and their progress</li>
+                                        <li><strong>Simple CSV:</strong> Basic user information and completion status</li>
+                                        <li><strong>Custom Export:</strong> Select specific users and quizzes for targeted reports</li>
+                                    </ul>
+
+                                    <h4>Custom Export Features</h4>
+                                    <ul>
+                                        <li><strong>User Selection:</strong> Choose individual users or groups</li>
+                                        <li><strong>Quiz Selection:</strong> Filter by specific quizzes or categories</li>
+                                        <li><strong>Data Fields:</strong> Control which information is included</li>
+                                        <li><strong>Format Options:</strong> CSV format for spreadsheet compatibility</li>
+                                        <li><strong>Progress Tracking:</strong> Monitor export generation progress</li>
+                                    </ul>
+
+                                    <h4>Use Cases</h4>
+                                    <ul>
+                                        <li><strong>Performance Reports:</strong> Analyze learning outcomes</li>
+                                        <li><strong>Compliance Documentation:</strong> Track training completion</li>
+                                        <li><strong>Data Analysis:</strong> Identify learning patterns and trends</li>
+                                        <li><strong>Backup:</strong> Create data backups for security</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
+                                <h3><i class="fas fa-award"></i> User Badges</h3>
+                                <div class="info-content">
+                                    <h4>Badge Management</h4>
+                                    <p>View and manage user achievements and badge awards.</p>
+                                    <ul>
+                                        <li><strong>User Badge Views:</strong> See all badges earned by each user</li>
+                                        <li><strong>Badge Details:</strong> View achievement dates and criteria</li>
+                                        <li><strong>Progress Tracking:</strong> Monitor which users are close to earning badges</li>
+                                        <li><strong>Achievement Analytics:</strong> Understand learning progression</li>
+                                    </ul>
+
+                                    <h4>Badge System</h4>
+                                    <ul>
+                                        <li><strong>Automatic Awards:</strong> Badges earned automatically upon achieving 80%+ score</li>
+                                        <li><strong>Quiz-Specific:</strong> Each quiz has its own unique badge</li>
+                                        <li><strong>Retake Support:</strong> Higher scores update badge eligibility</li>
+                                        <li><strong>Visual Recognition:</strong> Unique badge designs for different achievements</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
+                                <h3><i class="fas fa-shield-alt"></i> Best Practices</h3>
+                                <div class="info-content">
+                                    <h4>User Management</h4>
+                                    <ul>
+                                        <li><strong>Regular Monitoring:</strong> Check user progress and activity regularly</li>
+                                        <li><strong>Progressive Access:</strong> Consider unlocking quizzes gradually based on progress</li>
+                                        <li><strong>Support Responsiveness:</strong> Address reset requests and technical issues promptly</li>
+                                        <li><strong>Data Privacy:</strong> Handle user data according to your organization's privacy policies</li>
+                                    </ul>
+
+                                    <h4>System Maintenance</h4>
+                                    <ul>
+                                        <li><strong>Timer Settings:</strong> Adjust timers based on question complexity and user feedback</li>
+                                        <li><strong>Guide Links:</strong> Keep external guide URLs current and accessible</li>
+                                        <li><strong>Auto-Reset Schedules:</strong> Align reset periods with training schedules</li>
+                                        <li><strong>Regular Exports:</strong> Create periodic data backups</li>
+                                    </ul>
+
+                                    <h4>Performance Monitoring</h4>
+                                    <ul>
+                                        <li><strong>Usage Analytics:</strong> Track which quizzes are most/least used</li>
+                                        <li><strong>Completion Rates:</strong> Monitor overall system engagement</li>
+                                        <li><strong>Issue Tracking:</strong> Identify and resolve common user problems</li>
+                                        <li><strong>Feedback Integration:</strong> Use export data to improve learning content</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
