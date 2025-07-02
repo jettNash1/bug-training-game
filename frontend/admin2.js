@@ -4813,7 +4813,7 @@ export class Admin2Dashboard {
     // Auto-reset settings methods
     async loadAutoResetSettings() {
         try {
-            // Add debounce to prevent multiple rapid calls
+            // Add debounce to prevent multiple rapid calls 
             const now = Date.now();
             if (!this.lastAutoSettingsLoad || (now - this.lastAutoSettingsLoad) > 5000) { // Only reload if it's been at least 5 seconds
                 this.lastAutoSettingsLoad = now;
