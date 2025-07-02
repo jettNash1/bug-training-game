@@ -7020,7 +7020,7 @@ export class Admin2Dashboard {
             'issue-tracking-tools': 'Issue Tracking & Management Tools',
             'raising-tickets': 'Raising & Managing Tickets',
             'reports': 'Test Reports & Documentation',
-            'cms-testing': 'CMS & Content Management Testing',
+            'cms-testing': 'CMS & Content Management Testing (CRUD)',
             'email-testing': 'Email & Communication Testing',
             'content-copy': 'Content & Copy Testing',
             'tester-mindset': 'Tester Mindset & Approach',

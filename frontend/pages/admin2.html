@@ -191,7 +191,7 @@
                                 <span>Create Account</span>
                             </button>
                         </li>
-                        <li class="menu-item" data-section="schedule-section" style="display: none;">
+                        <li class="menu-item" data-section="schedule-section">
                             <button>
                                 <i class="fas fa-calendar-alt"></i>
                                 <span>Schedule</span>
@@ -531,12 +531,13 @@
                     </div>
 
                     <!-- Schedule Section -->
-                    <div id="schedule-section" class="content-section" style="display: none;">
-                        <h2>Schedule Quiz Reset</h2>
+                    <div id="schedule-section" class="content-section">
+                        <h2>Auto-Reset Management</h2>
                         <div class="schedule-container">
-                            <p class="section-description">Schedule automatic quiz resets for users at specific dates and times.</p>
+                            <p class="section-description">Configure automatic quiz resets and view current settings.</p>
                             
-                            <div class="schedule-form-card">
+                            <!-- HIDDEN: Manual Scheduling Features -->
+                            <div class="schedule-form-card" style="display: none;">
                                 <h3>Create Schedule</h3>
                                 <form id="scheduleForm" class="schedule-form">
                                     <div class="form-group">
@@ -571,8 +572,8 @@
                                 </form>
                             </div>
 
-                            <!-- MOVED: Scheduled Resets List - belongs in manual scheduling section -->
-                            <div class="scheduled-items-card">
+                            <!-- HIDDEN: Scheduled Resets List -->
+                            <div class="scheduled-items-card" style="display: none;">
                                 <h3>Scheduled Resets</h3>
                                 <div id="scheduledItemsList">
                                     <!-- Schedule items will be displayed here -->
