@@ -957,52 +957,56 @@ export class APIService {
     }
 
     async getQuizQuestions(username, quizName) {
-        try {
-            console.log(`Fetching quiz questions for ${username}/${quizName}`);
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users/${username}/quiz-questions/${quizName}`);
-            console.log('Raw quiz questions response:', response);
-            
-            // If the response itself is not successful
-            if (!response.success) {
-                console.error('Failed to fetch quiz questions:', response);
-                throw new Error(response.message || 'Failed to fetch quiz questions');
-            }
+        const cacheKey = `getQuizQuestions_${username}_${quizName}`;
+        
+        return this.deduplicatedRequest(cacheKey, async () => {
+            try {
+                console.log(`Fetching quiz questions for ${username}/${quizName}`);
+                const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users/${username}/quiz-questions/${quizName}`);
+                console.log('Raw quiz questions response:', response);
+                
+                // If the response itself is not successful
+                if (!response.success) {
+                    console.error('Failed to fetch quiz questions:', response);
+                    throw new Error(response.message || 'Failed to fetch quiz questions');
+                }
 
-            // If there's no data or no question history
-            if (!response.data) {
-                console.warn('No data found in response:', response);
+                // If there's no data or no question history
+                if (!response.data) {
+                    console.warn('No data found in response:', response);
+                    return {
+                        success: true,
+                        data: {
+                            questionHistory: [],
+                            totalQuestions: 0,
+                            score: 0,
+                            experience: 0,
+                            lastActive: null
+                        }
+                    };
+                }
+
+                // Ensure questionHistory is an array
+                if (!Array.isArray(response.data.questionHistory)) {
+                    console.warn('Question history is not an array:', response.data);
+                    response.data.questionHistory = [];
+                }
+
                 return {
                     success: true,
                     data: {
-                        questionHistory: [],
-                        totalQuestions: 0,
-                        score: 0,
-                        experience: 0,
-                        lastActive: null
+                        questionHistory: response.data.questionHistory || [],
+                        totalQuestions: response.data.totalQuestions || 0,
+                        score: response.data.score || 0,
+                        experience: response.data.experience || 0,
+                        lastActive: response.data.lastActive || null
                     }
                 };
+            } catch (error) {
+                console.error(`Failed to fetch quiz questions for ${username}/${quizName}:`, error);
+                throw error;
             }
-
-            // Ensure questionHistory is an array
-            if (!Array.isArray(response.data.questionHistory)) {
-                console.warn('Question history is not an array:', response.data);
-                response.data.questionHistory = [];
-            }
-
-            return {
-                success: true,
-                data: {
-                    questionHistory: response.data.questionHistory || [],
-                    totalQuestions: response.data.totalQuestions || 0,
-                    score: response.data.score || 0,
-                    experience: response.data.experience || 0,
-                    lastActive: response.data.lastActive || null
-                }
-            };
-        } catch (error) {
-            console.error(`Failed to fetch quiz questions for ${username}/${quizName}:`, error);
-            throw error;
-        }
+        });
     }
 
     async getQuizScenarios(quizName) {
@@ -1300,6 +1304,12 @@ export class APIService {
     // Helper method to format quiz names (used by getUserBadgesByAdmin)
     formatQuizName(quizId) {
         if (!quizId) return '';
+        
+        // Special case for CMS Testing display name only
+        if (quizId.toLowerCase() === 'cms-testing') {
+            return 'CMS Testing (CRUD)';
+        }
+        
         return quizId
             .split(/[-_]/) // Split on either hyphen or underscore
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -2997,6 +3007,14 @@ export class APIService {
             console.error('[API] Error during emergency cache clear:', error);
             return false;
         }
+    }
+
+    // Clear specific quiz questions cache for immediate refresh
+    clearQuizQuestionsCache(username, quizName) {
+        const cacheKey = `getQuizQuestions_${username}_${quizName}`;
+        this.requestCache.delete(cacheKey);
+        this.requestCache.delete(`${cacheKey}_pending`);
+        console.log(`[API] Cleared quiz questions cache for ${username}/${quizName}`);
     }
 }
 

@@ -1784,6 +1784,12 @@ export class BaseQuiz {
      */
     formatQuizName(quizName) {
         if (!quizName) return '';
+        
+        // Special case for CMS Testing display name only
+        if (quizName.toLowerCase() === 'cms-testing') {
+            return 'CMS Testing (CRUD)';
+        }
+        
         return quizName
             .split('-')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))

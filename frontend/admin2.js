@@ -2662,11 +2662,24 @@ export class Admin2Dashboard {
                     if (confirm(`Are you sure you want to reset progress for ${this.formatQuizName(quizName)}?`)) {
                         try {
                             await this.resetQuizProgress(userName, quizName);
+                            
+                            // IMMEDIATE CACHE CLEARING: Clear API service request cache to ensure fresh data
+                            this.apiService.clearRequestCache();
+                            
                             // Update the grid to reflect changes (local data was already updated in resetQuizProgress)
                             await this.updateUsersList();
+                            
+                            // Close any open quiz questions dialog and immediately refresh the user details
+                            const existingQuizDialog = document.querySelector('.user-details-overlay[data-dialog-type="quiz-questions"]');
+                            if (existingQuizDialog) {
+                                existingQuizDialog.remove();
+                            }
+                            
                             overlay.remove();
                             this.showSuccess(`Reset progress for ${this.formatQuizName(quizName)}`);
-                            this.showUserDetails(userName);
+                            
+                            // Immediately refresh user details to show updated state
+                            await this.showUserDetails(userName);
                         } catch (error) {
                             console.error('Failed to reset quiz:', error);
                             this.showError(`Failed to reset ${this.formatQuizName(quizName)}`);
@@ -2708,9 +2721,21 @@ export class Admin2Dashboard {
                     if (confirm(`Are you sure you want to reset all progress for ${username}? This cannot be undone.`)) {
                         try {
                             await this.resetAllProgress(username);
+                            
+                            // IMMEDIATE CACHE CLEARING: Clear API service request cache to ensure fresh data
+                            this.apiService.clearRequestCache();
+                            
+                            // Close any open quiz questions dialog
+                            const existingQuizDialog = document.querySelector('.user-details-overlay[data-dialog-type="quiz-questions"]');
+                            if (existingQuizDialog) {
+                                existingQuizDialog.remove();
+                            }
+                            
                             overlay.remove();
                             this.showSuccess(`Progress reset for ${username}`);
-                            // updateUsersList is already called in resetAllProgress method
+                            
+                            // Immediately refresh user details to show updated state
+                            await this.showUserDetails(username);
                         } catch (error) {
                             this.showError(`Failed to reset progress: ${error.message}`);
                         }
@@ -3040,6 +3065,9 @@ export class Admin2Dashboard {
             } catch (invalidationError) {
                 console.warn(`[Admin] Failed to notify server of cache invalidation for ${username}'s ${quizType}:`, invalidationError);
             }
+            
+            // IMMEDIATE CACHE CLEARING: Clear specific quiz questions cache
+            this.apiService.clearQuizQuestionsCache(username, quizType);
 
             // Update the local user data to reflect the reset
             const user = this.users.find(u => u.username === username);
@@ -3130,6 +3158,7 @@ export class Admin2Dashboard {
             overlay.setAttribute('role', 'dialog');
             overlay.setAttribute('aria-modal', 'true');
                     overlay.setAttribute('aria-labelledby', 'questions-details-title');
+                    overlay.setAttribute('data-dialog-type', 'quiz-questions');
             
             // Create content container
             const content = document.createElement('div');
@@ -4769,6 +4798,12 @@ export class Admin2Dashboard {
     // Helper function to format quiz names from kebab-case to Title Case
     formatQuizName(quizName) {
         if (!quizName) return '';
+        
+        // Special case for CMS Testing display name only
+        if (quizName.toLowerCase() === 'cms-testing') {
+            return 'CMS Testing (CRUD)';
+        }
+        
         return quizName
             .split('-')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -6661,17 +6696,17 @@ export class Admin2Dashboard {
         const hiddenQuizzes = user.hiddenQuizzes || [];
         
         // Determine visible quizzes (those NOT in hiddenQuizzes)
-        const visibleQuizTypes = this.quizTypes ? this.quizTypes.filter(quizType => {
+        const visibleQuizzes = this.quizTypes ? this.quizTypes.filter(quizType => {
             const quizLower = quizType.toLowerCase();
             return !hiddenQuizzes.includes(quizLower);
         }) : [];
         
         let totalQuestionsAnswered = 0;
-        const totalPossibleQuestions = visibleQuizTypes.length * 15; // 15 questions per visible quiz
+        const totalPossibleQuestions = visibleQuizzes.length * 15; // 15 questions per visible quiz
         
         // Sum up questions answered across visible quizzes only
-        if (visibleQuizTypes && Array.isArray(visibleQuizTypes)) {
-            visibleQuizTypes.forEach(quizType => {
+        if (visibleQuizzes && Array.isArray(visibleQuizzes)) {
+            visibleQuizzes.forEach(quizType => {
                 if (typeof quizType === 'string') {
                     const progress = user.quizProgress?.[quizType.toLowerCase()];
                     const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());

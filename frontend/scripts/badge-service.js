@@ -430,6 +430,11 @@ export class BadgeService {
 
     // Helper function to format quiz names
     formatQuizName(quizId) {
+        // Special case for CMS Testing display name only
+        if (quizId.toLowerCase() === 'cms-testing') {
+            return 'CMS Testing (CRUD)';
+        }
+        
         return quizId
             .split(/[-_]/) // Split on either hyphen or underscore
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))

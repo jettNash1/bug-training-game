@@ -187,6 +187,11 @@ export class QuizList {
     }
 
     formatQuizName(name) {
+        // Special case for CMS Testing display name only
+        if (name.toLowerCase() === 'cms-testing') {
+            return 'CMS Testing (CRUD)';
+        }
+        
         return name.split('-')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
