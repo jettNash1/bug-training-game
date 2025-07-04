@@ -89,17 +89,17 @@ export const scriptMetricsScenarios = {
                 id: 4,
                 level: 'Basic',
                 title: 'Environment Rows',
-                description: 'How should you handle empty environment rows?',
+                description: 'You have finished compatibility testing and have empty environment rows present within the primary compatibility environment tab, how would you best handle this?',
                 options: [
                     {
-                        text: 'Delete the environment rows completely',
-                        outcome: 'Deleting rows can break formulas.',
-                        experience: -10
+                        text: 'Delete the environment rows completely, then ensure any relevant formulas are updated and metrics are correct',
+                        outcome: 'Correct! - This maintains formula integrity whilst displaying only the relevant environment rows.',
+                        experience: 15
                     },
                     {
-                        text: 'Copy formulas from existing rows and update environment details',
-                        outcome: 'Correct! - This maintains formula integrity while allowing new environment details.',
-                        experience: 15,
+                        text: 'Copy in placeholder data to the empty rows, to ensure people know they have not been used.',
+                        outcome: 'This would not be a viable solution as the placeholder data would not be accurate and could affect the metrics.',
+                        experience: -10
                     },
                     {
                         text: 'Hide the environment rows within the environment checks tab',
@@ -117,7 +117,7 @@ export const scriptMetricsScenarios = {
                 id: 5,
                 level: 'Basic',
                 title: '#REF! Errors',
-                description: 'What causes #REF! errors in the Session Totals table?',
+                description: 'What causes #REF! errors in the Metrics \'Overall Session Totals\' section?',
                 options: [
                     {
                         text: 'Insufficient lines for all dates in the sessions totals table',
@@ -253,34 +253,6 @@ export const scriptMetricsScenarios = {
                     }
                 ]
             },
-            {
-                id: 20,
-                level: 'Basic',
-                title: 'Environment Count',
-                description: 'Why might an environment not be counted in the \'Compatibility Environments Complete\' figure despite correct cell population and \'Primary No\' checked?',
-                options: [
-                    {
-                        text: 'The formula in the cell showing the figure isn\'t encompassing all environment rows',
-                        outcome: 'Correct! by double clicking the cell showing the incorrect figure, you can see if the formula is not encompassing the newly added environment row.',
-                        experience: 15,
-                    },
-                    {
-                        text: 'The environment is marked as a primary environment rather than a compatibility environment',
-                        outcome: 'The question stated that the \'Primary No\' column had been checked.',
-                        experience: -10
-                    },
-                    {
-                        text: 'The environment was added after the initial script was created',
-                        outcome: 'When an environment is added shouldn\'t have a bearing on environment count.',
-                        experience: -5
-                    },
-                    {
-                        text: 'The count automatically updates only at the end of each day',
-                        outcome: 'This is not the case, environments should be counted when added to the table and formulas are correctly checked.',
-                        experience: 0
-                    }
-                ]
-            }
         ],
 
          // Intermediate Scenarios (IDs 6-10, 125 XP total)
@@ -343,28 +315,28 @@ export const scriptMetricsScenarios = {
             },
             {
                 id: 8,
-                level: 'Intermediate',
-                title: 'Environment Lists',
-                description: 'How should you modify environment lists that have multiple tickets?',
+                level: 'Basic',
+                title: 'Environment Count',
+                description: 'Why might an environment not be counted in the \'Compatibility Environments Complete\' figure despite correct cell population and \'Primary No\' checked?',
                 options: [
                     {
-                        text: 'Update each list individually to reflect the specific related tickets',
-                        outcome: 'This is inefficient and prone to inconsistency.',
-                        experience: -5
+                        text: 'The formula in the cell showing the figure isn\'t encompassing all environment rows',
+                        outcome: 'Correct! by double clicking the cell showing the incorrect figure, you can see if the formula is not encompassing the newly added environment row.',
+                        experience: 15,
                     },
                     {
-                        text: 'Update the environment list tab and remove excess rows',
-                        outcome: 'Correct! - This ensures consistent updates across all linked tickets.',
-                        experience: 20,
-                    },
-                    {
-                        text: 'Create new environment lists across multiple tabs',
-                        outcome: 'This breaks the connection with existing metrics.',
+                        text: 'The environment is marked as a primary environment rather than a compatibility environment',
+                        outcome: 'The question stated that the \'Primary No\' column had been checked.',
                         experience: -10
                     },
                     {
-                        text: 'Update the main environments list tab only',
-                        outcome: 'While updating the main tab is important, excess rows still need handling.',
+                        text: 'The environment was added after the initial script was created',
+                        outcome: 'When an environment is added shouldn\'t have a bearing on environment count.',
+                        experience: -5
+                    },
+                    {
+                        text: 'The count automatically updates only at the end of each day',
+                        outcome: 'This is not the case, environments should be counted when added to the table and formulas are correctly checked.',
                         experience: 0
                     }
                 ]
@@ -461,26 +433,27 @@ export const scriptMetricsScenarios = {
                 id: 12,
                 level: 'Advanced',
                 title: 'Environment Table Metrics',
-                description: 'How should you handle complex environment table metrics?',
+                description: 'When reviewing the Compatibility environment metrics, the values displayed are incorrect. How would you best handle this?',
+
                 options: [
                     {
-                        text: 'Simplify the metrics to return the expected outcome',
-                        outcome: 'Simplifying metrics could lose important tracking details.',
+                        text: 'Simplify the formulas to return the expected outcome',
+                        outcome: 'Simplifying formulas could lose important tracking details.',
                         experience: -15
                     },
                     {
-                        text: 'Use basic counting for the metrics table only',
-                        outcome: 'This wouldn\'t capture all necessary metrics.',
+                        text: 'Count the values within the metrics table manually',
+                        outcome: 'This may not capture all necessary metrics, and could be inaccurate/time consuming.',
                         experience: -10
                     },
                     {
-                        text: 'Verify all formula chains and dependencies',
+                        text: 'Verify all formula chains and dependencies related to the metrics table',
                         outcome: 'Correct! - This ensures accurate tracking across all dependencies',
                         experience: 25,
                     },
                     {
-                        text: 'Check individual formulas that relate to the environment table',
-                        outcome: 'While important, it misses the broader dependencies like formula chains',
+                        text: 'Verify all formula chains and dependencies related to the Comaptibility Environments tab',
+                        outcome: 'Whilst this would solve the issue, it would be time consuming and not the most efficient approach.',
                         experience: 0
                     }
                 ]
@@ -517,25 +490,25 @@ export const scriptMetricsScenarios = {
                 id: 14,
                 level: 'Advanced',
                 title: 'Un-displayed Metrics',
-                description: 'How should you handle metric discrepancies across multiple tabs?',
+                description: 'You notice that tracking metrics on the Metrics tab are innacurate, how would you best handle this?',
                 options: [
                     {
-                        text: 'Check individual tab metrics throughout the test script',
-                        outcome: 'While important, cross-tab relationships are also taken into consideration.',
+                        text: 'Copy the formula from a script template and paste it into the relevant cells',
+                        outcome: 'Whilst this may potentially fix the issue, scripts tend to be altered based on projects so it could make the problem worse.',
                         experience: 0
                     },
                     {
                         text: 'Determine an average from the discrepancies to enter into the metrics tables',
-                        outcome: 'This doesn\'t address the root cause of the metrics issues across the tabs within the test script.',
+                        outcome: 'This doesn\'t address the root cause of the metrics issues across the tabs within the test script, and would be innacurate.',
                         experience: -5
                     },
                     {
-                        text: 'Use the highest values returned from the tabs within the test script',
-                        outcome: 'This could hide actual issues and actual metrics need to be reported.',
+                        text: 'Use the values obtained from the tabs within the test script',
+                        outcome: 'The spreadsheet will have to be delivered to the client with the correct metrics, this would not be a viable solution. Additionally, this could impact your TDM as they would likely have to fix the problem.',
                         experience: -10
                     },
                     {
-                        text: 'Trace formula chains and verify all connections',
+                        text: 'Trace the relevant formula chains and verify all connections',
                         outcome: 'Correct! - This identifies and resolves the source of discrepancies.',
                         experience: 25,
                     }
