@@ -447,7 +447,7 @@ export const scriptMetricsScenarios = {
                         experience: -10
                     },
                     {
-                        text: 'Verify all formula chains and dependencies related to the metrics table',
+                        text: 'Confirm that the environments tab metrics are counting the environments correctly and that the metrics tab is referencing the correct value.',
                         outcome: 'Correct! - This ensures accurate tracking across all dependencies',
                         experience: 25,
                     },
@@ -508,7 +508,7 @@ export const scriptMetricsScenarios = {
                         experience: -10
                     },
                     {
-                        text: 'Trace the relevant formula chains and verify all connections',
+                        text: 'Identify that the metrics are incorrect and adjust formula and call references to ensure the correct values are being displayed.',
                         outcome: 'Correct! - This identifies and resolves the source of discrepancies.',
                         experience: 25,
                     }
