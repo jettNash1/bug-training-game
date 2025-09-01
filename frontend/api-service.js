@@ -678,10 +678,57 @@ export class APIService {
             // Normalize the quiz name - always use the standard normalized version
             const normalizedQuizName = this.normalizeQuizName(quizName);
             
+            // ENHANCED RESET DETECTION: Check for reset flags before returning any progress
+            const username = localStorage.getItem('username');
+            const resetFlags = [
+                window.CACHE_INVALIDATED,
+                window.RESET_IN_PROGRESS,
+                localStorage.getItem(`cache_invalidated_${username}_${normalizedQuizName}`),
+                localStorage.getItem(`force_reset_${username}_${normalizedQuizName}`),
+                localStorage.getItem(`reset_timestamp_${username}`)
+            ];
+            
+            const hasResetFlag = resetFlags.some(flag => flag && flag !== 'null' && flag !== 'undefined');
+            
+            if (hasResetFlag) {
+                console.warn(`[API] RESET DETECTED: Returning fresh progress for ${quizName} due to reset flags`);
+                return {
+                    success: true,
+                    data: {
+                        experience: 0,
+                        questionsAnswered: 0,
+                        status: 'not-started',
+                        scorePercentage: 0,
+                        currentScenario: 0,
+                        questionHistory: []
+                    }
+                };
+            }
+            
+            // ENHANCED: Check for cross-browser cache invalidation
+            try {
+                const cacheInvalidated = await this.checkCacheInvalidation(username, normalizedQuizName);
+                if (cacheInvalidated) {
+                    console.warn(`[API] CROSS-BROWSER RESET DETECTED: Returning fresh progress for ${quizName}`);
+                    return {
+                        success: true,
+                        data: {
+                            experience: 0,
+                            questionsAnswered: 0,
+                            status: 'not-started',
+                            scorePercentage: 0,
+                            currentScenario: 0,
+                            questionHistory: []
+                        }
+                    };
+                }
+            } catch (invalidationError) {
+                console.warn(`[API] Error checking cross-browser cache invalidation for ${quizName}:`, invalidationError);
+            }
+            
             console.log(`[API] Using normalized quiz name: ${normalizedQuizName}`);
             
             // Add logging to help diagnose issues
-            const username = localStorage.getItem('username');
             console.log(`[API] Current user: ${username || 'unknown'}`);
             
             // Fetch both from API and localStorage in parallel for efficiency
@@ -2521,6 +2568,19 @@ export class APIService {
                 `strict_quiz_progress_${username}_${normalizedQuizName}`,
                 `quizResults_${username}_${normalizedQuizName}`,
                 `quizResults_${username}`,
+                
+                // Additional comprehensive keys
+                `quiz_progress_${username}_${quizName}`,
+                `quiz_progress_${username}_${quizName.toLowerCase()}`,
+                `quiz_progress_${username}_${quizName.toUpperCase()}`,
+                `quiz_progress_${username}_${quizName.replace(/-/g, '')}`,
+                `quiz_progress_${username}_${quizName.replace(/-/g, '_')}`,
+                `quiz_progress_${username}_${quizName.replace(/([A-Z])/g, '-$1').toLowerCase()}`,
+                
+                // Force reset markers
+                `force_reset_${username}_${normalizedQuizName}`,
+                `reset_timestamp_${username}`,
+                `cache_invalidated_${username}_${normalizedQuizName}`,
             ];
             
             let cleared = false;
@@ -2701,7 +2761,7 @@ export class APIService {
     }
 
     /**
-     * NEW: Check if cache has been invalidated by another browser session
+     * ENHANCED: Check if cache has been invalidated by another browser session
      * This should be called when a user loads a quiz
      */
     async checkCacheInvalidation(username, quizName) {
@@ -2712,32 +2772,55 @@ export class APIService {
             const localInvalidationKey = `cache_invalidated_${username}_${normalizedQuizName}`;
             const localInvalidationTime = localStorage.getItem(localInvalidationKey);
             
-            // Check server for invalidation notifications
-            const response = await this.fetchWithAuth(`${this.baseUrl}/check-cache-invalidation`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    username,
-                    quizName: normalizedQuizName,
-                    lastCheck: localInvalidationTime || '0'
-                })
-            });
+            // ENHANCED: Check server for invalidation notifications with retry logic
+            let shouldInvalidate = false;
+            let invalidationTime = null;
             
-            if (response.ok) {
-                const data = await response.json();
-                if (data.shouldInvalidate) {
-                    console.log(`[API] Cache invalidation detected for ${username}'s ${normalizedQuizName} - clearing local cache`);
-                    
-                    // Clear the specific quiz cache
-                    this.clearQuizLocalStorage(username, normalizedQuizName);
-                    
-                    // Update local invalidation timestamp
-                    localStorage.setItem(localInvalidationKey, data.invalidationTime.toString());
-                    
-                    return true;
+            try {
+                const response = await this.fetchWithAuth(`${this.baseUrl}/check-cache-invalidation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username,
+                        quizName: normalizedQuizName,
+                        lastCheck: localInvalidationTime || '0'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    shouldInvalidate = data.shouldInvalidate;
+                    invalidationTime = data.invalidationTime;
                 }
+            } catch (serverError) {
+                console.warn('[API] Server cache invalidation check failed, trying alternative method:', serverError);
+                
+                // FALLBACK: Check if we have any reset flags that might indicate a reset
+                const resetFlags = [
+                    localStorage.getItem(`force_reset_${username}_${normalizedQuizName}`),
+                    localStorage.getItem(`reset_timestamp_${username}`)
+                ];
+                
+                shouldInvalidate = resetFlags.some(flag => flag && flag !== 'null' && flag !== 'undefined');
+                if (shouldInvalidate) {
+                    invalidationTime = Date.now();
+                }
+            }
+            
+            if (shouldInvalidate) {
+                console.log(`[API] Cache invalidation detected for ${username}'s ${normalizedQuizName} - clearing local cache`);
+                
+                // Clear the specific quiz cache
+                this.clearQuizLocalStorage(username, normalizedQuizName);
+                
+                // Update local invalidation timestamp
+                if (invalidationTime) {
+                    localStorage.setItem(localInvalidationKey, invalidationTime.toString());
+                }
+                
+                return true;
             }
             
             return false;
@@ -2878,8 +2961,21 @@ export class APIService {
      * NEW: Override saveQuizProgress to prevent saving during reset
      */
     async saveQuizProgress(quizName, progress) {
-        // Check if cache has been invalidated
-        if (window.CACHE_INVALIDATED || window.RESET_IN_PROGRESS) {
+        const username = localStorage.getItem('username');
+        const normalizedQuizName = this.normalizeQuizName(quizName);
+        
+        // ENHANCED RESET DETECTION: Check multiple sources for reset flags
+        const resetFlags = [
+            window.CACHE_INVALIDATED,
+            window.RESET_IN_PROGRESS,
+            localStorage.getItem(`cache_invalidated_${username}_${normalizedQuizName}`),
+            localStorage.getItem(`force_reset_${username}_${normalizedQuizName}`),
+            localStorage.getItem(`reset_timestamp_${username}`)
+        ];
+        
+        const hasResetFlag = resetFlags.some(flag => flag && flag !== 'null' && flag !== 'undefined');
+        
+        if (hasResetFlag) {
             console.warn(`[API] RESET MODE: Preventing quiz progress save for ${quizName} - cache invalidated`);
             return { success: false, message: 'Cache invalidated - please reload page' };
         }

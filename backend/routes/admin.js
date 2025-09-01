@@ -360,7 +360,19 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
                 console.log(`User model - Removed ${initialLength - user.quizResults.length} quiz results`);
             }
 
+            // ENHANCED: Also clear any quiz-related fields that might store progress
+            if (user.allowedQuizzes) {
+                // Keep allowedQuizzes as they are permissions, not progress
+                console.log('User model - Keeping allowedQuizzes (permissions)');
+            }
+            
+            if (user.hiddenQuizzes) {
+                // Keep hiddenQuizzes as they are visibility settings, not progress
+                console.log('User model - Keeping hiddenQuizzes (visibility settings)');
+            }
+
             await user.save();
+            console.log(`User model - Successfully saved user after reset`);
         }
         
         // Reset in QuizUser model (if it exists)
@@ -374,7 +386,14 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
                 }
             });
             
+            // ENHANCED: Also clear any other quiz-related data in QuizUser
+            if (quizUser.allowedQuizzes) {
+                // Keep allowedQuizzes as they are permissions, not progress
+                console.log('QuizUser model - Keeping allowedQuizzes (permissions)');
+            }
+            
             await quizUser.save();
+            console.log(`QuizUser model - Successfully saved after reset`);
         }
         console.log('COMPREHENSIVE RESET COMPLETE:', { 
             username, 

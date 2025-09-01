@@ -65,6 +65,45 @@ function normalizeQuizName(quizName) {
     return normalized;
 }
 
+// Cache invalidation check endpoint for cross-browser synchronization
+router.post('/check-cache-invalidation', auth, async (req, res) => {
+    try {
+        const { username, quizName, lastCheck } = req.body;
+        
+        if (!username || !quizName) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username and quizName are required'
+            });
+        }
+        
+        // Get cache invalidations from admin routes
+        const adminRoute = require('./admin.js');
+        const cacheInvalidations = adminRoute.getCacheInvalidations();
+        
+        // Check if there's a more recent invalidation than the client's last check
+        const invalidationKey = `${username}_${quizName.toLowerCase()}`;
+        const serverInvalidationTime = cacheInvalidations.get(invalidationKey);
+        
+        const shouldInvalidate = serverInvalidationTime && 
+            (!lastCheck || serverInvalidationTime > parseInt(lastCheck));
+        
+        console.log(`[Cache Check] ${username}'s ${quizName}: shouldInvalidate=${shouldInvalidate}, serverTime=${serverInvalidationTime}, lastCheck=${lastCheck}`);
+        
+        res.json({
+            success: true,
+            shouldInvalidate,
+            invalidationTime: serverInvalidationTime || null
+        });
+    } catch (error) {
+        console.error('[Cache Check] Error checking cache invalidation:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to check cache invalidation'
+        });
+    }
+});
+
 // Guide settings endpoint for frontend quiz access
 router.get('/guide-settings/:quizName', async (req, res) => {
     try {

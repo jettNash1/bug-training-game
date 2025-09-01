@@ -2979,10 +2979,15 @@ export class Admin2Dashboard {
                 try {
                     const response = await this.apiService.resetQuizProgress(username, quizType);
                     if (response.success) {
-                        // CRITICAL FIX: Clear localStorage cache for this user's quiz
-                        // This prevents old cached progress from being restored when the user next visits the quiz
+                        // COMPREHENSIVE CACHE CLEARING: Clear ALL possible storage locations
+                        console.log(`[Admin] Starting comprehensive cache clearing for ${username}'s ${quizType} quiz`);
+                        
+                        // Clear localStorage cache for this user's quiz
                         this.apiService.clearQuizLocalStorage(username, quizType);
                         console.log(`[Admin] Cleared localStorage cache for ${username}'s ${quizType} quiz`);
+                        
+                        // CRITICAL: Force clear ALL possible storage keys for this user/quiz combination
+                        this.forceClearAllUserQuizCache(username, quizType);
                         
                         // CRITICAL: Notify server about cache invalidation for cross-browser synchronization
                         try {
@@ -3053,10 +3058,15 @@ export class Admin2Dashboard {
                 throw new Error(response.message || 'Failed to reset quiz progress');
             }
 
-            // CRITICAL FIX: Clear localStorage cache for this user's quiz
-            // This prevents old cached progress from being restored when the user next visits the quiz
+            // COMPREHENSIVE CACHE CLEARING: Clear ALL possible storage locations
+            console.log(`[Admin] Starting comprehensive cache clearing for ${username}'s ${quizType} quiz`);
+            
+            // Clear localStorage cache for this user's quiz
             this.apiService.clearQuizLocalStorage(username, quizType);
             console.log(`[Admin] Cleared localStorage cache for ${username}'s ${quizType} quiz`);
+            
+            // CRITICAL: Force clear ALL possible storage keys for this user/quiz combination
+            this.forceClearAllUserQuizCache(username, quizType);
             
             // CRITICAL: Notify server about cache invalidation for cross-browser synchronization
             try {
@@ -3068,6 +3078,24 @@ export class Admin2Dashboard {
             
             // IMMEDIATE CACHE CLEARING: Clear specific quiz questions cache
             this.apiService.clearQuizQuestionsCache(username, quizType);
+
+            // VERIFICATION: Check if reset was successful by attempting to fetch progress
+            try {
+                const verificationResponse = await this.apiService.getUserQuizProgress(username, quizType);
+                if (verificationResponse.success && verificationResponse.data) {
+                    const hasProgress = verificationResponse.data.questionHistory?.length > 0 || 
+                                      verificationResponse.data.questionsAnswered > 0;
+                    if (hasProgress) {
+                        console.warn(`[Admin] WARNING: Quiz reset verification failed - progress still exists for ${username}'s ${quizType}`);
+                        // Force a second cache clearing attempt
+                        this.forceClearAllUserQuizCache(username, quizType);
+                    } else {
+                        console.log(`[Admin] Quiz reset verification successful - no progress found for ${username}'s ${quizType}`);
+                    }
+                }
+            } catch (verificationError) {
+                console.warn(`[Admin] Could not verify reset for ${username}'s ${quizType}:`, verificationError);
+            }
 
             // Update the local user data to reflect the reset
             const user = this.users.find(u => u.username === username);
@@ -3089,6 +3117,96 @@ export class Admin2Dashboard {
             console.error('Error resetting quiz progress:', error);
             throw error;
         }
+    }
+
+    // NEW: Comprehensive cache clearing method
+    forceClearAllUserQuizCache(username, quizType) {
+        if (!username || !quizType) {
+            console.warn('[Admin] Cannot clear cache: missing username or quizType');
+            return;
+        }
+
+        console.log(`[Admin] FORCE CLEARING ALL CACHE for ${username}'s ${quizType} quiz`);
+        
+        const normalizedQuizType = quizType.toLowerCase();
+        
+        // Set global flags to prevent caching
+        window.CACHE_INVALIDATED = true;
+        window.RESET_IN_PROGRESS = true;
+        
+        // Clear ALL possible localStorage keys
+        const allKeys = Object.keys(localStorage);
+        const keysToClear = allKeys.filter(key => {
+            const keyLower = key.toLowerCase();
+            const usernameLower = username.toLowerCase();
+            const quizLower = normalizedQuizType.toLowerCase();
+            
+            return (keyLower.includes(usernameLower) && keyLower.includes(quizLower)) ||
+                   (keyLower.includes('quiz') && keyLower.includes(usernameLower) && keyLower.includes(quizLower)) ||
+                   (keyLower.includes('timer') && keyLower.includes(usernameLower) && keyLower.includes(quizLower)) ||
+                   (keyLower.includes('progress') && keyLower.includes(usernameLower) && keyLower.includes(quizLower)) ||
+                   (keyLower.includes('results') && keyLower.includes(usernameLower) && keyLower.includes(quizLower));
+        });
+        
+        keysToClear.forEach(key => {
+            localStorage.removeItem(key);
+            console.log(`[Admin] Cleared localStorage key: ${key}`);
+        });
+        
+        // Clear sessionStorage
+        try {
+            const sessionKeys = Object.keys(sessionStorage).filter(key => {
+                const keyLower = key.toLowerCase();
+                const usernameLower = username.toLowerCase();
+                const quizLower = normalizedQuizType.toLowerCase();
+                
+                return (keyLower.includes(usernameLower) && keyLower.includes(quizLower)) ||
+                       (keyLower.includes('quiz') && keyLower.includes(usernameLower) && keyLower.includes(quizLower));
+            });
+            
+            sessionKeys.forEach(key => {
+                sessionStorage.removeItem(key);
+                console.log(`[Admin] Cleared sessionStorage key: ${key}`);
+            });
+        } catch (error) {
+            console.warn('[Admin] Error clearing sessionStorage:', error);
+        }
+        
+        // Clear in-memory caches
+        try {
+            // Clear QuizProgressService cache
+            if (window.quizProgressService) {
+                window.quizProgressService.initialized = false;
+                console.log(`[Admin] Reset QuizProgressService cache`);
+            }
+            
+            // Clear QuizUser cache
+            if (window.quizUser && window.quizUser.quizProgress) {
+                delete window.quizUser.quizProgress[normalizedQuizType];
+                console.log(`[Admin] Cleared QuizUser cache for ${normalizedQuizType}`);
+            }
+            
+            // Clear IndexPage cache
+            if (window.indexPage && window.indexPage.user && window.indexPage.user.quizProgress) {
+                delete window.indexPage.user.quizProgress[normalizedQuizType];
+                console.log(`[Admin] Cleared IndexPage cache for ${normalizedQuizType}`);
+            }
+        } catch (error) {
+            console.warn('[Admin] Error clearing in-memory caches:', error);
+        }
+        
+        // Set cache invalidation markers
+        try {
+            const timestamp = Date.now();
+            localStorage.setItem(`cache_invalidated_${username}_${normalizedQuizType}`, timestamp.toString());
+            localStorage.setItem(`reset_timestamp_${username}`, timestamp.toString());
+            localStorage.setItem(`force_reset_${username}_${normalizedQuizType}`, timestamp.toString());
+            console.log(`[Admin] Set cache invalidation markers for ${username}'s ${normalizedQuizType}`);
+        } catch (error) {
+            console.warn('[Admin] Error setting cache invalidation markers:', error);
+        }
+        
+        console.log(`[Admin] Force cache clearing completed for ${username}'s ${quizType} quiz`);
     }
 
     // Add implementation for showQuizQuestions matching standard admin
@@ -3311,7 +3429,7 @@ export class Admin2Dashboard {
                                                     <td>
                                                         <span class="status-badge ${isPassed ? 'pass' : question.isTimedOut ? 'timeout' : 'fail'}">
                                                             ${isPassed ? 'CORRECT' : question.isTimedOut ? 'TIMED OUT' : 'INCORRECT'}
-                                    </span>
+                                </span>
                                                     </td>
                                                     <td>
                                                         <strong>${question.question || 'Question text not available'}</strong>
@@ -6789,7 +6907,7 @@ export class Admin2Dashboard {
             try {
                 const settings = await this.apiService.getQuizTimerSettings();
                 if (settings.success && settings.data) {
-                    // Use defaultSeconds consistently - explicitly check for undefined to allow 0
+                    // Use defaultSeconds consistently - explicitly check for undefined to allow 0 values
                     const defaultSeconds = settings.data.defaultSeconds;
                     if (defaultSeconds !== undefined) {
                         this.timerSettings.defaultSeconds = defaultSeconds;
