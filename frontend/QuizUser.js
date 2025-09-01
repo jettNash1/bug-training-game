@@ -178,22 +178,7 @@ export class QuizUser {
         }
     }
 
-    saveToLocalStorage(quizData) {
-        try {
-            // Find and update or add new quiz result
-            const existingIndex = this.quizResults.findIndex(r => r.quizName === quizData.quizName);
-            if (existingIndex !== -1) {
-                this.quizResults[existingIndex] = quizData;
-            } else {
-                this.quizResults.push(quizData);
-            }
-
-            // Save to localStorage
-            localStorage.setItem(`quizResults_${this.username}`, JSON.stringify(this.quizResults));
-        } catch (error) {
-            console.error('Failed to save to localStorage:', error);
-        }
-    }
+    // SERVER AS MASTER: localStorage saving removed - only server saves are allowed
 
     getQuizResult(quizName) {
         quizName = this.normalizeQuizName(quizName);
@@ -217,8 +202,7 @@ export class QuizUser {
                     const result = await this.api.saveQuizProgress(quizName, progress);
                     if (result) {
                         this.quizProgress[quizName] = progress;
-                        // Update localStorage as backup
-                        localStorage.setItem(`quizProgress_${this.username}`, JSON.stringify(this.quizProgress));
+                        // SERVER AS MASTER: Only cache in memory, never localStorage
                         return true;
                     }
                     // If result is false, try again
@@ -233,28 +217,18 @@ export class QuizUser {
             // If we get here, all retries failed
             console.error('All attempts to save quiz progress failed:', lastError);
             
-            // Save to localStorage as fallback
-            this.saveProgressToLocalStorage(quizName, progress);
+            // SERVER AS MASTER: No localStorage fallback
             
             // Re-throw the error to be handled by the caller
             throw lastError || new Error('Failed to save quiz progress after multiple attempts');
         } catch (error) {
             console.error('Failed to save quiz progress:', error);
-            // Save to localStorage as fallback
-            this.saveProgressToLocalStorage(quizName, progress);
+            // SERVER AS MASTER: No localStorage fallback
             throw error; // Re-throw to be handled by the caller
         }
     }
 
-    saveProgressToLocalStorage(quizName, progress) {
-        quizName = this.normalizeQuizName(quizName);
-        try {
-            this.quizProgress[quizName] = progress;
-            localStorage.setItem(`quizProgress_${this.username}`, JSON.stringify(this.quizProgress));
-        } catch (error) {
-            console.error('Failed to save progress to localStorage:', error);
-        }
-    }
+    // SERVER AS MASTER: localStorage saving removed - only server saves are allowed
 
     async getQuizProgress(quizName) {
         // Always normalize the quiz name for consistency
@@ -268,35 +242,7 @@ export class QuizUser {
             if (!response || !response.success) {
                 console.warn(`[QuizUser] Quiz progress API returned unsuccessful response for ${normalizedQuizName}:`, response);
                 
-                // Try the local cached progress as a fallback
-                if (this.quizProgress && this.quizProgress[normalizedQuizName]) {
-                    console.log(`[QuizUser] Using cached progress for ${normalizedQuizName} after API failure`);
-                    return this.quizProgress[normalizedQuizName];
-                }
-                
-                // If nothing found in cache, check localStorage directly
-                try {
-                    const username = localStorage.getItem('username');
-                    if (username) {
-                        const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-                        const localData = localStorage.getItem(storageKey);
-                        
-                        if (localData) {
-                            const parsed = JSON.parse(localData);
-                            if (parsed && parsed.data) {
-                                console.log(`[QuizUser] Using direct localStorage data for ${normalizedQuizName}`);
-                                
-                                // Cache this data in memory for future use
-                                this.quizProgress[normalizedQuizName] = parsed.data;
-                                
-                                return parsed.data;
-                            }
-                        }
-                    }
-                } catch (localError) {
-                    console.error(`[QuizUser] Error accessing localStorage:`, localError);
-                }
-                
+                // SERVER AS MASTER: No localStorage fallback, return null on API failure
                 return null;
             }
             
@@ -324,28 +270,14 @@ export class QuizUser {
                 status: progressData.status
             });
             
-            // Cache the progress data in memory for future use
+            // SERVER AS MASTER: Only cache in memory, never localStorage
             this.quizProgress[normalizedQuizName] = progressData;
-            
-            // Also update our localStorage cache (this is redundant with API's cache but serves as extra insurance)
-            try {
-                const username = localStorage.getItem('username');
-                if (username) {
-                    localStorage.setItem(`quizProgress_${this.username}`, JSON.stringify(this.quizProgress));
-                }
-            } catch (e) {
-                console.error(`[QuizUser] Failed to update localStorage cache:`, e);
-            }
             
             return progressData;
         } catch (error) {
             console.error(`[QuizUser] Failed to get quiz progress for ${normalizedQuizName}:`, error);
             
-            // Try the local cached progress as a fallback
-            if (this.quizProgress && this.quizProgress[normalizedQuizName]) {
-                console.log(`[QuizUser] Using cached progress for ${normalizedQuizName} after error`);
-                return this.quizProgress[normalizedQuizName];
-            }
+            // SERVER AS MASTER: No localStorage fallback on error
             
             return null;
         }
@@ -411,8 +343,7 @@ export class QuizUser {
             } catch (apiError) {
                 console.error('API error when saving quiz result:', apiError);
                 
-                // Fall back to local storage
-                this.saveToLocalStorage(quizData);
+                // SERVER AS MASTER: No localStorage fallback
                 
                 // Still return false to indicate API save failed
                 return false;

@@ -9,8 +9,9 @@ const path = require('path');
 const ScheduledReset = require('../models/scheduledReset.model');
 const AutoReset = require('../models/autoReset.model');
 const QuizUser = require('../models/quizUser.model');
+const CacheInvalidation = require('../models/cacheInvalidation.model');
 
-// In-memory cache for invalidation tracking
+// In-memory cache for invalidation tracking (fallback)
 const cacheInvalidations = new Map();
 
 // Clean up old invalidation records every hour
@@ -404,17 +405,26 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
         });
         
         // CRITICAL: Record cache invalidation for cross-browser synchronization
-        const invalidationKey = `${username}_${quizName.toLowerCase()}`;
-        const invalidationTime = Date.now();
-        cacheInvalidations.set(invalidationKey, invalidationTime);
-        console.log(`[Cache Invalidation] Recorded invalidation for ${invalidationKey} at ${invalidationTime}`);
-        
-        // Also record for all quiz variations to ensure all cached versions are invalidated
-        quizVariations.forEach(variant => {
-            const variantKey = `${username}_${variant}`;
-            cacheInvalidations.set(variantKey, invalidationTime);
-        });
-        console.log(`[Cache Invalidation] Recorded invalidation for ${quizVariations.length} quiz variations`);
+        try {
+            // Record in database for persistent storage
+            await CacheInvalidation.recordInvalidation(username, quizName);
+            
+            // Also record in memory as fallback
+            const invalidationKey = `${username}_${quizName.toLowerCase()}`;
+            const invalidationTime = Date.now();
+            cacheInvalidations.set(invalidationKey, invalidationTime);
+            console.log(`[Cache Invalidation] Recorded invalidation for ${invalidationKey} at ${invalidationTime}`);
+            
+            // Also record for all quiz variations to ensure all cached versions are invalidated
+            quizVariations.forEach(variant => {
+                const variantKey = `${username}_${variant}`;
+                cacheInvalidations.set(variantKey, invalidationTime);
+            });
+            console.log(`[Cache Invalidation] Recorded invalidation for ${quizVariations.length} quiz variations`);
+        } catch (invalidationError) {
+            console.error('[Cache Invalidation] Error recording invalidation:', invalidationError);
+            // Continue with the reset even if invalidation recording fails
+        }
         
         res.json({ 
             success: true,

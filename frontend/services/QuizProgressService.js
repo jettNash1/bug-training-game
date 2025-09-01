@@ -239,57 +239,12 @@ export class QuizProgressService {
                 apiError = error;
             }
             
-            // Check localStorage as a fallback
-            let localStorageData = null;
-            const strictStorageKey = this.getUniqueQuizStorageKey(this.username, normalizedQuizName);
-            const oldStorageKey = `quiz_progress_${this.username}_${normalizedQuizName}`;
-            
-            try {
-                // Try the strict key first
-                const strictData = localStorage.getItem(strictStorageKey);
-                if (strictData) {
-                    const parsed = JSON.parse(strictData);
-                    if (parsed && parsed.quizName === normalizedQuizName) {
-                        localStorageData = parsed.data || parsed;
-                        console.log(`[QuizProgress] Found valid localStorage data using strict key for ${normalizedQuizName}`);
-                    }
-                }
-                
-                // If strict key didn't have valid data, try old key
-                if (!localStorageData) {
-                    const oldData = localStorage.getItem(oldStorageKey);
-                    if (oldData) {
-                        const parsed = JSON.parse(oldData);
-                        localStorageData = parsed.data || parsed;
-                        console.log(`[QuizProgress] Found localStorage data using old key for ${normalizedQuizName}`);
-                    }
-                }
-            } catch (error) {
-                console.warn(`[QuizProgress] LocalStorage error for ${normalizedQuizName}:`, error);
-            }
-            
-            // Determine which data to use
+            // SERVER AS MASTER: Only use API data, never localStorage fallback
             let finalProgressData = null;
             
-            if (apiProgressData && localStorageData) {
-                // Both sources have data, use the one with more questions answered
-                const apiQuestionsAnswered = apiProgressData.questionsAnswered || 
-                    (apiProgressData.questionHistory ? apiProgressData.questionHistory.length : 0);
-                    
-                const localQuestionsAnswered = localStorageData.questionsAnswered || 
-                    (localStorageData.questionHistory ? localStorageData.questionHistory.length : 0);
-                
-                if (localQuestionsAnswered > apiQuestionsAnswered) {
-                    console.log(`[QuizProgress] Using localStorage data (${localQuestionsAnswered} questions) over API (${apiQuestionsAnswered} questions)`);
-                    finalProgressData = localStorageData;
-                } else {
-                    console.log(`[QuizProgress] Using API data (${apiQuestionsAnswered} questions) over localStorage (${localQuestionsAnswered} questions)`);
-                    finalProgressData = apiProgressData;
-                }
-            } else if (apiProgressData) {
+            if (apiProgressData) {
                 finalProgressData = apiProgressData;
-            } else if (localStorageData) {
-                finalProgressData = localStorageData;
+                console.log(`[QuizProgress] Using API data for ${normalizedQuizName}`);
             }
             
             // If we have no data from either source
@@ -382,57 +337,22 @@ export class QuizProgressService {
                 console.log(`[QuizProgress] Fixed missing questionsAnswered with questionHistory.length=${progressData.questionHistory.length}`);
             }
             
-            // Save to both API and localStorage in parallel
-            const [apiResult, localResult] = await Promise.allSettled([
-                // API save
-                this.apiService.saveQuizProgress(normalizedQuizName, progressData),
-                
-                // localStorage save (using try/catch directly)
-                (async () => {
-                    try {
-                        const strictStorageKey = this.getUniqueQuizStorageKey(this.username, normalizedQuizName);
-                        const data = {
-                            quizName: normalizedQuizName, // Include quiz name for verification
-                            data: progressData,
-                            timestamp: new Date().toISOString()
-                        };
-                        
-                        localStorage.setItem(strictStorageKey, JSON.stringify(data));
-                        console.log(`[QuizProgress] Saved to localStorage with key: ${strictStorageKey}`);
-                        return true;
-                    } catch (error) {
-                        console.error(`[QuizProgress] localStorage save error:`, error);
-                        throw error;
-                    }
-                })()
-            ]);
+            // SERVER AS MASTER: Only save to API, never localStorage
+            const apiResult = await this.apiService.saveQuizProgress(normalizedQuizName, progressData);
             
-            // Check results
-            const apiSaved = apiResult.status === 'fulfilled' && apiResult.value && apiResult.value.success;
-            const localSaved = localResult.status === 'fulfilled' && localResult.value === true;
-            
-            console.log(`[QuizProgress] Save results - API: ${apiSaved}, localStorage: ${localSaved}`);
-            
-            if (apiSaved) {
+            if (apiResult && apiResult.success) {
+                console.log(`[QuizProgress] Successfully saved to API for ${normalizedQuizName}`);
                 return {
                     success: true,
-                    message: 'Saved to API and localStorage',
+                    message: 'Saved to server',
                     data: progressData,
-                    apiSaved: true,
-                    localSaved: localSaved
-                };
-            } else if (localSaved) {
-                return {
-                    success: true,
-                    message: 'Saved to localStorage only (API failed)',
-                    data: progressData,
-                    apiSaved: false,
-                    localSaved: true
+                    apiSaved: true
                 };
             } else {
+                console.error(`[QuizProgress] Failed to save to API for ${normalizedQuizName}:`, apiResult);
                 return {
                     success: false,
-                    message: 'Failed to save quiz progress to both API and localStorage',
+                    message: 'Failed to save to server',
                     data: progressData
                 };
             }
@@ -525,89 +445,7 @@ export class QuizProgressService {
                 console.warn(`[QuizProgress] Error getting user data from API:`, error);
             }
             
-            // Then check localStorage for any additional/newer progress data
-            try {
-                // Get all localStorage keys that match our progress patterns
-                const progressPatterns = [
-                    `strict_quiz_progress_${this.username}_`, // New format
-                    `quiz_progress_${this.username}_`        // Old format
-                ];
-                
-                const allKeys = Object.keys(localStorage);
-                const progressKeys = allKeys.filter(key => {
-                    return progressPatterns.some(pattern => key.startsWith(pattern));
-                });
-                
-                console.log(`[QuizProgress] Found ${progressKeys.length} potential quiz progress items in localStorage`);
-                
-                // Process each key to extract quiz progress
-                for (const key of progressKeys) {
-                    try {
-                        // Extract the quiz name from the key
-                        let quizId = null;
-                        let isNewFormat = false;
-                        
-                        for (const pattern of progressPatterns) {
-                            if (key.startsWith(pattern)) {
-                                const quizNameMatch = key.match(new RegExp(`${pattern}([^_]+)`));
-                                if (quizNameMatch && quizNameMatch[1]) {
-                                    quizId = quizNameMatch[1];
-                                    isNewFormat = pattern.includes('strict');
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        if (!quizId) continue;
-                        
-                        if (key.includes('_backup') || key.includes('_emergency')) {
-                            // Skip backup/emergency keys
-                            continue;
-                        }
-                        
-                        // Normalize the quiz ID
-                        const normalizedQuizId = this.normalizeQuizName(quizId);
-                        
-                        // Process the localStorage data
-                        const localStorageData = localStorage.getItem(key);
-                        if (!localStorageData) continue;
-                        
-                        const parsedData = JSON.parse(localStorageData);
-                        if (!parsedData) continue;
-                        
-                        // Verify this data actually belongs to the correct quiz (for new format)
-                        if (isNewFormat && parsedData.quizName && parsedData.quizName !== normalizedQuizId) {
-                            console.warn(`[QuizProgress] Skipping localStorage data from key ${key} because it belongs to ${parsedData.quizName}, not ${normalizedQuizId}`);
-                            continue;
-                        }
-                        
-                        const localProgress = parsedData.data || parsedData;
-                        const apiProgress = quizProgress[normalizedQuizId];
-                        
-                        // Fix missing questionsAnswered if we have questionHistory
-                        if (!localProgress.questionsAnswered && 
-                            localProgress.questionHistory && 
-                            localProgress.questionHistory.length > 0) {
-                            
-                            localProgress.questionsAnswered = localProgress.questionHistory.length;
-                        }
-                        
-                        // Check if we should use this localStorage data
-                        if (!apiProgress || 
-                            (localProgress.questionsAnswered > (apiProgress.questionsAnswered || 0)) ||
-                            (localProgress.lastUpdated && apiProgress.lastUpdated && 
-                             new Date(localProgress.lastUpdated) > new Date(apiProgress.lastUpdated))) {
-                            
-                            console.log(`[QuizProgress] Using localStorage progress for ${normalizedQuizId} from key ${key}`);
-                            quizProgress[normalizedQuizId] = localProgress;
-                        }
-                    } catch (keyError) {
-                        console.warn(`[QuizProgress] Error processing localStorage key ${key}:`, keyError);
-                    }
-                }
-            } catch (localScanError) {
-                console.warn('[QuizProgress] Error scanning localStorage for quiz progress:', localScanError);
-            }
+            // SERVER AS MASTER: Only use API data, never localStorage fallback
             
             return {
                 success: true,

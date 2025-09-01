@@ -77,30 +77,47 @@ router.post('/check-cache-invalidation', auth, async (req, res) => {
             });
         }
         
-        // Get cache invalidations from admin routes
-        const adminRoute = require('./admin.js');
-        const cacheInvalidations = adminRoute.getCacheInvalidations();
+        // Import the CacheInvalidation model
+        const CacheInvalidation = require('../models/cacheInvalidation.model');
         
-        // Check if there's a more recent invalidation than the client's last check
-        const invalidationKey = `${username}_${quizName.toLowerCase()}`;
-        const serverInvalidationTime = cacheInvalidations.get(invalidationKey);
+        // Check database for cache invalidation
+        const result = await CacheInvalidation.checkInvalidation(username, quizName, lastCheck);
         
-        const shouldInvalidate = serverInvalidationTime && 
-            (!lastCheck || serverInvalidationTime > parseInt(lastCheck));
-        
-        console.log(`[Cache Check] ${username}'s ${quizName}: shouldInvalidate=${shouldInvalidate}, serverTime=${serverInvalidationTime}, lastCheck=${lastCheck}`);
+        console.log(`[Cache Check] ${username}'s ${quizName}: shouldInvalidate=${result.shouldInvalidate}, serverTime=${result.invalidationTime}, lastCheck=${lastCheck}`);
         
         res.json({
             success: true,
-            shouldInvalidate,
-            invalidationTime: serverInvalidationTime || null
+            shouldInvalidate: result.shouldInvalidate,
+            invalidationTime: result.invalidationTime
         });
     } catch (error) {
         console.error('[Cache Check] Error checking cache invalidation:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to check cache invalidation'
-        });
+        
+        // Fallback to in-memory cache if database fails
+        try {
+            const adminRoute = require('./admin.js');
+            const cacheInvalidations = adminRoute.getCacheInvalidations();
+            
+            const invalidationKey = `${username}_${quizName.toLowerCase()}`;
+            const serverInvalidationTime = cacheInvalidations.get(invalidationKey);
+            
+            const shouldInvalidate = serverInvalidationTime && 
+                (!lastCheck || serverInvalidationTime > parseInt(lastCheck));
+            
+            console.log(`[Cache Check] Fallback: ${username}'s ${quizName}: shouldInvalidate=${shouldInvalidate}, serverTime=${serverInvalidationTime}, lastCheck=${lastCheck}`);
+            
+            res.json({
+                success: true,
+                shouldInvalidate,
+                invalidationTime: serverInvalidationTime || null
+            });
+        } catch (fallbackError) {
+            console.error('[Cache Check] Fallback also failed:', fallbackError);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to check cache invalidation'
+            });
+        }
     }
 });
 
@@ -290,59 +307,6 @@ router.get('/version', (req, res) => {
     }
 });
 
-// Cache invalidation check endpoint for cross-browser synchronization
-router.post('/check-cache-invalidation', auth, async (req, res) => {
-    try {
-        const { username, quizName, lastCheck } = req.body;
-        
-        if (!username || !quizName) {
-            return res.status(400).json({
-                success: false,
-                message: 'Username and quizName are required'
-            });
-        }
 
-        // Check if there's a cache invalidation record for this user/quiz combination
-        const invalidationKey = `${username}_${quizName}`;
-        
-        // Import the cache invalidations from the admin module
-        const { getCacheInvalidations } = require('./admin');
-        const cacheInvalidations = getCacheInvalidations();
-        
-        const lastCheckTime = parseInt(lastCheck) || 0;
-        const currentTime = Date.now();
-        
-        // Check if there's an invalidation record for this user/quiz that's newer than lastCheck
-        const invalidationTime = cacheInvalidations.get(invalidationKey);
-        
-        console.log(`[Cache Invalidation Check] Checking for ${invalidationKey}:`, {
-            invalidationTime,
-            lastCheckTime,
-            shouldInvalidate: invalidationTime && invalidationTime > lastCheckTime
-        });
-        
-        if (invalidationTime && invalidationTime > lastCheckTime) {
-            res.json({
-                success: true,
-                shouldInvalidate: true,
-                invalidationTime: invalidationTime,
-                message: 'Cache invalidation detected'
-            });
-        } else {
-            res.json({
-                success: true,
-                shouldInvalidate: false,
-                invalidationTime: currentTime,
-                message: 'No cache invalidation found'
-            });
-        }
-    } catch (error) {
-        console.error('[Cache Invalidation Check] Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to check cache invalidation'
-        });
-    }
-});
 
 module.exports = router; 

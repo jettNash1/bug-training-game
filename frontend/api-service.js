@@ -731,58 +731,10 @@ export class APIService {
             // Add logging to help diagnose issues
             console.log(`[API] Current user: ${username || 'unknown'}`);
             
-            // Fetch both from API and localStorage in parallel for efficiency
-            let localStorageData = null;
+            // SERVER AS MASTER: Only fetch from API, never fallback to localStorage
             let response = null;
-            let localStorageDataFound = false;
             
-            // Get localStorage data first as it's faster
-            if (username) {
-                // First try the new strict key format
-                const strictStorageKey = this.getUniqueQuizStorageKey(username, normalizedQuizName);
-                
-                // Then try fallback keys in order of preference
-                const storageKeys = [
-                    strictStorageKey, // New strict format key (preferred)
-                    `quiz_progress_${username}_${normalizedQuizName}`, // Old format 
-                    `quiz_progress_${username}_${normalizedQuizName}_backup` // Backup key
-                ];
-                
-                console.log(`[API] Will try these localStorage keys in order:`, storageKeys);
-                
-                for (const storageKey of storageKeys) {
-                try {
-                    const localData = localStorage.getItem(storageKey);
-                    if (localData) {
-                            const parsed = JSON.parse(localData);
-                            
-                            // Verify this data actually belongs to the correct quiz
-                            // This double-check prevents cross-contamination
-                            if (parsed && parsed.quizName && parsed.quizName !== normalizedQuizName) {
-                                console.warn(`[API] Skipping localStorage data from key ${storageKey} because it belongs to ${parsed.quizName}, not ${normalizedQuizName}`);
-                                continue;
-                            }
-                            
-                            // Verify data has some valid content
-                            if (parsed && (parsed.data || parsed)) {
-                                localStorageData = parsed;
-                                localStorageDataFound = true;
-                                console.log(`[API] Found progress in localStorage for ${normalizedQuizName} in key: ${storageKey}`);
-                                // Break after finding first valid data
-                                break;
-                            }
-                    }
-                } catch (e) {
-                        console.error(`[API] Error parsing localStorage data for key ${storageKey}:`, e);
-                    }
-                }
-                
-                if (!localStorageDataFound) {
-                    console.log(`[API] No localStorage data found for ${normalizedQuizName}`);
-                }
-            }
-            
-            // Now try to fetch from API
+            // Fetch from API only
             try {
                 console.log(`[API] Fetching progress from API for ${normalizedQuizName}`);
                 
@@ -813,22 +765,9 @@ export class APIService {
                 console.error(`[API] Error fetching progress from API for ${normalizedQuizName}:`, apiError);
             }
             
-            // If we have localStorage data but no valid API data, prefer localStorage
-            if (localStorageDataFound && (!response || !response.data || Object.keys(response.data || {}).length === 0)) {
-                console.log(`[API] Using localStorage data since API data is unavailable or empty for ${normalizedQuizName}`);
-                
-                const localProgressData = localStorageData.data || localStorageData;
-                response = {
-                    success: true,
-                    data: localProgressData
-                };
-            }
-            
-            // If no data found anywhere, return default
-            if ((!response || !response.data || Object.keys(response.data || {}).length === 0) && 
-                (!localStorageData || !(localStorageData.data || localStorageData))) {
-                
-                console.log(`[API] No progress found anywhere for quiz ${quizName}, returning default`);
+            // SERVER AS MASTER: If no valid API data, return fresh defaults
+            if (!response || !response.data || Object.keys(response.data || {}).length === 0) {
+                console.log(`[API] No valid progress found in server for quiz ${quizName}, returning fresh defaults`);
                 return {
                     success: true,
                     data: {
@@ -888,40 +827,7 @@ export class APIService {
                 experienceType: typeof progress.experience
             });
             
-            // Check localStorage data for better values if API data is suspicious
-            if ((progress.experience === 0 || progress.questionHistory.length === 0) && 
-                localStorageDataFound) {
-                
-                const localData = localStorageData.data || localStorageData;
-                
-                // Use localStorage experience if available and higher
-                if (progress.experience === 0 && localData.experience > 0) {
-                    console.log(`[API] Using localStorage experience ${localData.experience} instead of API value 0`);
-                    progress.experience = parseFloat(localData.experience) || 0;
-                }
-                
-                // Use localStorage question history if available and longer
-                if (progress.questionHistory.length === 0 && 
-                    Array.isArray(localData.questionHistory) && 
-                    localData.questionHistory.length > 0) {
-                    
-                    console.log(`[API] Using localStorage questionHistory (${localData.questionHistory.length} items) instead of empty API history`);
-                    progress.questionHistory = localData.questionHistory;
-                    
-                    // Also update related fields to be consistent
-                    progress.questionsAnswered = localData.questionHistory.length;
-                    progress.currentScenario = localData.questionHistory.length;
-                    
-                    if (localData.status && 
-                       (localData.status === 'completed' || 
-                        localData.status === 'passed' || 
-                        localData.status === 'failed')) {
-                        progress.status = localData.status;
-                    } else if (localData.questionHistory.length > 0) {
-                        progress.status = 'in-progress';
-                    }
-                }
-            }
+            // SERVER AS MASTER: Always use server data, never localStorage fallbacks
             
             // Enhanced corruption check: look for NaN or undefined in critical fields
             let hasCorruptedData = false;
@@ -947,19 +853,7 @@ export class APIService {
                 progress.currentScenario = progress.questionHistory.length;
             }
             
-            // If data was updated, save it back to localStorage for future consistency
-            if (username && (hasCorruptedData || progress.experience > 0 || progress.questionHistory.length > 0)) {
-                const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-                try {
-                    localStorage.setItem(storageKey, JSON.stringify({ 
-                        data: progress,
-                        timestamp: Date.now() 
-                    }));
-                    console.log(`[API] Updated localStorage with consistent progress data for ${normalizedQuizName}`);
-                } catch (e) {
-                    console.error(`[API] Error saving progress to localStorage:`, e);
-                }
-            }
+            // SERVER AS MASTER: Never save to localStorage, only return server data
             
             return {
                 success: true,
@@ -967,12 +861,11 @@ export class APIService {
             };
             
         } catch (error) {
-            console.error(`[API] Error getting quiz progress:`, error);
+            console.error(`[API] Error in getQuizProgress for ${quizName}:`, error);
             
-            // If all else fails, return an empty default state
+            // SERVER AS MASTER: On any error, return fresh defaults
             return {
                 success: true,
-                error: error.message,
                 data: {
                     experience: 0,
                     questionsAnswered: 0,
@@ -3003,12 +2896,7 @@ export class APIService {
                 lastUpdated: new Date().toISOString()
             };
 
-            // Save to localStorage with unique key
-            const storageKey = this.getUniqueQuizStorageKey(username, normalizedQuizName);
-            localStorage.setItem(storageKey, JSON.stringify(progressData));
-            console.log(`[API] Saved quiz progress for ${normalizedQuizName} with key: ${storageKey}`);
-
-            // Save to server
+            // SERVER AS MASTER: Only save to server, never to localStorage
             const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress`, {
                 method: 'POST',
                 headers: {
@@ -3025,8 +2913,7 @@ export class APIService {
                 return response;
             } else {
                 console.error(`[API] Failed to save quiz progress to server:`, response.message || 'Unknown error');
-                // Still return success since localStorage save worked
-                return { success: true, message: 'Saved to local storage only' };
+                return { success: false, message: response.message || 'Failed to save to server' };
             }
         } catch (error) {
             console.error(`[API] Error saving quiz progress for ${quizName}:`, error);

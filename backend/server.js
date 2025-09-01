@@ -359,6 +359,18 @@ app.get('*', (req, res) => {
     }
 });
 
+// Import CacheInvalidation model for cleanup
+const CacheInvalidation = require('./models/cacheInvalidation.model');
+
+// Setup cache invalidation cleanup job (runs every hour)
+setInterval(async () => {
+    try {
+        await CacheInvalidation.cleanupOldInvalidations();
+    } catch (error) {
+        console.error('Error in cache invalidation cleanup:', error);
+    }
+}, 60 * 60 * 1000); // Run every hour
+
 // Start server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
