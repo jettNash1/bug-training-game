@@ -203,8 +203,11 @@ export class Admin2Dashboard {
             
             console.log(`[Admin] Loading progress for ${this.users.length} users with max ${MAX_CONCURRENT_REQUESTS} concurrent requests`);
             
+            // Update progress
+            this.updateLoadingProgress(10, 'Starting user progress loading...');
+            
             // Process users in chunks to limit concurrent requests
-            const processUserChunk = async (userChunk) => {
+            const processUserChunk = async (userChunk, chunkIndex, totalChunks) => {
                 return Promise.all(
                     userChunk.map(async (user) => {
                         try {
@@ -223,27 +226,50 @@ export class Admin2Dashboard {
                 chunks.push(this.users.slice(i, i + MAX_CONCURRENT_REQUESTS));
             }
             
-            for (const chunk of chunks) {
-                await processUserChunk(chunk);
+            for (let i = 0; i < chunks.length; i++) {
+                const chunk = chunks[i];
+                const progress = Math.round(10 + (i / chunks.length) * 40); // 10% to 50%
+                this.updateLoadingProgress(progress, `Loading user progress... (${i + 1}/${chunks.length} chunks)`);
+                await processUserChunk(chunk, i, chunks.length);
             }
             
-            // Wait for enrichment to complete
+            // Wait for enrichment to complete with timeout protection
             console.log('[Admin] Waiting for quiz enrichment to complete...');
-            await new Promise(resolve => setTimeout(resolve, 3000)); // Increased wait time for enrichment
+            this.updateLoadingProgress(50, 'Enriching quiz data with question history...');
             
-            // Update statistics with the enriched data
-            console.log('[Admin] Updating statistics with enriched data...');
+            try {
+                // Set a maximum wait time for enrichment
+                const enrichmentTimeout = 15000; // 15 seconds max
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Enrichment timeout - proceeding with available data'));
+                    }, enrichmentTimeout);
+                    
+                    // Check if enrichment is still needed
+                    setTimeout(() => {
+                        clearTimeout(timeout);
+                        resolve();
+                    }, 5000); // Wait 5 seconds then proceed
+                });
+            } catch (error) {
+                console.warn('[Admin] Enrichment timeout or error:', error.message);
+            }
+            
+            // Update statistics with whatever data we have
+            console.log('[Admin] Updating statistics with available data...');
+            this.updateLoadingProgress(80, 'Calculating final statistics...');
             const stats = this.updateStatistics();
             this.updateStatisticsDisplay(stats);
             
             // Hide loading state first
+            this.updateLoadingProgress(100, 'Displaying user data...');
             this.hideLoadingState();
             
-            // Now show the user list with enriched data
-            console.log('[Admin] Displaying user list with enriched data...');
+            // Now show the user list with available data
+            console.log('[Admin] Displaying user list with available data...');
             await this.updateUsersList();
             
-            console.log("Completed loading progress for all users with enriched data");
+            console.log("Completed loading progress for all users");
             // Ensure hero stats are updated after all progress is loaded
             await this.updateDashboard();
         } catch (error) {
@@ -341,6 +367,7 @@ export class Admin2Dashboard {
             
             let enrichmentCount = 0;
             let successCount = 0;
+            let failedCount = 0;
             
             // Check each quiz type for completed quizzes without question history
             for (const quizType of this.quizTypes) {
@@ -359,7 +386,16 @@ export class Admin2Dashboard {
                     enrichmentCount++;
                     try {
                         console.log(`[Admin] Enriching ${username}/${quizType} with question history`);
-                        const response = await this.apiService.getQuizQuestions(username, quizType);
+                        
+                        // Add timeout protection to prevent hanging
+                        const timeoutPromise = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Enrichment timeout')), 10000)
+                        );
+                        
+                        const response = await Promise.race([
+                            this.apiService.getQuizQuestions(username, quizType),
+                            timeoutPromise
+                        ]);
                         
                         if (response.success && response.data && response.data.questionHistory) {
                             // Update the progress with question history
@@ -368,14 +404,16 @@ export class Admin2Dashboard {
                             console.log(`[Admin] Successfully enriched ${username}/${quizType} with question history (${response.data.questionHistory.length} questions)`);
                         } else {
                             console.warn(`[Admin] Failed to enrich ${username}/${quizType}: API response invalid`, response);
+                            failedCount++;
                         }
                     } catch (error) {
                         console.warn(`[Admin] Failed to enrich ${username}/${quizType} with question history:`, error);
+                        failedCount++;
                     }
                 }
             }
             
-            console.log(`[Admin] Enrichment complete for ${username}: ${successCount}/${enrichmentCount} quizzes enriched successfully`);
+            console.log(`[Admin] Enrichment complete for ${username}: ${successCount}/${enrichmentCount} quizzes enriched successfully, ${failedCount} failed`);
             
         } catch (error) {
             console.warn(`[Admin] Error enriching quiz progress for ${username}:`, error);
@@ -567,6 +605,12 @@ export class Admin2Dashboard {
                     <h3>Loading User Data</h3>
                     <p>Fetching quiz progress and calculating accurate statistics...</p>
                     <p class="loading-detail">This may take a few moments while we gather complete information for all users.</p>
+                    <div class="loading-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="loading-progress-fill"></div>
+                        </div>
+                        <p class="progress-text" id="loading-progress-text">Initializing...</p>
+                    </div>
                 </div>
             `;
             
@@ -625,6 +669,32 @@ export class Admin2Dashboard {
                         color: #888;
                         font-style: italic;
                     }
+                    
+                    .loading-progress {
+                        margin-top: 1.5rem;
+                    }
+                    
+                    .progress-bar {
+                        width: 100%;
+                        height: 8px;
+                        background-color: #e9ecef;
+                        border-radius: 4px;
+                        overflow: hidden;
+                        margin-bottom: 0.5rem;
+                    }
+                    
+                    .progress-fill {
+                        height: 100%;
+                        background-color: #007bff;
+                        width: 0%;
+                        transition: width 0.3s ease;
+                    }
+                    
+                    .progress-text {
+                        font-size: 0.9rem;
+                        color: #666;
+                        margin: 0;
+                    }
                 `;
                 document.head.appendChild(style);
             }
@@ -636,6 +706,25 @@ export class Admin2Dashboard {
             console.log('[Admin] Loading state displayed');
         } catch (error) {
             console.error('[Admin] Error showing loading state:', error);
+        }
+    }
+    
+    /**
+     * Update loading progress
+     */
+    updateLoadingProgress(percent, text) {
+        try {
+            const progressFill = document.getElementById('loading-progress-fill');
+            const progressText = document.getElementById('loading-progress-text');
+            
+            if (progressFill) {
+                progressFill.style.width = `${percent}%`;
+            }
+            if (progressText) {
+                progressText.textContent = text;
+            }
+        } catch (error) {
+            console.error('[Admin] Error updating loading progress:', error);
         }
     }
     
@@ -966,6 +1055,12 @@ export class Admin2Dashboard {
         const loadingOverlay = document.getElementById('admin-loading-overlay');
         if (loadingOverlay) {
             console.log('[Admin] Still loading, skipping user card display');
+            return;
+        }
+        
+        // If we have users but no quiz types, show a message
+        if (!this.quizTypes || this.quizTypes.length === 0) {
+            container.innerHTML = '<div class="loading-message">Quiz types not loaded yet...</div>';
             return;
         }
 
