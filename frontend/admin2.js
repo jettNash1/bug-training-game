@@ -306,28 +306,36 @@ export class Admin2Dashboard {
                 
                 // PRIORITY 1: Use quiz results from server as single source of truth
                 if (result) {
-                    questionsAnswered = result.questionsAnswered || 0;
+                    questionsAnswered = result.questionsAnswered || 
+                                      result.questionHistory?.length || 0;
                     
-                    // Check if the quiz has a status field indicating pass/fail
-                    if (result.status === 'passed') {
+                    // Use the SAME logic as detailed view - prioritize question history
+                    const questionHistory = result.questionHistory;
+                    
+                    if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
+                        // Use the same logic as the detailed view - check if status is 'passed'
+                        const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
+                        const score = Math.round((correctAnswers / questionHistory.length) * 100);
+                        isPassed = score >= 70;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using result questionHistory - ${correctAnswers}/${questionHistory.length} = ${score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
+                    } else if (result.status === 'passed') {
                         isPassed = true;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using result status field - PASSED`);
                     } else if (result.status === 'failed') {
                         isPassed = false;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using result status field - FAILED`);
+                    } else if (result.score !== undefined) {
+                        // Use score if available
+                        isPassed = result.score >= 70;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using result score = ${result.score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
+                    } else if (result.scorePercentage !== undefined) {
+                        // Use score percentage if available
+                        isPassed = result.scorePercentage >= 70;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using result scorePercentage = ${result.scorePercentage}% (${isPassed ? 'PASSED' : 'FAILED'})`);
                     } else {
-                        // Fallback: calculate from question history if available
-                        if (result.questionHistory && result.questionHistory.length > 0) {
-                            const correctAnswers = result.questionHistory.filter(q => q.status === 'passed').length;
-                            isPassed = (correctAnswers / result.questionHistory.length) >= 0.7; // 70% threshold
-                        } else if (result.score !== undefined) {
-                            // Use score if available
-                            isPassed = result.score >= 70;
-                        } else if (result.scorePercentage !== undefined) {
-                            // Use score percentage if available
-                            isPassed = result.scorePercentage >= 70;
-                        }
+                        isPassed = false;
+                        console.log(`[Admin] ${user.username}/${quizType}: No reliable result data, defaulting to FAILED`);
                     }
-                    
-                    console.log(`[Admin] ${user.username}/${quizType}: Using quiz results - status: ${result.status}, isPassed: ${isPassed}, questionsAnswered: ${questionsAnswered}`);
                 } else if (progress) {
                     // PRIORITY 2: Fallback to progress data if no results available
                     questionsAnswered = progress.questionsAnswered || 
