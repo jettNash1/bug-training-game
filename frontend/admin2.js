@@ -1042,6 +1042,10 @@ export class Admin2Dashboard {
                 // Refresh badges user dropdown when badge section is activated
                 this.populateBadgesUserDropdown();
                 break;
+            case 'account-modifications-section':
+                // Initialize account modifications section
+                this.setupAccountModificationsSection();
+                break;
             case 'export-section':
                 // Initialize custom export when export section is activated
                 setTimeout(() => this.initializeCustomExport(), 300);
@@ -1646,9 +1650,413 @@ export class Admin2Dashboard {
         // Update average completion stat after users list is updated
         if (typeof updateAverageCompletionStat === 'function') {
             updateAverageCompletionStat(this);
+                }
+    }
+
+    /**
+     * Setup Account Modifications Section
+     */
+    async setupAccountModificationsSection() {
+        console.log('[Admin] Setting up Account Modifications section');
+        
+        // Populate the user list
+        await this.populateBulkUsersList();
+        
+        // Setup event listeners
+        this.setupBulkActionEventListeners();
+    }
+
+    /**
+     * Populate the bulk users list with checkboxes
+     */
+    async populateBulkUsersList() {
+        const container = document.getElementById('bulk-users-list');
+        if (!container) return;
+
+        try {
+            // Show loading
+            container.innerHTML = '<div class="loading-message">Loading users...</div>';
+
+            // Use existing users data or load fresh
+            let users = this.users;
+            if (!users || users.length === 0) {
+                const response = await this.apiService.getUsers();
+                if (response.success) {
+                    users = response.data;
+                } else {
+                    throw new Error('Failed to load users');
+                }
+            }
+
+            // Filter out admin users for safety
+            const safeUsers = users.filter(user => 
+                user.username.toLowerCase() !== 'admin' && 
+                !user.isAdmin
+            );
+
+            if (safeUsers.length === 0) {
+                container.innerHTML = '<div class="no-users">No users available for bulk operations</div>';
+                return;
+            }
+
+            // Generate user list HTML
+            const usersHTML = safeUsers.map(user => {
+                const stats = this.getUserStatsDisplay(user);
+                return `
+                    <div class="bulk-user-item" data-username="${user.username}">
+                        <div class="bulk-user-info">
+                            <input type="checkbox" class="bulk-user-checkbox" value="${user.username}" 
+                                   id="user-${user.username}" aria-label="Select ${user.username}">
+                            <div class="bulk-user-details">
+                                <div class="bulk-user-name">${user.username}</div>
+                                <div class="bulk-user-stats">${stats}</div>
+                            </div>
+                        </div>
+                        <div class="bulk-user-actions">
+                            <button class="action-button view-btn" onclick="window.adminDashboard.showUserDetails('${user.username}')">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = usersHTML;
+
+            // Update counter
+            this.updateSelectedCounter();
+
+        } catch (error) {
+            console.error('[Admin] Error loading bulk users list:', error);
+            container.innerHTML = '<div class="error-message">Failed to load users. Please try again.</div>';
         }
     }
-    
+
+    /**
+     * Get user stats for display in bulk list
+     */
+    getUserStatsDisplay(user) {
+        if (!user.quizProgress && !user.quizResults) {
+            return 'No quiz data';
+        }
+
+        const progressCount = user.quizProgress ? Object.keys(user.quizProgress).length : 0;
+        const resultsCount = user.quizResults ? user.quizResults.length : 0;
+        const completedCount = user.quizResults ? 
+            user.quizResults.filter(r => r.questionsAnswered >= 15).length : 0;
+
+        return `${completedCount} completed • ${progressCount} in progress • ${resultsCount} total results`;
+    }
+
+    /**
+     * Setup event listeners for bulk actions
+     */
+    setupBulkActionEventListeners() {
+        // Select all checkbox
+        const selectAllCheckbox = document.getElementById('select-all-users');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', (e) => {
+                this.handleSelectAll(e.target.checked);
+            });
+        }
+
+        // Individual user checkboxes
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('bulk-user-checkbox')) {
+                this.handleUserSelection(e.target);
+            }
+        });
+
+        // Search functionality
+        const searchInput = document.getElementById('bulk-user-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.filterBulkUsers(e.target.value);
+            });
+        }
+
+        // Bulk action buttons
+        const resetButton = document.getElementById('bulk-reset-progress');
+        if (resetButton) {
+            resetButton.addEventListener('click', () => {
+                this.handleBulkResetProgress();
+            });
+        }
+
+        const deleteButton = document.getElementById('bulk-delete-accounts');
+        if (deleteButton) {
+            deleteButton.addEventListener('click', () => {
+                this.handleBulkDeleteAccounts();
+            });
+        }
+    }
+
+    /**
+     * Handle select all checkbox
+     */
+    handleSelectAll(checked) {
+        const userCheckboxes = document.querySelectorAll('.bulk-user-checkbox:not([style*="display: none"])');
+        userCheckboxes.forEach(checkbox => {
+            checkbox.checked = checked;
+            this.updateUserItemSelection(checkbox);
+        });
+        this.updateSelectedCounter();
+        this.updateBulkActionButtons();
+    }
+
+    /**
+     * Handle individual user selection
+     */
+    handleUserSelection(checkbox) {
+        this.updateUserItemSelection(checkbox);
+        this.updateSelectedCounter();
+        this.updateBulkActionButtons();
+        
+        // Update select all checkbox state
+        const selectAllCheckbox = document.getElementById('select-all-users');
+        const allCheckboxes = document.querySelectorAll('.bulk-user-checkbox:not([style*="display: none"])');
+        const checkedCheckboxes = document.querySelectorAll('.bulk-user-checkbox:checked:not([style*="display: none"])');
+        
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = allCheckboxes.length > 0 && checkedCheckboxes.length === allCheckboxes.length;
+            selectAllCheckbox.indeterminate = checkedCheckboxes.length > 0 && checkedCheckboxes.length < allCheckboxes.length;
+        }
+    }
+
+    /**
+     * Update user item selection visual state
+     */
+    updateUserItemSelection(checkbox) {
+        const userItem = checkbox.closest('.bulk-user-item');
+        if (userItem) {
+            userItem.classList.toggle('selected', checkbox.checked);
+        }
+    }
+
+    /**
+     * Update selected counter
+     */
+    updateSelectedCounter() {
+        const selectedCount = document.querySelectorAll('.bulk-user-checkbox:checked').length;
+        const counterElement = document.getElementById('selected-count');
+        if (counterElement) {
+            counterElement.textContent = `${selectedCount} user${selectedCount !== 1 ? 's' : ''} selected`;
+        }
+    }
+
+    /**
+     * Update bulk action button states
+     */
+    updateBulkActionButtons() {
+        const selectedCount = document.querySelectorAll('.bulk-user-checkbox:checked').length;
+        const hasSelection = selectedCount > 0;
+        
+        const resetButton = document.getElementById('bulk-reset-progress');
+        const deleteButton = document.getElementById('bulk-delete-accounts');
+        
+        if (resetButton) {
+            resetButton.disabled = !hasSelection;
+        }
+        if (deleteButton) {
+            deleteButton.disabled = !hasSelection;
+        }
+    }
+
+    /**
+     * Filter bulk users based on search input
+     */
+    filterBulkUsers(searchTerm) {
+        const userItems = document.querySelectorAll('.bulk-user-item');
+        const term = searchTerm.toLowerCase();
+
+        userItems.forEach(item => {
+            const username = item.querySelector('.bulk-user-name').textContent.toLowerCase();
+            const isVisible = username.includes(term);
+            item.style.display = isVisible ? '' : 'none';
+        });
+
+        // Update counters after filtering
+        this.updateSelectedCounter();
+        this.updateBulkActionButtons();
+    }
+
+    /**
+     * Handle bulk reset progress
+     */
+    async handleBulkResetProgress() {
+        const selectedUsers = Array.from(document.querySelectorAll('.bulk-user-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+
+        if (selectedUsers.length === 0) {
+            this.showError('No users selected');
+            return;
+        }
+
+        // Confirmation dialog
+        const confirmed = confirm(
+            `Are you sure you want to reset progress for ${selectedUsers.length} user(s)?\n\n` +
+            `This will:\n` +
+            `• Delete all quiz progress\n` +
+            `• Delete all quiz results\n` +
+            `• Reset all completed quizzes\n\n` +
+            `This action cannot be undone.`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            // Show loading overlay
+            this.showBulkActionLoading(`Resetting progress for ${selectedUsers.length} users...`);
+
+            const results = [];
+            for (const username of selectedUsers) {
+                try {
+                    console.log(`[Admin] Resetting progress for ${username}`);
+                    const result = await this.resetUserProgress(username);
+                    results.push({ username, success: true, message: result.message });
+                } catch (error) {
+                    console.error(`[Admin] Failed to reset progress for ${username}:`, error);
+                    results.push({ username, success: false, message: error.message });
+                }
+            }
+
+            this.hideBulkActionLoading();
+
+            // Show results
+            const successCount = results.filter(r => r.success).length;
+            const failCount = results.length - successCount;
+
+            if (failCount === 0) {
+                this.showInfo(`Successfully reset progress for all ${successCount} users`);
+            } else {
+                this.showError(`Reset complete: ${successCount} successful, ${failCount} failed`);
+            }
+
+            // Refresh the users list and clear selections
+            await this.populateBulkUsersList();
+            await this.updateUsersList(); // Refresh main dashboard
+
+        } catch (error) {
+            this.hideBulkActionLoading();
+            this.showError(`Bulk reset failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Handle bulk delete accounts
+     */
+    async handleBulkDeleteAccounts() {
+        const selectedUsers = Array.from(document.querySelectorAll('.bulk-user-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+
+        if (selectedUsers.length === 0) {
+            this.showError('No users selected');
+            return;
+        }
+
+        // Strong confirmation dialog
+        const confirmed = confirm(
+            `⚠️ DANGER: Are you sure you want to DELETE ${selectedUsers.length} user account(s)?\n\n` +
+            `Users to be deleted:\n${selectedUsers.join(', ')}\n\n` +
+            `This will PERMANENTLY:\n` +
+            `• Delete user accounts\n` +
+            `• Delete all their data\n` +
+            `• Remove all their progress\n\n` +
+            `THIS CANNOT BE UNDONE!\n\n` +
+            `Type 'DELETE' in the next prompt to confirm.`
+        );
+
+        if (!confirmed) return;
+
+        const deleteConfirmation = prompt(
+            `To confirm deletion of ${selectedUsers.length} accounts, type 'DELETE' (all caps):`
+        );
+
+        if (deleteConfirmation !== 'DELETE') {
+            this.showInfo('Account deletion cancelled');
+            return;
+        }
+
+        try {
+            // Show loading overlay
+            this.showBulkActionLoading(`Deleting ${selectedUsers.length} user accounts...`);
+
+            const results = [];
+            for (const username of selectedUsers) {
+                try {
+                    console.log(`[Admin] Deleting account for ${username}`);
+                    const response = await this.apiService.deleteUser(username);
+                    if (response.success) {
+                        results.push({ username, success: true, message: 'Account deleted' });
+                    } else {
+                        throw new Error(response.message || 'Delete failed');
+                    }
+                } catch (error) {
+                    console.error(`[Admin] Failed to delete account for ${username}:`, error);
+                    results.push({ username, success: false, message: error.message });
+                }
+            }
+
+            this.hideBulkActionLoading();
+
+            // Show results
+            const successCount = results.filter(r => r.success).length;
+            const failCount = results.length - successCount;
+
+            if (failCount === 0) {
+                this.showInfo(`Successfully deleted all ${successCount} user accounts`);
+            } else {
+                this.showError(`Deletion complete: ${successCount} successful, ${failCount} failed`);
+            }
+
+            // Refresh the users list and clear selections
+            await this.populateBulkUsersList();
+            await this.updateUsersList(); // Refresh main dashboard
+
+        } catch (error) {
+            this.hideBulkActionLoading();
+            this.showError(`Bulk deletion failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Show loading overlay for bulk actions
+     */
+    showBulkActionLoading(message) {
+        const overlay = document.createElement('div');
+        overlay.id = 'bulk-action-loading';
+        overlay.className = 'loading-modal-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: all;
+        `;
+        overlay.innerHTML = `
+            <div style="background: white; padding: 2rem; border-radius: 8px; text-align: center; max-width: 400px; margin: 100px auto; box-shadow: 0 4px 24px rgba(0,0,0,0.2);">
+                <div class="loading-spinner" style="margin-bottom: 1rem; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                <h3>${message}</h3>
+                <p>Please wait while the operation completes.</p>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    /**
+     * Hide bulk action loading overlay
+     */
+    hideBulkActionLoading() {
+        const overlay = document.getElementById('bulk-action-loading');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
     // Display timer settings in the settings section
     displayTimerSettings() {
         const container = document.getElementById('timer-settings-container');
