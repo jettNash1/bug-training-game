@@ -165,17 +165,26 @@ export class Admin2Dashboard {
                 // Store users data
                 this.users = response.data;
                 
-                // Load user progress progressively to get accurate data FIRST
-                console.log('[Admin] Loading user progress before displaying cards...');
-                await this.loadAllUserProgress();
-                
-                // Now display user cards with enriched data
-                console.log('[Admin] Displaying user cards with enriched data...');
+                // Display user cards immediately with basic API data (so users see something)
+                console.log('[Admin] Displaying user cards with basic API data...');
                 this.updateUsersList();
                 
-                // Update statistics with enriched data
+                // Update statistics with basic data
                 const stats = this.updateStatistics();
                 this.updateStatisticsDisplay(stats);
+                
+                // Load user progress progressively in the background to get accurate data
+                console.log('[Admin] Starting progressive loading in background...');
+                this.loadAllUserProgress().then(() => {
+                    console.log('[Admin] Progressive loading complete, updating cards with accurate data...');
+                    // Update the cards with the enriched data
+                    this.updateUsersList();
+                    // Update statistics with accurate data
+                    const finalStats = this.updateStatistics();
+                    this.updateStatisticsDisplay(finalStats);
+                }).catch(error => {
+                    console.error('[Admin] Progressive loading failed:', error);
+                });
                 
                 // Update badges section user dropdown
                 this.populateBadgesUserDropdown();
@@ -198,6 +207,9 @@ export class Admin2Dashboard {
     async loadAllUserProgress() {
         try {
             console.log('[Admin] Starting progressive user data loading...');
+            
+            // Show progress indicator
+            this.updateProgressIndicator(0, 'Starting user data enrichment...');
             
             // Load user progress progressively to get accurate data
             console.log('[Admin] Loading user progress progressively to get accurate data...');
@@ -1311,7 +1323,10 @@ export class Admin2Dashboard {
             return;
         }
         
-        // Note: We now show user cards immediately, so no loading state check needed
+        // Show loading message while processing users
+        if (this.users.length > 0) {
+            container.innerHTML = '<div class="loading-message">Processing user data...</div>';
+        }
         
         // If we have users but no quiz types, show a message
         if (!this.quizTypes || this.quizTypes.length === 0) {
