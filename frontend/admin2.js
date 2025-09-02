@@ -226,16 +226,16 @@ export class Admin2Dashboard {
             
             // Wait a bit for any async enrichment to complete
             console.log('[Admin] Waiting for quiz enrichment to complete...');
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Update statistics and user list after loading all progress
-            const stats = this.updateStatistics();
-            this.updateStatisticsDisplay(stats);
-            this.updateUsersList();
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Increased wait time
             
             // Force a refresh of the user list to ensure enriched data is displayed
             console.log('[Admin] Refreshing user list with enriched data...');
             await this.updateUsersList();
+            
+            // Update statistics again with the enriched data
+            console.log('[Admin] Updating statistics with enriched data...');
+            const stats = this.updateStatistics();
+            this.updateStatisticsDisplay(stats);
             
             // console.log("Completed loading progress for all users");
             // Ensure hero stats are updated after all progress is loaded
@@ -323,18 +323,31 @@ export class Admin2Dashboard {
      */
     async enrichQuizProgressWithQuestionHistory(username, user) {
         try {
-            if (!user.quizProgress || !this.quizTypes) return;
+            if (!user.quizProgress || !this.quizTypes) {
+                console.log(`[Admin] Cannot enrich ${username}: missing quizProgress (${!!user.quizProgress}) or quizTypes (${!!this.quizTypes})`);
+                return;
+            }
+            
+            console.log(`[Admin] Starting enrichment for ${username} with ${Object.keys(user.quizProgress).length} quiz progress entries`);
+            
+            let enrichmentCount = 0;
+            let successCount = 0;
             
             // Check each quiz type for completed quizzes without question history
             for (const quizType of this.quizTypes) {
                 const quizLower = quizType.toLowerCase();
                 const progress = user.quizProgress[quizLower];
                 
+                if (progress) {
+                    console.log(`[Admin] ${username}/${quizType}: questionsAnswered=${progress.questionsAnswered}, hasHistory=${!!progress.questionHistory}, historyLength=${progress.questionHistory?.length || 0}`);
+                }
+                
                 // Only fetch for completed quizzes that don't have question history
                 if (progress && 
                     progress.questionsAnswered >= 15 && 
                     (!progress.questionHistory || progress.questionHistory.length === 0)) {
                     
+                    enrichmentCount++;
                     try {
                         console.log(`[Admin] Enriching ${username}/${quizType} with question history`);
                         const response = await this.apiService.getQuizQuestions(username, quizType);
@@ -342,15 +355,50 @@ export class Admin2Dashboard {
                         if (response.success && response.data && response.data.questionHistory) {
                             // Update the progress with question history
                             progress.questionHistory = response.data.questionHistory;
-                            console.log(`[Admin] Successfully enriched ${username}/${quizType} with question history`);
+                            successCount++;
+                            console.log(`[Admin] Successfully enriched ${username}/${quizType} with question history (${response.data.questionHistory.length} questions)`);
+                        } else {
+                            console.warn(`[Admin] Failed to enrich ${username}/${quizType}: API response invalid`, response);
                         }
                     } catch (error) {
                         console.warn(`[Admin] Failed to enrich ${username}/${quizType} with question history:`, error);
                     }
                 }
             }
+            
+            console.log(`[Admin] Enrichment complete for ${username}: ${successCount}/${enrichmentCount} quizzes enriched successfully`);
+            
         } catch (error) {
             console.warn(`[Admin] Error enriching quiz progress for ${username}:`, error);
+        }
+    }
+    
+    /**
+     * Manually refresh a specific user's quiz data and statistics
+     */
+    async refreshUserQuizData(username) {
+        try {
+            console.log(`[Admin] Manually refreshing quiz data for ${username}`);
+            
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                console.warn(`[Admin] User ${username} not found for refresh`);
+                return;
+            }
+            
+            // Re-enrich the user's data
+            await this.enrichQuizProgressWithQuestionHistory(username, user);
+            
+            // Update the user's card
+            await this.updateUsersList();
+            
+            // Update statistics
+            const stats = this.updateStatistics();
+            this.updateStatisticsDisplay(stats);
+            
+            console.log(`[Admin] Manual refresh complete for ${username}`);
+        } catch (error) {
+            console.error(`[Admin] Error refreshing quiz data for ${username}:`, error);
         }
     }
     
@@ -780,6 +828,11 @@ export class Admin2Dashboard {
                             // Quiz progress data processed
                         }
                         
+                        // Debug logging for score calculation
+                        if (questionsAnswered >= 15) {
+                            console.log(`[Admin] ${username}/${quizType}: Completed (${questionsAnswered}/15), Score: ${scorePercentage}%, Status: ${scorePercentage >= 70 ? 'PASSED' : 'FAILED'}`);
+                        }
+                        
                         // Categorize quiz status
                         if (questionsAnswered >= 15) {
                             // Quiz is completed (15/15)
@@ -799,6 +852,16 @@ export class Admin2Dashboard {
                     }
                 });
             }
+            
+            // Log summary of quiz statistics for this user
+            console.log(`[Admin] ${user.username} Quiz Summary:`, {
+                assigned: quizzesAssigned,
+                completed: quizzesCompleted,
+                passed: quizzesPassed,
+                failed: quizzesFailed,
+                inProgress: quizzesInProgress,
+                notStarted: quizzesNotStarted
+            });
             
             // Use the same calculation as the details overlay for overall progress
             const overallProgress = this.calculateQuestionsAnsweredPercent(user);
