@@ -194,123 +194,236 @@ export class Admin2Dashboard {
     }
     
     async loadAllUserProgress() {
-        // Limit concurrent requests to avoid overwhelming the server
-        const MAX_CONCURRENT_REQUESTS = 3;
-        
         try {
-            // Show loading state
-            this.showLoadingState();
+            console.log('[Admin] Starting progressive user data loading...');
             
-            console.log(`[Admin] Loading progress for ${this.users.length} users with max ${MAX_CONCURRENT_REQUESTS} concurrent requests`);
-            
-            // Update progress
-            this.updateLoadingProgress(10, 'Starting user progress loading...');
-            
-            // Process users in chunks to limit concurrent requests
-            const processUserChunk = async (userChunk, chunkIndex, totalChunks) => {
-                return Promise.all(
-                    userChunk.map(async (user) => {
-                        try {
-                            await this.loadUserProgress(user.username);
-                            // console.log(`Successfully loaded progress for ${user.username}`);
-                        } catch (error) {
-                            console.warn(`Non-critical error loading progress for ${user.username}:`, error);
-                        }
-                    })
-                );
-            };
-            
-            // Process users in chunks
-            const chunks = [];
-            for (let i = 0; i < this.users.length; i += MAX_CONCURRENT_REQUESTS) {
-                chunks.push(this.users.slice(i, i + MAX_CONCURRENT_REQUESTS));
-            }
-            
-            // Add overall timeout protection for the entire loading process
-            const overallTimeout = 30000; // 30 seconds max for entire process
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => {
-                    reject(new Error('Overall loading timeout - proceeding with available data'));
-                }, overallTimeout);
-            });
-            
-            try {
-                for (let i = 0; i < chunks.length; i++) {
-                    const chunk = chunks[i];
-                    const progress = Math.round(10 + (i / chunks.length) * 40); // 10% to 50%
-                    this.updateLoadingProgress(progress, `Loading user progress... (${i + 1}/${chunks.length} chunks)`);
-                    await processUserChunk(chunk, i, chunks.length);
-                }
-            } catch (error) {
-                console.warn('[Admin] Loading process interrupted:', error.message);
-                this.updateLoadingProgress(60, 'Loading interrupted - proceeding with available data...');
-            }
-            
-            // Wait for enrichment to complete with timeout protection
-            console.log('[Admin] Waiting for quiz enrichment to complete...');
-            this.updateLoadingProgress(50, 'Enriching quiz data with question history...');
-            
-            try {
-                // Set a maximum wait time for enrichment
-                const enrichmentTimeout = 15000; // 15 seconds max
-                await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        reject(new Error('Enrichment timeout - proceeding with available data'));
-                    }, enrichmentTimeout);
-                    
-                    // Check if enrichment is still needed
-                    setTimeout(() => {
-                        clearTimeout(timeout);
-                        resolve();
-                    }, 5000); // Wait 5 seconds then proceed
-                });
-            } catch (error) {
-                console.warn('[Admin] Enrichment timeout or error:', error.message);
-            }
-            
-            // Check if we have any successful data loading
-            const usersWithProgress = this.users.filter(user => 
-                user.quizProgress && Object.keys(user.quizProgress).length > 0
-            );
-            
-            if (usersWithProgress.length === 0) {
-                console.warn('[Admin] No user progress data loaded - API may be down or CORS blocked');
-                this.updateLoadingProgress(90, 'API connection issues detected - showing available data...');
-            }
-            
-            // Update statistics with whatever data we have
-            console.log('[Admin] Updating statistics with available data...');
-            this.updateLoadingProgress(80, 'Calculating final statistics...');
-            const stats = this.updateStatistics();
-            this.updateStatisticsDisplay(stats);
-            
-            // Hide loading state first
-            this.updateLoadingProgress(100, 'Displaying user data...');
-            this.hideLoadingState();
-            
-            // Now show the user list with available data
-            console.log('[Admin] Displaying user list with available data...');
+            // Step 1: Show user cards immediately with basic data
+            console.log('[Admin] Step 1: Displaying user cards with basic data...');
             await this.updateUsersList();
             
-            console.log("Completed loading progress for all users");
-            // Ensure hero stats are updated after all progress is loaded
-            await this.updateDashboard();
+            // Step 2: Update statistics with whatever data we have
+            console.log('[Admin] Step 2: Updating initial statistics...');
+            const initialStats = this.updateStatistics();
+            this.updateStatisticsDisplay(initialStats);
+            
+            // Step 3: Load user progress one by one and update cards progressively
+            console.log('[Admin] Step 3: Loading user progress progressively...');
+            await this.loadUserProgressProgressive();
+            
+            // Step 4: Final statistics update
+            console.log('[Admin] Step 4: Final statistics update...');
+            const finalStats = this.updateStatistics();
+            this.updateStatisticsDisplay(finalStats);
+            
+            console.log('[Admin] Progressive loading complete');
             
         } catch (error) {
-            console.error('[Admin] Critical error in loadAllUserProgress:', error);
-            this.updateLoadingProgress(100, 'Error occurred - showing available data...');
-            
-            // Still try to update the UI with whatever data we have
+            console.error('[Admin] Error in progressive loading:', error);
+            // Even on error, we should have basic user cards displayed
+        }
+    }
+    
+    /**
+     * Load user progress one by one and update cards progressively
+     */
+    async loadUserProgressProgressive() {
+        const users = [...this.users]; // Copy array to avoid modification issues
+        
+        for (let i = 0; i < users.length; i++) {
+            const user = users[i];
             try {
-                const stats = this.updateStatistics();
-                this.updateStatisticsDisplay(stats);
-                this.updateUsersList();
-            } catch (uiError) {
-                console.error('Failed to update UI after error:', uiError);
+                console.log(`[Admin] Loading progress for user ${i + 1}/${users.length}: ${user.username}`);
+                
+                // Load progress for this user
+                await this.loadUserProgress(user.username);
+                
+                // Immediately update this user's card with new data
+                await this.updateSingleUserCard(user.username);
+                
+                // Update progress indicator
+                const progress = Math.round((i + 1) / users.length * 100);
+                this.updateProgressIndicator(progress, `Updated ${i + 1}/${users.length} users`);
+                
+                // Small delay to avoid overwhelming the API
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+            } catch (error) {
+                console.warn(`[Admin] Failed to load progress for ${user.username}:`, error);
+                // Continue with next user
             }
-        } finally {
-            // Always hide loading state, even if errors occurred
-            this.hideLoadingState();
+        }
+    }
+    
+    /**
+     * Update a single user's card with their latest data
+     */
+    async updateSingleUserCard(username) {
+        try {
+            const user = this.users.find(u => u.username === username);
+            if (!user) return;
+            
+            // Find the user's card in the DOM
+            const userCard = document.querySelector(`[data-username="${username}"]`);
+            if (!userCard) return;
+            
+            // Recalculate statistics for this user
+            const stats = this.calculateUserQuizStats(user);
+            
+            // Update the card's data attributes
+            userCard.setAttribute('data-passed', stats.passed.toString());
+            userCard.setAttribute('data-failed', stats.failed.toString());
+            userCard.setAttribute('data-completed', stats.completed.toString());
+            userCard.setAttribute('data-in-progress', stats.inProgress.toString());
+            userCard.setAttribute('data-not-started', stats.notStarted.toString());
+            
+            // Update the displayed values in the card
+            this.updateUserCardDisplay(userCard, stats);
+            
+            console.log(`[Admin] Updated card for ${username}:`, stats);
+            
+        } catch (error) {
+            console.warn(`[Admin] Error updating card for ${username}:`, error);
+        }
+    }
+    
+    /**
+     * Calculate quiz statistics for a single user
+     */
+    calculateUserQuizStats(user) {
+        const hiddenQuizzes = user.hiddenQuizzes || [];
+        const visibleQuizzes = this.quizTypes ? this.quizTypes.filter(quizType => {
+            const quizLower = quizType.toLowerCase();
+            return !hiddenQuizzes.includes(quizLower);
+        }) : [];
+        
+        let quizzesAssigned = visibleQuizzes.length;
+        let quizzesCompleted = 0;
+        let quizzesPassed = 0;
+        let quizzesFailed = 0;
+        let quizzesInProgress = 0;
+        let quizzesNotStarted = 0;
+        
+        visibleQuizzes.forEach(quizType => {
+            if (typeof quizType === 'string') {
+                const quizLower = quizType.toLowerCase();
+                const progress = user.quizProgress?.[quizLower];
+                const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                
+                let questionsAnswered = 0;
+                let scorePercentage = 0;
+                
+                if (result) {
+                    questionsAnswered = result.questionsAnswered || 0;
+                    scorePercentage = result.score || 0;
+                } else if (progress) {
+                    questionsAnswered = progress.questionsAnswered || 
+                                      (progress.questionHistory ? progress.questionHistory.length : 0);
+                    
+                    if (progress.questionHistory && progress.questionHistory.length > 0) {
+                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                        scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
+                    } else if (progress.scorePercentage !== undefined) {
+                        scorePercentage = progress.scorePercentage;
+                    } else if (progress.score !== undefined) {
+                        scorePercentage = progress.score;
+                    } else if (progress.correctAnswers !== undefined && questionsAnswered > 0) {
+                        scorePercentage = Math.round((progress.correctAnswers / questionsAnswered) * 100);
+                    } else if (progress.experience !== undefined && questionsAnswered >= 15) {
+                        const normalizedExperience = Math.max(-150, Math.min(300, progress.experience));
+                        scorePercentage = Math.max(0, Math.min(100, Math.round(((normalizedExperience + 150) / 450) * 100)));
+                    } else {
+                        scorePercentage = 0;
+                    }
+                }
+                
+                if (questionsAnswered >= 15) {
+                    quizzesCompleted++;
+                    if (scorePercentage >= 70) {
+                        quizzesPassed++;
+                    } else {
+                        quizzesFailed++;
+                    }
+                } else if (questionsAnswered > 0) {
+                    quizzesInProgress++;
+                } else {
+                    quizzesNotStarted++;
+                }
+            }
+        });
+        
+        return {
+            assigned: quizzesAssigned,
+            completed: quizzesCompleted,
+            passed: quizzesPassed,
+            failed: quizzesFailed,
+            inProgress: quizzesInProgress,
+            notStarted: quizzesNotStarted
+        };
+    }
+    
+    /**
+     * Update the visual display of a user card with new statistics
+     */
+    updateUserCardDisplay(userCard, stats) {
+        try {
+            // Update row view stats
+            const statValues = userCard.querySelectorAll('.stat-value');
+            if (statValues.length >= 6) {
+                statValues[2].textContent = stats.completed; // Completed
+                statValues[3].textContent = stats.passed;    // Passed
+                statValues[4].textContent = stats.failed;    // Failed
+                statValues[5].textContent = stats.inProgress; // In Progress
+                statValues[6].textContent = stats.notStarted; // Not Started
+            }
+            
+            // Update card view stats (if they exist)
+            const cardStats = userCard.querySelectorAll('.stat-value');
+            cardStats.forEach(stat => {
+                const statType = stat.getAttribute('data-stat');
+                if (statType === 'completed') stat.textContent = stats.completed;
+                if (statType === 'passed') stat.textContent = stats.passed;
+                if (statType === 'failed') stat.textContent = stats.failed;
+                if (statType === 'in-progress') stat.textContent = stats.inProgress;
+                if (statType === 'not-started') stat.textContent = stats.notStarted;
+            });
+            
+        } catch (error) {
+            console.warn('[Admin] Error updating user card display:', error);
+        }
+    }
+    
+    /**
+     * Update progress indicator (simpler than full loading overlay)
+     */
+    updateProgressIndicator(percent, text) {
+        try {
+            // Create or update a simple progress bar at the top of the users list
+            let progressBar = document.getElementById('user-progress-indicator');
+            if (!progressBar) {
+                progressBar = document.createElement('div');
+                progressBar.id = 'user-progress-indicator';
+                progressBar.className = 'user-progress-indicator';
+                progressBar.innerHTML = `
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <p class="progress-text" id="progress-text">${text}</p>
+                `;
+                
+                const usersList = document.getElementById('usersList');
+                if (usersList) {
+                    usersList.insertBefore(progressBar, usersList.firstChild);
+                }
+            }
+            
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            
+            if (progressFill) progressFill.style.width = `${percent}%`;
+            if (progressText) progressText.textContent = text;
+            
+        } catch (error) {
+            console.warn('[Admin] Error updating progress indicator:', error);
         }
     }
     
@@ -753,6 +866,38 @@ export class Admin2Dashboard {
                     .retry-btn:hover {
                         background: #0056b3;
                     }
+                    
+                    .user-progress-indicator {
+                        background: #f8f9fa;
+                        border: 1px solid #dee2e6;
+                        border-radius: 8px;
+                        padding: 1rem;
+                        margin-bottom: 1rem;
+                        text-align: center;
+                    }
+                    
+                    .user-progress-indicator .progress-bar {
+                        width: 100%;
+                        height: 8px;
+                        background-color: #e9ecef;
+                        border-radius: 4px;
+                        overflow: hidden;
+                        margin-bottom: 0.5rem;
+                    }
+                    
+                    .user-progress-indicator .progress-fill {
+                        height: 100%;
+                        background-color: #28a745;
+                        width: 0%;
+                        transition: width 0.3s ease;
+                    }
+                    
+                    .user-progress-indicator .progress-text {
+                        font-size: 0.9rem;
+                        color: #666;
+                        margin: 0;
+                        font-weight: 500;
+                    }
                 `;
                 document.head.appendChild(style);
             }
@@ -1109,12 +1254,7 @@ export class Admin2Dashboard {
             return;
         }
         
-        // Check if we're still in loading state - if so, don't show user cards yet
-        const loadingOverlay = document.getElementById('admin-loading-overlay');
-        if (loadingOverlay) {
-            console.log('[Admin] Still loading, skipping user card display');
-            return;
-        }
+        // Note: We now show user cards immediately, so no loading state check needed
         
         // If we have users but no quiz types, show a message
         if (!this.quizTypes || this.quizTypes.length === 0) {
