@@ -733,7 +733,7 @@ export class Admin2Dashboard {
                         if (questionsAnswered >= 15) {
                             // Quiz is completed (15/15)
                             quizzesCompleted++;
-                            if (scorePercentage >= 80) {
+                            if (scorePercentage >= 70) {
                                 quizzesPassed++;
                             } else {
                                 quizzesFailed++;
@@ -2230,7 +2230,7 @@ export class Admin2Dashboard {
                 }
                 
                 // Update the card styling based on the new score (matching index page colors)
-                if (calculatedScore >= 80) {
+                if (calculatedScore >= 70) {
                     quizCard.className = 'quiz-card completed-perfect';
                     quizCard.style.backgroundColor = '#C8E6C9'; // Light green (matches index page)
                 } else {
@@ -2402,10 +2402,10 @@ export class Admin2Dashboard {
                     if (questionsAnswered > 0) {
                         if (questionsAnswered === 15) {
                             // All questions completed
-                            if (score >= 80) {
-                                backgroundColor = '#C8E6C9'; // Light green for 80% or higher (matches index page)
+                            if (score >= 70) {
+                                backgroundColor = '#C8E6C9'; // Light green for 70% or higher (matches index page)
                             } else {
-                                backgroundColor = '#FFE0B2'; // Light orange for completed but less than 80% (matches index page)
+                                backgroundColor = '#FFE0B2'; // Light orange for completed but less than 70% (matches index page)
                             }
                         } else {
                             backgroundColor = '#FFF8E7'; // Light cream/yellow for in progress (matches index page)
@@ -2415,10 +2415,10 @@ export class Admin2Dashboard {
                     // Determine quiz status class
                     let statusClass = 'not-started';
                     if (questionsAnswered === 15) {
-                        if (score >= 80) {
-                            statusClass = 'completed-perfect'; // 80% or higher score
+                        if (score >= 70) {
+                            statusClass = 'completed-perfect'; // 70% or higher score
                         } else {
-                            statusClass = 'completed-partial'; // Completed but less than 80%
+                            statusClass = 'completed-partial'; // Completed but less than 70%
                         }
                     } else if (questionsAnswered > 0) {
                         statusClass = 'in-progress';
