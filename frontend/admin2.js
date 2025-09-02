@@ -165,26 +165,23 @@ export class Admin2Dashboard {
                 // Store users data
                 this.users = response.data;
                 
-                // Display user cards immediately with basic API data (so users see something)
-                console.log('[Admin] Displaying user cards with basic API data...');
+                // Show loading state while we fetch complete user data
+                console.log('[Admin] Loading complete user data before displaying cards...');
+                this.showLoadingState();
+                
+                // Load user progress progressively to get accurate data FIRST
+                await this.loadAllUserProgress();
+                
+                console.log('[Admin] Progressive loading complete, now displaying user cards with accurate data...');
+                // Now display user cards with complete and accurate data
                 this.updateUsersList();
                 
-                // Update statistics with basic data
-                const stats = this.updateStatistics();
-                this.updateStatisticsDisplay(stats);
+                // Update statistics with accurate data
+                const finalStats = this.updateStatistics();
+                this.updateStatisticsDisplay(finalStats);
                 
-                // Load user progress progressively in the background to get accurate data
-                console.log('[Admin] Starting progressive loading in background...');
-                this.loadAllUserProgress().then(() => {
-                    console.log('[Admin] Progressive loading complete, updating cards with accurate data...');
-                    // Update the cards with the enriched data
-                    this.updateUsersList();
-                    // Update statistics with accurate data
-                    const finalStats = this.updateStatistics();
-                    this.updateStatisticsDisplay(finalStats);
-                }).catch(error => {
-                    console.error('[Admin] Progressive loading failed:', error);
-                });
+                // Hide loading state
+                this.hideLoadingState();
                 
                 // Update badges section user dropdown
                 this.populateBadgesUserDropdown();
@@ -218,7 +215,23 @@ export class Admin2Dashboard {
             // Hide the progress indicator when complete
             this.hideProgressIndicator();
             
-            console.log('[Admin] Progressive loading complete - all users now have enriched data');
+            // ENHANCED: Verify that we actually got data for users
+            const usersWithData = this.users.filter(user => 
+                (user.quizProgress && Object.keys(user.quizProgress).length > 0) ||
+                (user.quizResults && user.quizResults.length > 0)
+            );
+            
+            console.log(`[Admin] Progressive loading complete - ${usersWithData.length}/${this.users.length} users now have enriched data`);
+            
+            // Log sample data for debugging
+            if (usersWithData.length > 0) {
+                const sampleUser = usersWithData[0];
+                console.log(`[Admin] Sample user data for ${sampleUser.username}:`, {
+                    quizProgressKeys: Object.keys(sampleUser.quizProgress || {}),
+                    quizResultsCount: sampleUser.quizResults ? sampleUser.quizResults.length : 0,
+                    sampleQuizResult: sampleUser.quizResults ? sampleUser.quizResults[0] : null
+                });
+            }
             
         } catch (error) {
             console.error('[Admin] Error in progressive loading:', error);
@@ -368,6 +381,26 @@ export class Admin2Dashboard {
         };
         
         console.log(`[Admin] ${user.username} Final Stats:`, summary);
+        
+        // ENHANCED: Log data source summary for debugging
+        const dataSourceSummary = {
+            totalQuizzes: visibleQuizzes.length,
+            quizzesWithResults: visibleQuizzes.filter(quizType => {
+                const quizLower = quizType.toLowerCase();
+                return user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+            }).length,
+            quizzesWithProgress: visibleQuizzes.filter(quizType => {
+                const quizLower = quizType.toLowerCase();
+                return user.quizProgress?.[quizLower];
+            }).length,
+            quizzesWithStatus: visibleQuizzes.filter(quizType => {
+                const quizLower = quizType.toLowerCase();
+                const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                return result && result.status;
+            }).length
+        };
+        
+        console.log(`[Admin] ${user.username} Data Source Summary:`, dataSourceSummary);
         
         return summary;
     }
@@ -1009,6 +1042,20 @@ export class Admin2Dashboard {
             // Update statistics with empty data
             const stats = this.updateStatistics([]);
             this.updateStatisticsDisplay(stats);
+            return;
+        }
+        
+        // ENHANCED: Verify that we have enriched user data before proceeding
+        const usersWithData = this.users.filter(user => 
+            (user.quizProgress && Object.keys(user.quizProgress).length > 0) ||
+            (user.quizResults && user.quizResults.length > 0)
+        );
+        
+        console.log(`[Admin] updateUsersList called with ${usersWithData.length}/${this.users.length} users having enriched data`);
+        
+        if (usersWithData.length === 0) {
+            console.warn('[Admin] No users have enriched data yet - progressive loading may not be complete');
+            container.innerHTML = '<div class="loading-message">Loading user data...</div>';
             return;
         }
         
