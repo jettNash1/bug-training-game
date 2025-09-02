@@ -165,15 +165,17 @@ export class Admin2Dashboard {
                 // Store users data
                 this.users = response.data;
                 
-                // Display user cards immediately with API data (so users see something)
+                // Load user progress progressively to get accurate data FIRST
+                console.log('[Admin] Loading user progress before displaying cards...');
+                await this.loadAllUserProgress();
+                
+                // Now display user cards with enriched data
+                console.log('[Admin] Displaying user cards with enriched data...');
                 this.updateUsersList();
                 
-                // Update statistics with API data
+                // Update statistics with enriched data
                 const stats = this.updateStatistics();
                 this.updateStatisticsDisplay(stats);
-                
-                // Load user progress progressively to get accurate data (this will update the cards)
-                this.loadAllUserProgress(); // Don't await - let it run in background
                 
                 // Update badges section user dropdown
                 this.populateBadgesUserDropdown();
@@ -197,24 +199,19 @@ export class Admin2Dashboard {
         try {
             console.log('[Admin] Starting progressive user data loading...');
             
-            // Step 1: Load user progress progressively to get accurate data
-            console.log('[Admin] Step 1: Loading user progress progressively to get accurate data...');
+            // Load user progress progressively to get accurate data
+            console.log('[Admin] Loading user progress progressively to get accurate data...');
             await this.loadUserProgressProgressive();
             
-            // Step 2: Update existing user cards with accurate data (don't regenerate them)
-            console.log('[Admin] Step 2: Updating existing user cards with accurate data...');
-            await this.updateExistingUserCards();
+            // Hide the progress indicator when complete
+            this.hideProgressIndicator();
             
-            // Step 3: Update statistics with accurate data
-            console.log('[Admin] Step 3: Updating statistics with accurate data...');
-            const finalStats = this.updateStatistics();
-            this.updateStatisticsDisplay(finalStats);
-            
-            console.log('[Admin] Progressive loading complete - cards now show accurate data');
+            console.log('[Admin] Progressive loading complete - all users now have enriched data');
             
         } catch (error) {
             console.error('[Admin] Error in progressive loading:', error);
-            // On error, don't regenerate cards - just log the error
+            // On error, hide the progress indicator
+            this.hideProgressIndicator();
         }
     }
     
@@ -249,88 +246,9 @@ export class Admin2Dashboard {
         }
     }
     
-    /**
-     * Update all existing user cards with accurate data without regenerating them
-     */
-    async updateExistingUserCards() {
-        try {
-            console.log('[Admin] Updating existing user cards with accurate data...');
-            
-            // Get all existing user cards from the DOM
-            const userCards = document.querySelectorAll('[data-username]');
-            console.log(`[Admin] Found ${userCards.length} existing user cards to update`);
-            
-            let updatedCount = 0;
-            
-            for (const userCard of userCards) {
-                const username = userCard.getAttribute('data-username');
-                const user = this.users.find(u => u.username === username);
-                
-                if (user) {
-                    try {
-                        // Recalculate statistics for this user with enriched data
-                        const stats = this.calculateUserQuizStats(user);
-                        
-                        // Update the card's data attributes
-                        userCard.setAttribute('data-passed', stats.passed.toString());
-                        userCard.setAttribute('data-failed', stats.failed.toString());
-                        userCard.setAttribute('data-completed', stats.completed.toString());
-                        userCard.setAttribute('data-in-progress', stats.inProgress.toString());
-                        userCard.setAttribute('data-not-started', stats.notStarted.toString());
-                        
-                        // Update the displayed values in the card
-                        this.updateUserCardDisplay(userCard, stats);
-                        
-                        // Update visual status (background colors)
-                        this.updateCardVisualStatus(userCard, stats.passed, stats.failed);
-                        
-                        updatedCount++;
-                        console.log(`[Admin] Updated card for ${username}:`, stats);
-                        
-                    } catch (error) {
-                        console.warn(`[Admin] Error updating card for ${username}:`, error);
-                    }
-                }
-            }
-            
-            console.log(`[Admin] Successfully updated ${updatedCount}/${userCards.length} user cards`);
-            
-        } catch (error) {
-            console.error('[Admin] Error updating existing user cards:', error);
-        }
-    }
+
     
-    /**
-     * Update a single user's card with their latest data
-     */
-    async updateSingleUserCard(username) {
-        try {
-            const user = this.users.find(u => u.username === username);
-            if (!user) return;
-            
-            // Find the user's card in the DOM
-            const userCard = document.querySelector(`[data-username="${username}"]`);
-            if (!userCard) return;
-            
-            // Recalculate statistics for this user
-            const stats = this.calculateUserQuizStats(user);
-            
-            // Update the card's data attributes
-            userCard.setAttribute('data-passed', stats.passed.toString());
-            userCard.setAttribute('data-failed', stats.failed.toString());
-            userCard.setAttribute('data-completed', stats.completed.toString());
-            userCard.setAttribute('data-in-progress', stats.inProgress.toString());
-            userCard.setAttribute('data-not-started', stats.notStarted.toString());
-            
-            // Update the displayed values in the card
-            this.updateUserCardDisplay(userCard, stats);
-            
-            console.log(`[Admin] Updated card for ${username}:`, stats);
-            
-        } catch (error) {
-            console.warn(`[Admin] Error updating card for ${username}:`, error);
-        }
-    }
+
     
     /**
      * Calculate quiz statistics for a single user
@@ -492,6 +410,16 @@ export class Admin2Dashboard {
             
         } catch (error) {
             console.warn('[Admin] Error updating progress indicator:', error);
+        }
+    }
+    
+    /**
+     * Hide the progress indicator
+     */
+    hideProgressIndicator() {
+        const existingIndicator = document.getElementById('user-progress-indicator');
+        if (existingIndicator) {
+            existingIndicator.remove();
         }
     }
     
@@ -657,205 +585,7 @@ export class Admin2Dashboard {
         }
     }
     
-    /**
-     * Refresh a specific user's card statistics after individual quiz scores are updated
-     */
-    async refreshUserCardStatistics(username) {
-        try {
-            console.log(`[Admin] Refreshing user card statistics for ${username}`);
-            
-            const user = this.users.find(u => u.username === username);
-            if (!user) {
-                console.warn(`[Admin] User ${username} not found for statistics refresh`);
-                return;
-            }
-            
-            // Find the user's card in the DOM
-            const userCard = document.querySelector(`[data-username="${username}"]`);
-            if (!userCard) {
-                console.warn(`[Admin] User card for ${username} not found in DOM`);
-                return;
-            }
-            
-            // Recalculate the user's quiz statistics
-            const hiddenQuizzes = user.hiddenQuizzes || [];
-            const visibleQuizzes = this.quizTypes ? this.quizTypes.filter(quizType => {
-                const quizLower = quizType.toLowerCase();
-                return !hiddenQuizzes.includes(quizLower);
-            }) : [];
-            
-            let quizzesAssigned = visibleQuizzes.length;
-            let quizzesCompleted = 0;
-            let quizzesPassed = 0;
-            let quizzesFailed = 0;
-            let quizzesInProgress = 0;
-            let quizzesNotStarted = 0;
-            
-            // Recalculate statistics with updated data
-            visibleQuizzes.forEach(quizType => {
-                if (typeof quizType === 'string') {
-                    const quizLower = quizType.toLowerCase();
-                    const progress = user.quizProgress?.[quizLower];
-                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                    
-                    let questionsAnswered = 0;
-                    let scorePercentage = 0;
-                    
-                    if (result) {
-                        questionsAnswered = result.questionsAnswered || 0;
-                        scorePercentage = result.score || 0;
-                    } else if (progress) {
-                        questionsAnswered = progress.questionsAnswered || 
-                                          (progress.questionHistory ? progress.questionHistory.length : 0);
-                        
-                        if (progress.questionHistory && progress.questionHistory.length > 0) {
-                            const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
-                            scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
-                        } else if (progress.scorePercentage !== undefined) {
-                            scorePercentage = progress.scorePercentage;
-                        } else if (progress.score !== undefined) {
-                            scorePercentage = progress.score;
-                        } else if (progress.correctAnswers !== undefined && questionsAnswered > 0) {
-                            scorePercentage = Math.round((progress.correctAnswers / questionsAnswered) * 100);
-                        } else if (progress.experience !== undefined && questionsAnswered >= 15) {
-                            const normalizedExperience = Math.max(-150, Math.min(300, progress.experience));
-                            scorePercentage = Math.max(0, Math.min(100, Math.round(((normalizedExperience + 150) / 450) * 100)));
-                        } else {
-                            scorePercentage = 0;
-                        }
-                    }
-                    
-                    if (questionsAnswered >= 15) {
-                        quizzesCompleted++;
-                        if (scorePercentage >= 70) {
-                            quizzesPassed++;
-                        } else {
-                            quizzesFailed++;
-                        }
-                    } else if (questionsAnswered > 0) {
-                        quizzesInProgress++;
-                    } else {
-                        quizzesNotStarted++;
-                    }
-                }
-            });
-            
-            // Update the user card's data attributes
-            userCard.setAttribute('data-passed', quizzesPassed.toString());
-            userCard.setAttribute('data-failed', quizzesFailed.toString());
-            userCard.setAttribute('data-completed', quizzesCompleted.toString());
-            userCard.setAttribute('data-in-progress', quizzesInProgress.toString());
-            userCard.setAttribute('data-not-started', quizzesNotStarted.toString());
-            
-            // Update the displayed statistics in the card - try multiple selector strategies
-            console.log(`[Admin] Updating DOM for ${username} card with stats:`, {
-                passed: quizzesPassed,
-                failed: quizzesFailed,
-                completed: quizzesCompleted,
-                inProgress: quizzesInProgress,
-                notStarted: quizzesNotStarted
-            });
-            
-            // Strategy 1: Look for elements with data-stat attributes
-            const passedElement = userCard.querySelector('.stat-value[data-stat="passed"]') || 
-                                userCard.querySelector('[data-stat="passed"]');
-            const failedElement = userCard.querySelector('.stat-value[data-stat="failed"]') || 
-                                userCard.querySelector('[data-stat="failed"]');
-            const completedElement = userCard.querySelector('.stat-value[data-stat="completed"]') || 
-                                   userCard.querySelector('[data-stat="completed"]');
-            const inProgressElement = userCard.querySelector('.stat-value[data-stat="in-progress"]') || 
-                                    userCard.querySelector('[data-stat="in-progress"]');
-            const notStartedElement = userCard.querySelector('.stat-value[data-stat="not-started"]') || 
-                                     userCard.querySelector('[data-stat="not-started"]');
-            
-            // Strategy 2: Look for elements by class and position
-            const allStatValues = userCard.querySelectorAll('.stat-value');
-            const allStats = userCard.querySelectorAll('.stat');
-            
-            console.log(`[Admin] Found ${allStatValues.length} stat-value elements and ${allStats.length} stat elements`);
-            
-            // Debug: Log the actual DOM structure
-            console.log(`[Admin] DOM structure for ${username} card:`, {
-                cardHTML: userCard.innerHTML.substring(0, 500) + '...',
-                statValues: Array.from(allStatValues).map(el => ({
-                    text: el.textContent,
-                    classes: el.className,
-                    dataStat: el.getAttribute('data-stat')
-                })),
-                stats: Array.from(allStats).map(el => ({
-                    text: el.textContent.substring(0, 100),
-                    classes: el.className
-                }))
-            });
-            
-            // Update elements if found by data-stat
-            if (passedElement) {
-                passedElement.textContent = quizzesPassed;
-                console.log(`[Admin] Updated passed element: ${quizzesPassed}`);
-            }
-            if (failedElement) {
-                failedElement.textContent = quizzesFailed;
-                console.log(`[Admin] Updated failed element: ${quizzesFailed}`);
-            }
-            if (completedElement) {
-                completedElement.textContent = quizzesCompleted;
-                console.log(`[Admin] Updated completed element: ${quizzesCompleted}`);
-            }
-            if (inProgressElement) {
-                inProgressElement.textContent = quizzesInProgress;
-                console.log(`[Admin] Updated in-progress element: ${quizzesInProgress}`);
-            }
-            if (notStartedElement) {
-                notStartedElement.textContent = quizzesNotStarted;
-                console.log(`[Admin] Updated not-started element: ${quizzesNotStarted}`);
-            }
-            
-            // Strategy 3: Update by position if data-stat didn't work
-            if (allStatValues.length >= 6) {
-                // Try to update by position in the stat-value array
-                allStatValues[2].textContent = quizzesCompleted; // Completed
-                allStatValues[3].textContent = quizzesPassed;    // Passed
-                allStatValues[4].textContent = quizzesFailed;    // Failed
-                allStatValues[5].textContent = quizzesInProgress; // In Progress
-                allStatValues[6].textContent = quizzesNotStarted; // Not Started
-                console.log(`[Admin] Updated stats by position for ${username}`);
-            }
-            
-            // Strategy 4: Update by looking for specific text patterns
-            const updateStatByLabel = (label, newValue) => {
-                const statElement = Array.from(allStats).find(stat => 
-                    stat.textContent.includes(label)
-                );
-                if (statElement) {
-                    const valueElement = statElement.querySelector('.stat-value');
-                    if (valueElement) {
-                        valueElement.textContent = newValue;
-                        console.log(`[Admin] Updated ${label} by label: ${newValue}`);
-                    }
-                }
-            };
-            
-            updateStatByLabel('Quizzes Passed:', quizzesPassed);
-            updateStatByLabel('Quizzes Failed:', quizzesFailed);
-            updateStatByLabel('Quizzes Completed:', quizzesCompleted);
-            updateStatByLabel('Quizzes In Progress:', quizzesInProgress);
-            updateStatByLabel('Quizzes Not Started:', quizzesNotStarted);
-            
-            // Force a visual refresh by updating the card's background colors if needed
-            this.updateCardVisualStatus(userCard, quizzesPassed, quizzesFailed);
-            
-            console.log(`[Admin] Updated ${username} card statistics:`, {
-                passed: quizzesPassed,
-                failed: quizzesFailed,
-                completed: quizzesCompleted,
-                inProgress: quizzesInProgress,
-                notStarted: quizzesNotStarted
-            });
-            
-        } catch (error) {
-            console.error(`[Admin] Error refreshing user card statistics for ${username}:`, error);
-        }
-    }
+
     
     /**
      * Update the user's data in memory with enriched quiz information
@@ -1050,19 +780,7 @@ export class Admin2Dashboard {
     /**
      * Refresh the overall dashboard statistics after individual user data is updated
      */
-    async refreshOverallStatistics() {
-        try {
-            console.log('[Admin] Refreshing overall dashboard statistics...');
-            
-            // Update statistics with current user data
-            const stats = this.updateStatistics();
-            this.updateStatisticsDisplay(stats);
-            
-            console.log('[Admin] Overall dashboard statistics refreshed');
-        } catch (error) {
-            console.error('[Admin] Error refreshing overall statistics:', error);
-        }
-    }
+
     
     /**
      * Show loading state while fetching and enriching user data
@@ -1671,106 +1389,21 @@ export class Admin2Dashboard {
         filteredUsers.forEach(user => {
             const lastActive = this.getLastActiveDate(user);
             
-            // Calculate number of visible quizzes for this user
-            const hiddenQuizzes = user.hiddenQuizzes || [];
-            const visibleQuizzes = this.quizTypes ? this.quizTypes.filter(quizType => {
-                const quizLower = quizType.toLowerCase();
-                return !hiddenQuizzes.includes(quizLower);
-            }) : [];
-            const assignedQuizzes = visibleQuizzes.length;
+            // Quiz statistics will be calculated by calculateUserQuizStats method
             
-            // Calculate comprehensive quiz statistics
-            let quizzesAssigned = assignedQuizzes;
-            let quizzesCompleted = 0;
-            let quizzesPassed = 0;
-            let quizzesFailed = 0;
-            let quizzesInProgress = 0;
-            let quizzesNotStarted = 0;
+            // Use the existing calculateUserQuizStats method for consistent calculations
+            const stats = this.calculateUserQuizStats(user);
             
-            if (visibleQuizzes && Array.isArray(visibleQuizzes)) {
-                // Removed debug logging
-                
-                visibleQuizzes.forEach(quizType => {
-                    if (typeof quizType === 'string') {
-                        const quizLower = quizType.toLowerCase();
-                        const progress = user.quizProgress?.[quizLower];
-                        const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                        
-                        // Progress and result checking logic
-                        
-                        // Get questions answered and score
-                        let questionsAnswered = 0;
-                        let scorePercentage = 0;
-                        
-                        // Prioritize quiz results over progress
-                        if (result) {
-                            questionsAnswered = result.questionsAnswered || 0;
-                            scorePercentage = result.score || 0;
-                            
-                            // Quiz result data processed
-                        } else if (progress) {
-                            questionsAnswered = progress.questionsAnswered || 
-                                              (progress.questionHistory ? progress.questionHistory.length : 0);
-                            
-                            // Calculate score from progress - prioritize question history for accuracy
-                            if (progress.questionHistory && progress.questionHistory.length > 0) {
-                                // Use question history for most accurate score calculation
-                                const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
-                                scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
-                            } else if (progress.scorePercentage !== undefined) {
-                                scorePercentage = progress.scorePercentage;
-                            } else if (progress.score !== undefined) {
-                                scorePercentage = progress.score;
-                            } else if (progress.correctAnswers !== undefined && questionsAnswered > 0) {
-                                // Fallback: use correctAnswers field if available
-                                scorePercentage = Math.round((progress.correctAnswers / questionsAnswered) * 100);
-                            } else if (progress.experience !== undefined && questionsAnswered >= 15) {
-                                // For completed quizzes without question history, estimate score from experience
-                                // Experience ranges from -150 to +300, convert to 0-100% scale
-                                // Formula: ((experience + 150) / 450) * 100
-                                const normalizedExperience = Math.max(-150, Math.min(300, progress.experience));
-                                scorePercentage = Math.max(0, Math.min(100, Math.round(((normalizedExperience + 150) / 450) * 100)));
-                            } else {
-                                // Default to 0 if no reliable score data available
-                                scorePercentage = 0;
-                            }
-                            // Quiz progress data processed
-                        }
-                        
-                        // Debug logging for score calculation
-                        if (questionsAnswered >= 15) {
-                            console.log(`[Admin] ${user.username}/${quizType}: Completed (${questionsAnswered}/15), Score: ${scorePercentage}%, Status: ${scorePercentage >= 70 ? 'PASSED' : 'FAILED'}`);
-                        }
-                        
-                        // Categorize quiz status
-                        if (questionsAnswered >= 15) {
-                            // Quiz is completed (15/15)
-                            quizzesCompleted++;
-                            if (scorePercentage >= 70) {
-                                quizzesPassed++;
-                            } else {
-                                quizzesFailed++;
-                            }
-                        } else if (questionsAnswered > 0) {
-                            // Quiz is in progress (>0 but <15)
-                            quizzesInProgress++;
-                        } else {
-                            // Quiz not started (0/15)
-                            quizzesNotStarted++;
-                        }
-                    }
-                });
-            }
+            // Extract the calculated values
+            const quizzesAssigned = stats.assigned;
+            const quizzesCompleted = stats.completed;
+            const quizzesPassed = stats.passed;
+            const quizzesFailed = stats.failed;
+            const quizzesInProgress = stats.inProgress;
+            const quizzesNotStarted = stats.notStarted;
             
-            // Log summary of quiz statistics for this user
-            console.log(`[Admin] ${user.username} Quiz Summary:`, {
-                assigned: quizzesAssigned,
-                completed: quizzesCompleted,
-                passed: quizzesPassed,
-                failed: quizzesFailed,
-                inProgress: quizzesInProgress,
-                notStarted: quizzesNotStarted
-            });
+            // Log the calculated statistics for debugging
+            console.log(`[Admin] ${user.username} Quiz Summary (from calculateUserQuizStats):`, stats);
             
             // Use the same calculation as the details overlay for overall progress
             const overallProgress = this.calculateQuestionsAnsweredPercent(user);
@@ -3263,11 +2896,8 @@ export class Admin2Dashboard {
                 
                 console.log(`[Admin] Updated quiz card for ${username}/${quizType} with score ${calculatedScore}%`);
                 
-                // After updating individual quiz scores, refresh the user's overall statistics
-                await this.refreshUserCardStatistics(username);
-                
-                // Also refresh the overall dashboard statistics
-                await this.refreshOverallStatistics();
+                // Note: User card statistics are not updated here to maintain consistency
+                // The main user card will continue to show the data from when the page loaded
                 
             } else {
                 console.warn(`[Admin] Failed to get question history from API for ${username}/${quizType}:`, response);
