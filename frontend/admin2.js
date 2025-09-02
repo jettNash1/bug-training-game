@@ -198,7 +198,10 @@ export class Admin2Dashboard {
         const MAX_CONCURRENT_REQUESTS = 3;
         
         try {
-            // console.log(`Loading progress for ${this.users.length} users with max ${MAX_CONCURRENT_REQUESTS} concurrent requests`);
+            // Show loading state
+            this.showLoadingState();
+            
+            console.log(`[Admin] Loading progress for ${this.users.length} users with max ${MAX_CONCURRENT_REQUESTS} concurrent requests`);
             
             // Process users in chunks to limit concurrent requests
             const processUserChunk = async (userChunk) => {
@@ -224,24 +227,30 @@ export class Admin2Dashboard {
                 await processUserChunk(chunk);
             }
             
-            // Wait a bit for any async enrichment to complete
+            // Wait for enrichment to complete
             console.log('[Admin] Waiting for quiz enrichment to complete...');
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Increased wait time
+            await new Promise(resolve => setTimeout(resolve, 3000)); // Increased wait time for enrichment
             
-            // Force a refresh of the user list to ensure enriched data is displayed
-            console.log('[Admin] Refreshing user list with enriched data...');
-            await this.updateUsersList();
-            
-            // Update statistics again with the enriched data
+            // Update statistics with the enriched data
             console.log('[Admin] Updating statistics with enriched data...');
             const stats = this.updateStatistics();
             this.updateStatisticsDisplay(stats);
             
-            // console.log("Completed loading progress for all users");
+            // Hide loading state first
+            this.hideLoadingState();
+            
+            // Now show the user list with enriched data
+            console.log('[Admin] Displaying user list with enriched data...');
+            await this.updateUsersList();
+            
+            console.log("Completed loading progress for all users with enriched data");
             // Ensure hero stats are updated after all progress is loaded
             await this.updateDashboard();
         } catch (error) {
             console.error('Error loading user progress:', error);
+            
+            // Hide loading state even on error
+            this.hideLoadingState();
             
             // Still try to update the UI with whatever data we have
             try {
@@ -380,14 +389,14 @@ export class Admin2Dashboard {
         try {
             console.log(`[Admin] Manually refreshing quiz data for ${username}`);
             
-            const user = this.users.find(u => u.username === username);
-            if (!user) {
+            const userIndex = this.users.findIndex(u => u.username === username);
+            if (userIndex === -1) {
                 console.warn(`[Admin] User ${username} not found for refresh`);
                 return;
             }
             
             // Re-enrich the user's data
-            await this.enrichQuizProgressWithQuestionHistory(username, user);
+            await this.enrichQuizProgressWithQuestionHistory(username, this.users[userIndex]);
             
             // Update the user's card
             await this.updateUsersList();
@@ -399,6 +408,249 @@ export class Admin2Dashboard {
             console.log(`[Admin] Manual refresh complete for ${username}`);
         } catch (error) {
             console.error(`[Admin] Error refreshing quiz data for ${username}:`, error);
+        }
+    }
+    
+    /**
+     * Refresh a specific user's card statistics after individual quiz scores are updated
+     */
+    async refreshUserCardStatistics(username) {
+        try {
+            console.log(`[Admin] Refreshing user card statistics for ${username}`);
+            
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                console.warn(`[Admin] User ${username} not found for statistics refresh`);
+                return;
+            }
+            
+            // Find the user's card in the DOM
+            const userCard = document.querySelector(`[data-username="${username}"]`);
+            if (!userCard) {
+                console.warn(`[Admin] User card for ${username} not found in DOM`);
+                return;
+            }
+            
+            // Recalculate the user's quiz statistics
+            const hiddenQuizzes = user.hiddenQuizzes || [];
+            const visibleQuizzes = this.quizTypes ? this.quizTypes.filter(quizType => {
+                const quizLower = quizType.toLowerCase();
+                return !hiddenQuizzes.includes(quizLower);
+            }) : [];
+            
+            let quizzesAssigned = visibleQuizzes.length;
+            let quizzesCompleted = 0;
+            let quizzesPassed = 0;
+            let quizzesFailed = 0;
+            let quizzesInProgress = 0;
+            let quizzesNotStarted = 0;
+            
+            // Recalculate statistics with updated data
+            visibleQuizzes.forEach(quizType => {
+                if (typeof quizType === 'string') {
+                    const quizLower = quizType.toLowerCase();
+                    const progress = user.quizProgress?.[quizLower];
+                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                    
+                    let questionsAnswered = 0;
+                    let scorePercentage = 0;
+                    
+                    if (result) {
+                        questionsAnswered = result.questionsAnswered || 0;
+                        scorePercentage = result.score || 0;
+                    } else if (progress) {
+                        questionsAnswered = progress.questionsAnswered || 
+                                          (progress.questionHistory ? progress.questionHistory.length : 0);
+                        
+                        if (progress.questionHistory && progress.questionHistory.length > 0) {
+                            const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                            scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
+                        } else if (progress.scorePercentage !== undefined) {
+                            scorePercentage = progress.scorePercentage;
+                        } else if (progress.score !== undefined) {
+                            scorePercentage = progress.score;
+                        } else if (progress.correctAnswers !== undefined && questionsAnswered > 0) {
+                            scorePercentage = Math.round((progress.correctAnswers / questionsAnswered) * 100);
+                        } else if (progress.experience !== undefined && questionsAnswered >= 15) {
+                            const normalizedExperience = Math.max(-150, Math.min(300, progress.experience));
+                            scorePercentage = Math.max(0, Math.min(100, Math.round(((normalizedExperience + 150) / 450) * 100)));
+                        } else {
+                            scorePercentage = 0;
+                        }
+                    }
+                    
+                    if (questionsAnswered >= 15) {
+                        quizzesCompleted++;
+                        if (scorePercentage >= 70) {
+                            quizzesPassed++;
+                        } else {
+                            quizzesFailed++;
+                        }
+                    } else if (questionsAnswered > 0) {
+                        quizzesInProgress++;
+                    } else {
+                        quizzesNotStarted++;
+                    }
+                }
+            });
+            
+            // Update the user card's data attributes
+            userCard.setAttribute('data-passed', quizzesPassed.toString());
+            userCard.setAttribute('data-failed', quizzesFailed.toString());
+            userCard.setAttribute('data-completed', quizzesCompleted.toString());
+            userCard.setAttribute('data-in-progress', quizzesInProgress.toString());
+            userCard.setAttribute('data-not-started', quizzesNotStarted.toString());
+            
+            // Update the displayed statistics in the card
+            const passedElement = userCard.querySelector('.stat-value[data-stat="passed"]') || 
+                                userCard.querySelector('.stat-value:nth-child(4)');
+            const failedElement = userCard.querySelector('.stat-value[data-stat="failed"]') || 
+                                userCard.querySelector('.stat-value:nth-child(5)');
+            const completedElement = userCard.querySelector('.stat-value[data-stat="completed"]') || 
+                                   userCard.querySelector('.stat-value:nth-child(3)');
+            const inProgressElement = userCard.querySelector('.stat-value[data-stat="in-progress"]') || 
+                                    userCard.querySelector('.stat-value:nth-child(6)');
+            const notStartedElement = userCard.querySelector('.stat-value[data-stat="not-started"]') || 
+                                     userCard.querySelector('.stat-value:nth-child(7)');
+            
+            if (passedElement) passedElement.textContent = quizzesPassed;
+            if (failedElement) failedElement.textContent = quizzesFailed;
+            if (completedElement) completedElement.textContent = quizzesCompleted;
+            if (inProgressElement) inProgressElement.textContent = quizzesInProgress;
+            if (notStartedElement) notStartedElement.textContent = quizzesNotStarted;
+            
+            console.log(`[Admin] Updated ${username} card statistics:`, {
+                passed: quizzesPassed,
+                failed: quizzesFailed,
+                completed: quizzesCompleted,
+                inProgress: quizzesInProgress,
+                notStarted: quizzesNotStarted
+            });
+            
+        } catch (error) {
+            console.error(`[Admin] Error refreshing user card statistics for ${username}:`, error);
+        }
+    }
+    
+    /**
+     * Refresh the overall dashboard statistics after individual user data is updated
+     */
+    async refreshOverallStatistics() {
+        try {
+            console.log('[Admin] Refreshing overall dashboard statistics...');
+            
+            // Update statistics with current user data
+            const stats = this.updateStatistics();
+            this.updateStatisticsDisplay(stats);
+            
+            console.log('[Admin] Overall dashboard statistics refreshed');
+        } catch (error) {
+            console.error('[Admin] Error refreshing overall statistics:', error);
+        }
+    }
+    
+    /**
+     * Show loading state while fetching and enriching user data
+     */
+    showLoadingState() {
+        try {
+            const usersList = document.getElementById('usersList');
+            if (!usersList) return;
+            
+            // Create loading overlay
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.id = 'admin-loading-overlay';
+            loadingOverlay.className = 'admin-loading-overlay';
+            loadingOverlay.innerHTML = `
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <h3>Loading User Data</h3>
+                    <p>Fetching quiz progress and calculating accurate statistics...</p>
+                    <p class="loading-detail">This may take a few moments while we gather complete information for all users.</p>
+                </div>
+            `;
+            
+            // Add loading styles
+            if (!document.getElementById('admin-loading-styles')) {
+                const style = document.createElement('style');
+                style.id = 'admin-loading-styles';
+                style.textContent = `
+                    .admin-loading-overlay {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(255, 255, 255, 0.95);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 1000;
+                        border-radius: 8px;
+                    }
+                    
+                    .loading-content {
+                        text-align: center;
+                        max-width: 400px;
+                        padding: 2rem;
+                    }
+                    
+                    .loading-spinner {
+                        width: 60px;
+                        height: 60px;
+                        border: 4px solid #f3f3f3;
+                        border-top: 4px solid #007bff;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                        margin: 0 auto 1.5rem;
+                    }
+                    
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                    
+                    .loading-content h3 {
+                        color: #333;
+                        margin-bottom: 1rem;
+                    }
+                    
+                    .loading-content p {
+                        color: #666;
+                        margin-bottom: 0.5rem;
+                    }
+                    
+                    .loading-detail {
+                        font-size: 0.9rem;
+                        color: #888;
+                        font-style: italic;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Show loading state
+            usersList.style.position = 'relative';
+            usersList.appendChild(loadingOverlay);
+            
+            console.log('[Admin] Loading state displayed');
+        } catch (error) {
+            console.error('[Admin] Error showing loading state:', error);
+        }
+    }
+    
+    /**
+     * Hide loading state and show user data
+     */
+    hideLoadingState() {
+        try {
+            const loadingOverlay = document.getElementById('admin-loading-overlay');
+            if (loadingOverlay) {
+                loadingOverlay.remove();
+                console.log('[Admin] Loading state hidden');
+            }
+        } catch (error) {
+            console.error('[Admin] Error hiding loading state:', error);
         }
     }
     
@@ -707,6 +959,13 @@ export class Admin2Dashboard {
             // Update statistics with empty data
             const stats = this.updateStatistics([]);
             this.updateStatisticsDisplay(stats);
+            return;
+        }
+        
+        // Check if we're still in loading state - if so, don't show user cards yet
+        const loadingOverlay = document.getElementById('admin-loading-overlay');
+        if (loadingOverlay) {
+            console.log('[Admin] Still loading, skipping user card display');
             return;
         }
 
@@ -2353,6 +2612,13 @@ export class Admin2Dashboard {
                 }
                 
                 console.log(`[Admin] Updated quiz card for ${username}/${quizType} with score ${calculatedScore}%`);
+                
+                // After updating individual quiz scores, refresh the user's overall statistics
+                await this.refreshUserCardStatistics(username);
+                
+                // Also refresh the overall dashboard statistics
+                await this.refreshOverallStatistics();
+                
             } else {
                 console.warn(`[Admin] Failed to get question history from API for ${username}/${quizType}:`, response);
             }
