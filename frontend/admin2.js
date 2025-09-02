@@ -197,29 +197,32 @@ export class Admin2Dashboard {
         try {
             console.log('[Admin] Starting progressive user data loading...');
             
-            // Step 1: Show user cards immediately with basic data
-            console.log('[Admin] Step 1: Displaying user cards with basic data...');
-            await this.updateUsersList();
+            // Show loading message to users
+            this.showLoadingMessage('Loading accurate quiz data for all users...');
             
-            // Step 2: Update statistics with whatever data we have
-            console.log('[Admin] Step 2: Updating initial statistics...');
-            const initialStats = this.updateStatistics();
-            this.updateStatisticsDisplay(initialStats);
-            
-            // Step 3: Load user progress one by one and update cards progressively
-            console.log('[Admin] Step 3: Loading user progress progressively...');
+            // Step 1: Load user progress progressively to get accurate data FIRST
+            console.log('[Admin] Step 1: Loading user progress progressively to get accurate data...');
             await this.loadUserProgressProgressive();
             
-            // Step 4: Final statistics update
-            console.log('[Admin] Step 4: Final statistics update...');
+            // Step 2: Display user cards ONLY after we have accurate data
+            console.log('[Admin] Step 2: Displaying user cards with accurate data...');
+            await this.updateUsersList();
+            
+            // Step 3: Update statistics with accurate data
+            console.log('[Admin] Step 3: Updating statistics with accurate data...');
             const finalStats = this.updateStatistics();
             this.updateStatisticsDisplay(finalStats);
             
-            console.log('[Admin] Progressive loading complete');
+            // Hide loading message
+            this.hideLoadingMessage();
+            
+            console.log('[Admin] Progressive loading complete - cards now show accurate data');
             
         } catch (error) {
             console.error('[Admin] Error in progressive loading:', error);
-            // Even on error, we should have basic user cards displayed
+            // On error, still try to show user cards with whatever data we have
+            this.hideLoadingMessage();
+            await this.updateUsersList();
         }
     }
     
@@ -234,26 +237,20 @@ export class Admin2Dashboard {
             try {
                 console.log(`[Admin] Loading progress for user ${i + 1}/${users.length}: ${user.username}`);
                 
-                // Load progress for this user
+                                // Load progress for this user
                 await this.loadUserProgress(user.username);
                 
                 // Enrich with question history for completed quizzes
                 await this.enrichQuizProgressWithQuestionHistory(user.username, user);
                 
-                // Update the user's data in memory with the enriched information
-                await this.updateUserDataInMemory(user.username);
-                
-                // Immediately update this user's card with new data
-                await this.updateSingleUserCard(user.username);
-                
                 // Update progress indicator
                 const progress = Math.round((i + 1) / users.length * 100);
-                this.updateProgressIndicator(progress, `Updated ${i + 1}/${users.length} users`);
+                this.updateProgressIndicator(progress, `Loading ${i + 1}/${users.length} users...`);
                 
                 // Small delay to avoid overwhelming the API
                 await new Promise(resolve => setTimeout(resolve, 200));
                 
-            } catch (error) {
+                        } catch (error) {
                 console.warn(`[Admin] Failed to load progress for ${user.username}:`, error);
                 // Continue with next user
             }
@@ -327,11 +324,7 @@ export class Admin2Dashboard {
                                       (progress.questionHistory ? progress.questionHistory.length : 0);
                     
                     // Priority order for score calculation (most accurate first)
-                    if (progress.hasAccurateScore && progress.scorePercentage !== undefined) {
-                        // Use the updated accurate score from memory
-                        scorePercentage = progress.scorePercentage;
-                        console.log(`[Admin] ${user.username}/${quizType}: Using updated accurate score from memory = ${scorePercentage}%`);
-                    } else if (progress.questionHistory && progress.questionHistory.length > 0) {
+                    if (progress.questionHistory && progress.questionHistory.length > 0) {
                         // Question history is the most accurate source
                         const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
                         scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
@@ -468,45 +461,41 @@ export class Admin2Dashboard {
             if (response.success) {
                 console.log(`Loaded progress for ${username}:`, response.data);
                 
-                            // Find the user and update their progress data
-            const userIndex = this.users.findIndex(u => u.username === username);
-            if (userIndex !== -1) {
-                // Verify data format
-                if (typeof response.data === 'object') {
-                    // Store quiz progress data
-                    this.users[userIndex].quizProgress = response.data.quizProgress || {};
+                // Find the user and update their progress data
+                const userIndex = this.users.findIndex(u => u.username === username);
+                if (userIndex !== -1) {
+                    // Verify data format
+                    if (typeof response.data === 'object') {
+                        // Store quiz progress data
+                        this.users[userIndex].quizProgress = response.data.quizProgress || {};
+                        
+                        // Store quiz results data if available
+                        if (response.data.quizResults && Array.isArray(response.data.quizResults)) {
+                            this.users[userIndex].quizResults = response.data.quizResults;
+                        }
+                        
+                        // If response has a message but was still successful, it's likely using fallback data
+                        if (response.message) {
+                            console.warn(`Note for ${username}: ${response.message}`);
+                        }
                     
-                    // Store quiz results data if available
-                    if (response.data.quizResults && Array.isArray(response.data.quizResults)) {
-                        this.users[userIndex].quizResults = response.data.quizResults;
-                    }
-                    
-                    // If response has a message but was still successful, it's likely using fallback data
-                    if (response.message) {
-                        console.warn(`Note for ${username}: ${response.message}`);
-                    }
-                    
-                    // Load enriched data from localStorage if available (this will override API data with more accurate scores)
-                    const hasEnrichedData = this.loadEnrichedDataFromStorage(username);
-                    if (hasEnrichedData) {
-                        console.log(`[Admin] ${username}: Using enriched data from localStorage instead of API data`);
-                    }
+
                     
                     // For completed quizzes without question history, try to fetch it
                     await this.enrichQuizProgressWithQuestionHistory(username, this.users[userIndex]);
-                    
-                    return response.data;
+                        
+                        return response.data;
+                    } else {
+                        console.warn(`Invalid progress data format for ${username}. Using empty data.`);
+                        // Instead of throwing, set empty data
+                        this.users[userIndex].quizProgress = {};
+                        this.users[userIndex].quizResults = [];
+                        return { quizProgress: {}, quizResults: [] };
+                    }
                 } else {
-                    console.warn(`Invalid progress data format for ${username}. Using empty data.`);
-                    // Instead of throwing, set empty data
-                    this.users[userIndex].quizProgress = {};
-                    this.users[userIndex].quizResults = [];
+                    console.warn(`User ${username} not found in users list. Skipping.`);
                     return { quizProgress: {}, quizResults: [] };
                 }
-            } else {
-                console.warn(`User ${username} not found in users list. Skipping.`);
-                return { quizProgress: {}, quizResults: [] };
-            }
             } else {
                 console.warn(`Could not load progress for ${username}: ${response.message || 'Unknown error'}`);
                 // If user exists, set empty data instead of throwing
@@ -974,6 +963,39 @@ export class Admin2Dashboard {
         } catch (error) {
             console.warn(`[Admin] Error loading enriched data for ${username}:`, error);
             return false;
+        }
+    }
+    
+    /**
+     * Show a loading message to users while fetching data
+     */
+    showLoadingMessage(message) {
+        // Remove any existing loading message
+        this.hideLoadingMessage();
+        
+        // Create loading message element
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'admin-loading-message';
+        loadingDiv.className = 'admin-loading-message';
+        loadingDiv.innerHTML = `
+            <div class="loading-spinner"></div>
+            <p>${message}</p>
+        `;
+        
+        // Insert at the top of the users list
+        const usersList = document.getElementById('users-list');
+        if (usersList) {
+            usersList.insertBefore(loadingDiv, usersList.firstChild);
+        }
+    }
+    
+    /**
+     * Hide the loading message
+     */
+    hideLoadingMessage() {
+        const existingMessage = document.getElementById('admin-loading-message');
+        if (existingMessage) {
+            existingMessage.remove();
         }
     }
     
@@ -7646,10 +7668,10 @@ export class Admin2Dashboard {
                         score = result.score;
                     } else {
                         // Calculate from question history first (most accurate)
-                        const questionHistory = result?.questionHistory || progress?.questionHistory;
-                        if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                            const correctAnswers = questionHistory.filter(q => q.isCorrect).length;
-                            score = Math.round((correctAnswers / questionHistory.length) * 100);
+                            const questionHistory = result?.questionHistory || progress?.questionHistory;
+                            if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
+                                const correctAnswers = questionHistory.filter(q => q.isCorrect).length;
+                                score = Math.round((correctAnswers / questionHistory.length) * 100);
                         } else {
                             // Fallback: calculate from experience if quiz is completed
                             const progress = user.quizProgress?.[quizId.toLowerCase()];
