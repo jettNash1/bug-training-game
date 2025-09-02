@@ -1928,6 +1928,12 @@ export class Admin2Dashboard {
         try {
             console.log('[Admin] Refreshing bulk users list...');
             
+            // Show loading in the container
+            const container = document.getElementById('bulk-users-list');
+            if (container) {
+                container.innerHTML = '<div class="loading-message">Refreshing users...</div>';
+            }
+            
             // Clear search input
             const searchInput = document.getElementById('bulk-user-search');
             if (searchInput) {
@@ -1937,8 +1943,14 @@ export class Admin2Dashboard {
             // Reload users from server
             const response = await this.apiService.getUsers();
             if (response.success) {
+                // Update both local users data and repopulate the bulk list
                 this.users = response.data;
                 await this.populateBulkUsersList();
+                
+                // Also refresh main dashboard if we're updating this.users
+                console.log('[Admin] Refreshing main dashboard with updated user data...');
+                await this.updateUsersList();
+                
                 this.showInfo('User list refreshed successfully');
             } else {
                 throw new Error('Failed to refresh user list');
@@ -1946,6 +1958,12 @@ export class Admin2Dashboard {
         } catch (error) {
             console.error('[Admin] Error refreshing bulk users list:', error);
             this.showError(`Failed to refresh user list: ${error.message}`);
+            
+            // Show error in container if refresh fails
+            const container = document.getElementById('bulk-users-list');
+            if (container) {
+                container.innerHTML = '<div class="error-message">Failed to refresh user list. Please try again.</div>';
+            }
         }
     }
 
@@ -2001,8 +2019,9 @@ export class Admin2Dashboard {
                 this.showError(`Reset complete: ${successCount} successful, ${failCount} failed`);
             }
 
-            // Refresh the users list and clear selections
-            await this.populateBulkUsersList();
+            // Refresh both the bulk list and main dashboard
+            console.log('[Admin] Refreshing user lists after reset operation...');
+            await this.refreshBulkUsersList(); // This will clear selections and refresh bulk list
             await this.updateUsersList(); // Refresh main dashboard
 
         } catch (error) {
@@ -2074,8 +2093,9 @@ export class Admin2Dashboard {
                 this.showError(`Deletion complete: ${successCount} successful, ${failCount} failed`);
             }
 
-            // Refresh the users list and clear selections
-            await this.populateBulkUsersList();
+            // Refresh both the bulk list and main dashboard
+            console.log('[Admin] Refreshing user lists after delete operation...');
+            await this.refreshBulkUsersList(); // This will clear selections and refresh bulk list
             await this.updateUsersList(); // Refresh main dashboard
 
         } catch (error) {
