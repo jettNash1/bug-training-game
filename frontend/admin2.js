@@ -226,11 +226,24 @@ export class Admin2Dashboard {
                 chunks.push(this.users.slice(i, i + MAX_CONCURRENT_REQUESTS));
             }
             
-            for (let i = 0; i < chunks.length; i++) {
-                const chunk = chunks[i];
-                const progress = Math.round(10 + (i / chunks.length) * 40); // 10% to 50%
-                this.updateLoadingProgress(progress, `Loading user progress... (${i + 1}/${chunks.length} chunks)`);
-                await processUserChunk(chunk, i, chunks.length);
+            // Add overall timeout protection for the entire loading process
+            const overallTimeout = 30000; // 30 seconds max for entire process
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => {
+                    reject(new Error('Overall loading timeout - proceeding with available data'));
+                }, overallTimeout);
+            });
+            
+            try {
+                for (let i = 0; i < chunks.length; i++) {
+                    const chunk = chunks[i];
+                    const progress = Math.round(10 + (i / chunks.length) * 40); // 10% to 50%
+                    this.updateLoadingProgress(progress, `Loading user progress... (${i + 1}/${chunks.length} chunks)`);
+                    await processUserChunk(chunk, i, chunks.length);
+                }
+            } catch (error) {
+                console.warn('[Admin] Loading process interrupted:', error.message);
+                this.updateLoadingProgress(60, 'Loading interrupted - proceeding with available data...');
             }
             
             // Wait for enrichment to complete with timeout protection
@@ -255,6 +268,16 @@ export class Admin2Dashboard {
                 console.warn('[Admin] Enrichment timeout or error:', error.message);
             }
             
+            // Check if we have any successful data loading
+            const usersWithProgress = this.users.filter(user => 
+                user.quizProgress && Object.keys(user.quizProgress).length > 0
+            );
+            
+            if (usersWithProgress.length === 0) {
+                console.warn('[Admin] No user progress data loaded - API may be down or CORS blocked');
+                this.updateLoadingProgress(90, 'API connection issues detected - showing available data...');
+            }
+            
             // Update statistics with whatever data we have
             console.log('[Admin] Updating statistics with available data...');
             this.updateLoadingProgress(80, 'Calculating final statistics...');
@@ -272,11 +295,10 @@ export class Admin2Dashboard {
             console.log("Completed loading progress for all users");
             // Ensure hero stats are updated after all progress is loaded
             await this.updateDashboard();
-        } catch (error) {
-            console.error('Error loading user progress:', error);
             
-            // Hide loading state even on error
-            this.hideLoadingState();
+        } catch (error) {
+            console.error('[Admin] Critical error in loadAllUserProgress:', error);
+            this.updateLoadingProgress(100, 'Error occurred - showing available data...');
             
             // Still try to update the UI with whatever data we have
             try {
@@ -286,6 +308,9 @@ export class Admin2Dashboard {
             } catch (uiError) {
                 console.error('Failed to update UI after error:', uiError);
             }
+        } finally {
+            // Always hide loading state, even if errors occurred
+            this.hideLoadingState();
         }
     }
     
@@ -695,6 +720,39 @@ export class Admin2Dashboard {
                         color: #666;
                         margin: 0;
                     }
+                    
+                    .api-error-message {
+                        text-align: center;
+                        padding: 2rem;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 8px;
+                        margin: 1rem 0;
+                    }
+                    
+                    .api-error-message h3 {
+                        color: #856404;
+                        margin-bottom: 1rem;
+                    }
+                    
+                    .api-error-message p {
+                        color: #856404;
+                        margin-bottom: 0.5rem;
+                    }
+                    
+                    .retry-btn {
+                        background: #007bff;
+                        color: white;
+                        border: none;
+                        padding: 0.5rem 1rem;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        margin-top: 1rem;
+                    }
+                    
+                    .retry-btn:hover {
+                        background: #0056b3;
+                    }
                 `;
                 document.head.appendChild(style);
             }
@@ -1063,6 +1121,24 @@ export class Admin2Dashboard {
             container.innerHTML = '<div class="loading-message">Quiz types not loaded yet...</div>';
             return;
         }
+        
+        // Check if we have any user progress data at all
+        const hasAnyProgressData = this.users.some(user => 
+            user.quizProgress && Object.keys(user.quizProgress).length > 0
+        );
+        
+        if (!hasAnyProgressData) {
+            console.warn('[Admin] No user progress data available - API may be down');
+            container.innerHTML = `
+                <div class="api-error-message">
+                    <h3>⚠️ API Connection Issue</h3>
+                    <p>The server appears to be down or unreachable. Showing basic user information only.</p>
+                    <p><strong>Error:</strong> CORS policy blocked or server returned 502 Bad Gateway</p>
+                    <button onclick="location.reload()" class="retry-btn">🔄 Retry Connection</button>
+                </div>
+            `;
+            return;
+        }
 
         // Get current filter values
         const searchQuery = document.getElementById('userSearch')?.value.toLowerCase() || '';
@@ -1184,7 +1260,7 @@ export class Admin2Dashboard {
                         
                         // Debug logging for score calculation
                         if (questionsAnswered >= 15) {
-                            console.log(`[Admin] ${username}/${quizType}: Completed (${questionsAnswered}/15), Score: ${scorePercentage}%, Status: ${scorePercentage >= 70 ? 'PASSED' : 'FAILED'}`);
+                            console.log(`[Admin] ${user.username}/${quizType}: Completed (${questionsAnswered}/15), Score: ${scorePercentage}%, Status: ${scorePercentage >= 70 ? 'PASSED' : 'FAILED'}`);
                         }
                         
                         // Categorize quiz status
