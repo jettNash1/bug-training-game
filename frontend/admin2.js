@@ -165,23 +165,26 @@ export class Admin2Dashboard {
                 // Store users data
                 this.users = response.data;
                 
-                // Show loading state while we fetch complete user data
-                console.log('[Admin] Loading complete user data before displaying cards...');
-                this.showLoadingState();
-                
-                // Load user progress progressively to get accurate data FIRST
-                await this.loadAllUserProgress();
-                
-                console.log('[Admin] Progressive loading complete, now displaying user cards with accurate data...');
-                // Now display user cards with complete and accurate data
+                // Display user cards immediately with basic API data (so users see something)
+                console.log('[Admin] Displaying user cards with basic API data...');
                 this.updateUsersList();
                 
-                // Update statistics with accurate data
-                const finalStats = this.updateStatistics();
-                this.updateStatisticsDisplay(finalStats);
+                // Update statistics with basic data
+                const stats = this.updateStatistics();
+                this.updateStatisticsDisplay(stats);
                 
-                // Hide loading state
-                this.hideLoadingState();
+                // Load user progress progressively in the background to get accurate data
+                console.log('[Admin] Starting progressive loading in background...');
+                this.loadAllUserProgress().then(() => {
+                    console.log('[Admin] Progressive loading complete, updating cards with accurate data...');
+                    // Update the cards with the enriched data
+                    this.updateUsersList();
+                    // Update statistics with accurate data
+                    const finalStats = this.updateStatistics();
+                    this.updateStatisticsDisplay(finalStats);
+                }).catch(error => {
+                    console.error('[Admin] Progressive loading failed:', error);
+                });
                 
                 // Update badges section user dropdown
                 this.populateBadgesUserDropdown();
@@ -1110,19 +1113,7 @@ export class Admin2Dashboard {
             return;
         }
         
-        // ENHANCED: Verify that we have enriched user data before proceeding
-        const usersWithData = this.users.filter(user => 
-            (user.quizProgress && Object.keys(user.quizProgress).length > 0) ||
-            (user.quizResults && user.quizResults.length > 0)
-        );
-        
-        console.log(`[Admin] updateUsersList called with ${usersWithData.length}/${this.users.length} users having enriched data`);
-        
-        if (usersWithData.length === 0) {
-            console.warn('[Admin] No users have enriched data yet - progressive loading may not be complete');
-            container.innerHTML = '<div class="loading-message">Loading user data...</div>';
-            return;
-        }
+
         
         // Show loading message while processing users
         if (this.users.length > 0) {
