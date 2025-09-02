@@ -1179,7 +1179,7 @@ export class Admin2Dashboard {
             style.id = 'users-loading-styles';
             style.textContent = `
                 .users-loading-overlay {
-                    position: absolute;
+                    position: fixed;
                     top: 0;
                     left: 0;
                     right: 0;
@@ -1188,8 +1188,8 @@ export class Admin2Dashboard {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    z-index: 1000;
-                    border-radius: 8px;
+                    z-index: 9999;
+                    border-radius: 0;
                 }
                 .loading-content {
                     text-align: center;
@@ -1216,11 +1216,8 @@ export class Admin2Dashboard {
             document.head.appendChild(style);
         }
         
-        const container = document.getElementById('usersList');
-        if (container) {
-            container.style.position = 'relative';
-            container.appendChild(overlay);
-        }
+        // Attach to body for full screen overlay
+        document.body.appendChild(overlay);
     }
 
     /**
@@ -1234,7 +1231,8 @@ export class Admin2Dashboard {
     }
     
     async updateUsersList() {
-        console.log('[Admin] updateUsersList() called');
+        const stackTrace = new Error().stack;
+        console.log('[Admin] updateUsersList() called from:', stackTrace.split('\n')[1]);
         const container = document.getElementById('usersList');
         if (!container) return;
 
@@ -1646,6 +1644,11 @@ export class Admin2Dashboard {
         
         // Hide loading overlay
         this.hideUsersLoadingOverlay();
+        
+        // Update average completion stat after users list is updated
+        if (typeof updateAverageCompletionStat === 'function') {
+            updateAverageCompletionStat(this);
+        }
     }
     
     // Display timer settings in the settings section
@@ -8089,16 +8092,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // ... existing code ...
-    // Add specific listener for updateUsersList completion
-    const originalUpdateUsersList = Admin2Dashboard.prototype.updateUsersList;
-    Admin2Dashboard.prototype.updateUsersList = async function() {
-        console.log('updateUsersList called, users:', this.users);
-        await originalUpdateUsersList.apply(this, arguments);
-        console.log("updateUsersList completed, forcing average score update");
-        // setTimeout(forceUpdateAverageScores, 100); // Removed undefined function call
-        updateAverageCompletionStat(this); // <-- Call here after users list is updated
-    };
+    // Note: Removed updateUsersList wrapper to prevent double loading
 
     // Remove the periodic update for average completion stat
     // setTimeout(updateAverageCompletionStat, 2000);
