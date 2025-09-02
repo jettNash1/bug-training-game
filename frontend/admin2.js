@@ -286,54 +286,67 @@ export class Admin2Dashboard {
                 const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
                 
                 let questionsAnswered = 0;
-                let scorePercentage = 0;
+                let isPassed = false;
                 
+                // PRIORITY 1: Use quiz results from server as single source of truth
                 if (result) {
-                    // Quiz results have the most accurate data
                     questionsAnswered = result.questionsAnswered || 0;
-                    scorePercentage = result.score || 0;
+                    
+                    // Check if the quiz has a status field indicating pass/fail
+                    if (result.status === 'passed') {
+                        isPassed = true;
+                    } else if (result.status === 'failed') {
+                        isPassed = false;
+                    } else {
+                        // Fallback: calculate from question history if available
+                        if (result.questionHistory && result.questionHistory.length > 0) {
+                            const correctAnswers = result.questionHistory.filter(q => q.status === 'passed').length;
+                            isPassed = (correctAnswers / result.questionHistory.length) >= 0.7; // 70% threshold
+                        } else if (result.score !== undefined) {
+                            // Use score if available
+                            isPassed = result.score >= 70;
+                        } else if (result.scorePercentage !== undefined) {
+                            // Use score percentage if available
+                            isPassed = result.scorePercentage >= 70;
+                        }
+                    }
+                    
+                    console.log(`[Admin] ${user.username}/${quizType}: Using quiz results - status: ${result.status}, isPassed: ${isPassed}, questionsAnswered: ${questionsAnswered}`);
                 } else if (progress) {
+                    // PRIORITY 2: Fallback to progress data if no results available
                     questionsAnswered = progress.questionsAnswered || 
                                       (progress.questionHistory ? progress.questionHistory.length : 0);
                     
-                    // Priority order for score calculation (most accurate first)
+                    // Try to determine pass/fail from question history if available
                     if (progress.questionHistory && progress.questionHistory.length > 0) {
-                        // Question history is the most accurate source
-                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
-                        scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
-                        console.log(`[Admin] ${user.username}/${quizType}: Using questionHistory - ${correctAnswers}/${progress.questionHistory.length} = ${scorePercentage}%`);
+                        const correctAnswers = progress.questionHistory.filter(q => q.status === 'passed').length;
+                        isPassed = (correctAnswers / progress.questionHistory.length) >= 0.7; // 70% threshold
+                        console.log(`[Admin] ${user.username}/${quizType}: Using progress questionHistory - ${correctAnswers}/${progress.questionHistory.length} = ${isPassed ? 'PASSED' : 'FAILED'}`);
                     } else if (progress.scorePercentage !== undefined) {
-                        // Direct score percentage
-                        scorePercentage = progress.scorePercentage;
-                        console.log(`[Admin] ${user.username}/${quizType}: Using scorePercentage = ${scorePercentage}%`);
+                        isPassed = progress.scorePercentage >= 70;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using progress scorePercentage = ${progress.scorePercentage}% (${isPassed ? 'PASSED' : 'FAILED'})`);
                     } else if (progress.score !== undefined) {
-                        // Direct score
-                        scorePercentage = progress.score;
-                        console.log(`[Admin] ${user.username}/${quizType}: Using score = ${scorePercentage}%`);
+                        isPassed = progress.score >= 70;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using progress score = ${progress.score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
                     } else if (progress.correctAnswers !== undefined && questionsAnswered > 0) {
-                        // Calculated from correct answers
-                        scorePercentage = Math.round((progress.correctAnswers / questionsAnswered) * 100);
-                        console.log(`[Admin] ${user.username}/${quizType}: Using correctAnswers - ${progress.correctAnswers}/${questionsAnswered} = ${scorePercentage}%`);
-                    } else if (progress.experience !== undefined && questionsAnswered >= 15) {
-                        // Experience field as last resort for completed quizzes
-                        const normalizedExperience = Math.max(-150, Math.min(300, progress.experience));
-                        scorePercentage = Math.max(0, Math.min(100, Math.round(((normalizedExperience + 150) / 450) * 100)));
-                        console.log(`[Admin] ${user.username}/${quizType}: Using experience fallback - ${progress.experience} → ${scorePercentage}%`);
+                        const scorePercentage = Math.round((progress.correctAnswers / questionsAnswered) * 100);
+                        isPassed = scorePercentage >= 70;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using progress correctAnswers - ${progress.correctAnswers}/${questionsAnswered} = ${scorePercentage}% (${isPassed ? 'PASSED' : 'FAILED'})`);
                     } else {
-                        // No reliable score data available
-                        scorePercentage = 0;
-                        console.log(`[Admin] ${user.username}/${quizType}: No reliable score data, defaulting to 0%`);
+                        // No reliable data available
+                        isPassed = false;
+                        console.log(`[Admin] ${user.username}/${quizType}: No reliable pass/fail data, defaulting to FAILED`);
                     }
                 }
                 
                 if (questionsAnswered >= 15) {
                     quizzesCompleted++;
-                    if (scorePercentage >= 70) {
+                    if (isPassed) {
                         quizzesPassed++;
-                        console.log(`[Admin] ${user.username}/${quizType}: PASSED (${scorePercentage}% >= 70%)`);
+                        console.log(`[Admin] ${user.username}/${quizType}: PASSED (${questionsAnswered}/15 questions)`);
                     } else {
                         quizzesFailed++;
-                        console.log(`[Admin] ${user.username}/${quizType}: FAILED (${scorePercentage}% < 70%)`);
+                        console.log(`[Admin] ${user.username}/${quizType}: FAILED (${questionsAnswered}/15 questions)`);
                     }
                 } else if (questionsAnswered > 0) {
                     quizzesInProgress++;
@@ -692,329 +705,6 @@ export class Admin2Dashboard {
     }
     }
     
-    /**
-     * Persist user data to localStorage so accurate scores survive page refreshes
-     */
-    persistUserDataToStorage(username) {
-        try {
-            const user = this.users.find(u => u.username === username);
-            if (!user) return;
-            
-            // Create a storage key for this user's enriched data
-            const storageKey = `admin_user_${username}_enriched_data`;
-            
-            // Store the enriched quiz progress data
-            const enrichedData = {
-                quizProgress: user.quizProgress,
-                quizResults: user.quizResults,
-                lastUpdated: new Date().toISOString(),
-                version: '1.0'
-            };
-            
-            localStorage.setItem(storageKey, JSON.stringify(enrichedData));
-            console.log(`[Admin] Persisted enriched data for ${username} to localStorage`);
-            
-        } catch (error) {
-            console.warn(`[Admin] Error persisting data for ${username}:`, error);
-        }
-    }
-    
-    /**
-     * Load enriched user data from localStorage if available
-     */
-    loadEnrichedDataFromStorage(username) {
-        try {
-            const storageKey = `admin_user_${username}_enriched_data`;
-            const storedData = localStorage.getItem(storageKey);
-            
-            if (storedData) {
-                const enrichedData = JSON.parse(storedData);
-                const user = this.users.find(u => u.username === username);
-                
-                if (user && enrichedData.quizProgress) {
-                    // Merge the enriched data with the user's current data
-                    user.quizProgress = { ...user.quizProgress, ...enrichedData.quizProgress };
-                    
-                    if (enrichedData.quizResults) {
-                        user.quizResults = enrichedData.quizResults;
-                    }
-                    
-                    console.log(`[Admin] Loaded enriched data for ${username} from localStorage`);
-                    return true;
-                }
-            }
-            
-            return false;
-        } catch (error) {
-            console.warn(`[Admin] Error loading enriched data for ${username}:`, error);
-            return false;
-        }
-    }
-    
-
-    
-    /**
-     * Update the visual status of a user card (background colors, etc.)
-     */
-    updateCardVisualStatus(userCard, passed, failed) {
-        try {
-            // Find and update the failed quizzes card background if there are failures
-            const failedCard = userCard.querySelector('.stat:has(.stat-value)') || 
-                              userCard.querySelector('.stat:nth-child(4)');
-            
-            if (failedCard && failed > 0) {
-                // Ensure failed card has red background
-                failedCard.style.backgroundColor = '#ffebee';
-                failedCard.style.borderColor = '#f44336';
-            } else if (failedCard && failed === 0) {
-                // Remove red background if no failures
-                failedCard.style.backgroundColor = '';
-                failedCard.style.borderColor = '';
-            }
-            
-            // Find and update the passed quizzes card background
-            const passedCard = userCard.querySelector('.stat:has(.stat-value)') || 
-                              userCard.querySelector('.stat:nth-child(3)');
-            
-            if (passedCard && passed > 0) {
-                // Ensure passed card has green background
-                passedCard.style.backgroundColor = '#e8f5e8';
-                passedCard.style.borderColor = '#4caf50';
-            }
-            
-            console.log(`[Admin] Updated visual status for card: passed=${passed}, failed=${failed}`);
-            
-        } catch (error) {
-            console.warn('[Admin] Error updating card visual status:', error);
-        }
-    }
-    
-    /**
-     * Refresh the overall dashboard statistics after individual user data is updated
-     */
-
-    
-    /**
-     * Show loading state while fetching and enriching user data
-     */
-    showLoadingState() {
-        try {
-            const usersList = document.getElementById('usersList');
-            if (!usersList) return;
-            
-            // Create loading overlay
-            const loadingOverlay = document.createElement('div');
-            loadingOverlay.id = 'admin-loading-overlay';
-            loadingOverlay.className = 'admin-loading-overlay';
-            loadingOverlay.innerHTML = `
-                <div class="loading-content">
-                    <div class="loading-spinner"></div>
-                    <h3>Loading User Data</h3>
-                    <p>Fetching quiz progress and calculating accurate statistics...</p>
-                    <p class="loading-detail">This may take a few moments while we gather complete information for all users.</p>
-                    <div class="loading-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="loading-progress-fill"></div>
-                        </div>
-                        <p class="progress-text" id="loading-progress-text">Initializing...</p>
-                    </div>
-                </div>
-            `;
-            
-            // Add loading styles
-            if (!document.getElementById('admin-loading-styles')) {
-                const style = document.createElement('style');
-                style.id = 'admin-loading-styles';
-                style.textContent = `
-                    .admin-loading-overlay {
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        background: rgba(255, 255, 255, 0.95);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        z-index: 1000;
-                        border-radius: 8px;
-                    }
-                    
-                    .loading-content {
-                        text-align: center;
-                        max-width: 400px;
-                        padding: 2rem;
-                    }
-                    
-                    .loading-spinner {
-                        width: 60px;
-                        height: 60px;
-                        border: 4px solid #f3f3f3;
-                        border-top: 4px solid #007bff;
-                        border-radius: 50%;
-                        animation: spin 1s linear infinite;
-                        margin: 0 auto 1.5rem;
-                    }
-                    
-                    @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                    
-                    .loading-content h3 {
-                        color: #333;
-                        margin-bottom: 1rem;
-                    }
-                    
-                    .loading-content p {
-                        color: #666;
-                        margin-bottom: 0.5rem;
-                    }
-                    
-                    .loading-detail {
-                        font-size: 0.9rem;
-                        color: #888;
-                        font-style: italic;
-                    }
-                    
-                    .loading-progress {
-                        margin-top: 1.5rem;
-                    }
-                    
-                    .progress-bar {
-                        width: 100%;
-                        height: 8px;
-                        background-color: #e9ecef;
-                        border-radius: 4px;
-                        overflow: hidden;
-                        margin-bottom: 0.5rem;
-                    }
-                    
-                    .progress-fill {
-                        height: 100%;
-                        background-color: #007bff;
-                        width: 0%;
-                        transition: width 0.3s ease;
-                    }
-                    
-                    .progress-text {
-                        font-size: 0.9rem;
-                        color: #666;
-                        margin: 0;
-                    }
-                    
-                    .api-error-message {
-                        text-align: center;
-                        padding: 2rem;
-                        background: #fff3cd;
-                        border: 1px solid #ffeaa7;
-                        border-radius: 8px;
-                        margin: 1rem 0;
-                    }
-                    
-                    .api-error-message h3 {
-                        color: #856404;
-                        margin-bottom: 1rem;
-                    }
-                    
-                    .api-error-message p {
-                        color: #856404;
-                        margin-bottom: 0.5rem;
-                    }
-                    
-                    .retry-btn {
-                        background: #007bff;
-                        color: white;
-                        border: none;
-                        padding: 0.5rem 1rem;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        margin-top: 1rem;
-                    }
-                    
-                    .retry-btn:hover {
-                        background: #0056b3;
-                    }
-                    
-                    .user-progress-indicator {
-                        background: #f8f9fa;
-                        border: 1px solid #dee2e6;
-                        border-radius: 8px;
-                        padding: 1rem;
-                        margin-bottom: 1rem;
-                        text-align: center;
-                    }
-                    
-                    .user-progress-indicator .progress-bar {
-                        width: 100%;
-                        height: 8px;
-                        background-color: #e9ecef;
-                        border-radius: 4px;
-                        overflow: hidden;
-                        margin-bottom: 0.5rem;
-                    }
-                    
-                    .user-progress-indicator .progress-fill {
-                        height: 100%;
-                        background-color: #28a745;
-                        width: 0%;
-                        transition: width 0.3s ease;
-                    }
-                    
-                    .user-progress-indicator .progress-text {
-                        font-size: 0.9rem;
-                        color: #666;
-                        margin: 0;
-                        font-weight: 500;
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
-            // Show loading state
-            usersList.style.position = 'relative';
-            usersList.appendChild(loadingOverlay);
-            
-            console.log('[Admin] Loading state displayed');
-        } catch (error) {
-            console.error('[Admin] Error showing loading state:', error);
-        }
-    }
-    
-    /**
-     * Update loading progress
-     */
-    updateLoadingProgress(percent, text) {
-        try {
-            const progressFill = document.getElementById('loading-progress-fill');
-            const progressText = document.getElementById('loading-progress-text');
-            
-            if (progressFill) {
-                progressFill.style.width = `${percent}%`;
-            }
-            if (progressText) {
-                progressText.textContent = text;
-            }
-        } catch (error) {
-            console.error('[Admin] Error updating loading progress:', error);
-        }
-    }
-    
-    /**
-     * Hide loading state and show user data
-     */
-    hideLoadingState() {
-        try {
-            const loadingOverlay = document.getElementById('admin-loading-overlay');
-            if (loadingOverlay) {
-                loadingOverlay.remove();
-                console.log('[Admin] Loading state hidden');
-            }
-        } catch (error) {
-            console.error('[Admin] Error hiding loading state:', error);
-        }
-    }
-    
     setupEventListeners() {
         // Menu navigation
         const menuItems = document.querySelectorAll('.menu-item');
@@ -1034,19 +724,18 @@ export class Admin2Dashboard {
             const button = item.querySelector('button');
             if (button) {
                             button.addEventListener('click', () => {
-                const sectionId = item.getAttribute('data-section');
-                console.log('Menu item clicked:', {
-                    sectionId: sectionId,
-                    buttonText: button.textContent.trim()
-                });
-                
-                // Save the current section to localStorage for persistence
-                localStorage.setItem('adminActiveSection', sectionId);
-                
-                // Show the selected section
-                this.showSection(sectionId);
-                    
-                });
+                                const sectionId = item.getAttribute('data-section');
+                                console.log('Menu item clicked:', {
+                                    sectionId: sectionId,
+                                    buttonText: button.textContent.trim()
+                                });
+                                
+                                // Save the current section to localStorage for persistence
+                                localStorage.setItem('adminActiveSection', sectionId);
+                                
+                                // Show the selected section
+                                this.showSection(sectionId);
+                            });
             }
         });
         
@@ -1336,19 +1025,19 @@ export class Admin2Dashboard {
         
         // Check if we have any user progress data at all
         const hasAnyProgressData = this.users.some(user => 
-            user.quizProgress && Object.keys(user.quizProgress).length > 0
+            (user.quizProgress && Object.keys(user.quizProgress).length > 0) ||
+            (user.quizResults && user.quizResults.length > 0)
         );
         
         if (!hasAnyProgressData) {
-            console.warn('[Admin] No user progress data available - API may be down');
+            console.warn('[Admin] No user progress or quiz results data available - API may be down');
             container.innerHTML = `
                 <div class="api-error-message">
                     <h3>⚠️ API Connection Issue</h3>
                     <p>The server appears to be down or unreachable. Showing basic user information only.</p>
                     <p><strong>Error:</strong> CORS policy blocked or server returned 502 Bad Gateway</p>
                     <button onclick="location.reload()" class="retry-btn">🔄 Retry Connection</button>
-                </div>
-            `;
+                `;
             return;
         }
 
@@ -1396,17 +1085,17 @@ export class Admin2Dashboard {
 
         // console.log(`Creating ${filteredUsers.length} user cards...`);
         
-        // Update statistics based on filtered users
-        const stats = this.updateStatistics(filteredUsers);
-        this.updateStatisticsDisplay(stats);
-
         // Create and append user cards
         filteredUsers.forEach(user => {
             const lastActive = this.getLastActiveDate(user);
             
-            // Quiz statistics will be calculated by calculateUserQuizStats method
+            // ENHANCED: Validate user data before calculating statistics
+            if (!user.quizProgress && !user.quizResults) {
+                console.warn(`[Admin] User ${user.username} has no quiz data - may need to refresh`);
+            }
             
             // Use the existing calculateUserQuizStats method for consistent calculations
+            // This method now prioritizes server quiz results as the single source of truth
             const stats = this.calculateUserQuizStats(user);
             
             // Extract the calculated values
@@ -1417,8 +1106,23 @@ export class Admin2Dashboard {
             const quizzesInProgress = stats.inProgress;
             const quizzesNotStarted = stats.notStarted;
             
-            // Log the calculated statistics for debugging
-            console.log(`[Admin] ${user.username} Quiz Summary (from calculateUserQuizStats):`, stats);
+            // ENHANCED: Log the calculated statistics for debugging and verification
+            console.log(`[Admin] ${user.username} Quiz Summary (from calculateUserQuizStats):`, {
+                ...stats,
+                hasQuizProgress: !!user.quizProgress,
+                hasQuizResults: !!user.quizResults,
+                quizProgressKeys: user.quizProgress ? Object.keys(user.quizProgress) : [],
+                quizResultsCount: user.quizResults ? user.quizResults.length : 0
+            });
+            
+            // ENHANCED: Validate that statistics make sense
+            if (quizzesPassed + quizzesFailed !== quizzesCompleted) {
+                console.warn(`[Admin] ${user.username}: Passed (${quizzesPassed}) + Failed (${quizzesFailed}) != Completed (${quizzesCompleted})`);
+            }
+            
+            if (quizzesCompleted + quizzesInProgress + quizzesNotStarted !== quizzesAssigned) {
+                console.warn(`[Admin] ${user.username}: Completed (${quizzesCompleted}) + InProgress (${quizzesInProgress}) + NotStarted (${quizzesNotStarted}) != Assigned (${quizzesAssigned})`);
+            }
             
             // Use the same calculation as the details overlay for overall progress
             const overallProgress = this.calculateQuestionsAnsweredPercent(user);
@@ -1669,7 +1373,7 @@ export class Admin2Dashboard {
 
             container.appendChild(card);
             
-            // Final verification
+            // ENHANCED: Final verification and debugging
             const scoreElements = card.querySelectorAll('.stat-value');
             scoreElements.forEach(element => {
                 if (element.textContent === '0%') {
@@ -1683,7 +1387,349 @@ export class Admin2Dashboard {
             container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
         }
         
-        console.log("Users list update complete.");
+        console.log(`[Admin] Users list update complete. Processed ${filteredUsers.length} users with enhanced data validation.`);
+    
+
+        // Sort users based on selected criteria
+        filteredUsers.sort((a, b) => {
+            switch (sortBy) {
+                case 'username-asc':
+                    return a.username.localeCompare(b.username);
+                case 'username-desc':
+                    return b.username.localeCompare(a.username);
+                case 'progress-high':
+                    return this.calculateQuestionsAnsweredPercent(b) - this.calculateQuestionsAnsweredPercent(a);
+                case 'progress-low':
+                    return this.calculateQuestionsAnsweredPercent(a) - this.calculateQuestionsAnsweredPercent(b);
+                case 'assigned-high':
+                    // Calculate assigned quizzes for each user
+                    const aAssigned = this.calculateAssignedQuizzes(a);
+                    const bAssigned = this.calculateAssignedQuizzes(b);
+                    return bAssigned - aAssigned;
+                case 'assigned-low':
+                    // Calculate assigned quizzes for each user
+                    const aAssignedLow = this.calculateAssignedQuizzes(a);
+                    const bAssignedLow = this.calculateAssignedQuizzes(b);
+                    return aAssignedLow - bAssignedLow;
+                case 'last-active':
+                    return this.getLastActiveDate(b) - this.getLastActiveDate(a);
+                default:
+                    return 0;
+            }
+        });
+
+        // Clear existing content
+        container.innerHTML = '';
+
+        // console.log(`Creating ${filteredUsers.length} user cards...`);
+        
+        // Update statistics based on filtered users
+        const stats = this.updateStatistics(filteredUsers);
+        this.updateStatisticsDisplay(stats);
+
+        // Create and append user cards
+        filteredUsers.forEach(user => {
+            const lastActive = this.getLastActiveDate(user);
+            
+            // ENHANCED: Validate user data before calculating statistics
+            if (!user.quizProgress && !user.quizResults) {
+                console.warn(`[Admin] User ${user.username} has no quiz data - may need to refresh`);
+            }
+            
+            // Use the existing calculateUserQuizStats method for consistent calculations
+            // This method now prioritizes server quiz results as the single source of truth
+            const stats = this.calculateUserQuizStats(user);
+            
+            // Extract the calculated values
+            const quizzesAssigned = stats.assigned;
+            const quizzesCompleted = stats.completed;
+            const quizzesPassed = stats.passed;
+            const quizzesFailed = stats.failed;
+            const quizzesInProgress = stats.inProgress;
+            const quizzesNotStarted = stats.notStarted;
+            
+            // ENHANCED: Log the calculated statistics for debugging and verification
+            console.log(`[Admin] ${user.username} Quiz Summary (from calculateUserQuizStats):`, {
+                ...stats,
+                hasQuizProgress: !!user.quizProgress,
+                hasQuizResults: !!user.quizResults,
+                quizProgressKeys: user.quizProgress ? Object.keys(user.quizProgress) : [],
+                quizResultsCount: user.quizResults ? user.quizResults.length : 0
+            });
+            
+            // ENHANCED: Validate that statistics make sense
+            if (quizzesPassed + quizzesFailed !== quizzesCompleted) {
+                console.warn(`[Admin] ${user.username}: Passed (${quizzesPassed}) + Failed (${quizzesFailed}) != Completed (${quizzesCompleted})`);
+            }
+            
+            if (quizzesCompleted + quizzesInProgress + quizzesNotStarted !== quizzesAssigned) {
+                console.warn(`[Admin] ${user.username}: Completed (${quizzesCompleted}) + InProgress (${quizzesInProgress}) + NotStarted (${quizzesNotStarted}) != Assigned (${quizzesAssigned})`);
+            }
+            
+            // Use the same calculation as the details overlay for overall progress
+            const overallProgress = this.calculateQuestionsAnsweredPercent(user);
+            const overallProgressDisplay = `${overallProgress.toFixed(1)}%`;
+
+            const card = document.createElement('div');
+            card.className = 'user-card';
+            
+            // Set data attributes for all the metrics
+            card.setAttribute('data-username', user.username);
+            card.setAttribute('data-progress', overallProgressDisplay);
+            card.setAttribute('data-assigned', quizzesAssigned.toString());
+            card.setAttribute('data-completed', quizzesCompleted.toString());
+            card.setAttribute('data-passed', quizzesPassed.toString());
+            card.setAttribute('data-failed', quizzesFailed.toString());
+            card.setAttribute('data-in-progress', quizzesInProgress.toString());
+            card.setAttribute('data-not-started', quizzesNotStarted.toString());
+            
+            if (isRowView) {
+                card.innerHTML = `
+                    <div class="row-content">
+                        <div class="user-info">
+                            <span class="username">${user.username}</span>
+                        </div>
+                        <div class="user-stats expanded-stats">
+                            <div class="stat">
+                                <span class="stat-label">Quizzes Assigned:</span>
+                                <span class="stat-value">${quizzesAssigned}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Quizzes Completed:</span>
+                                <span class="stat-value">${quizzesCompleted}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Quizzes Passed:</span>
+                                <span class="stat-value">${quizzesPassed}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Quizzes Failed:</span>
+                                <span class="stat-value">${quizzesFailed}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Quizzes In Progress:</span>
+                                <span class="stat-value">${quizzesInProgress}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Quizzes Not Started:</span>
+                                <span class="stat-value">${quizzesNotStarted}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Last Active:</span>
+                                <span class="stat-value">${this.formatDate(lastActive)}</span>
+                            </div>
+                        </div>
+                        <button class="view-details-btn row-btn" tabindex="0" aria-label="View details for ${user.username}">View Details</button>
+                    </div>
+                `;
+                
+                const viewBtn = card.querySelector('.view-details-btn');
+                if (viewBtn) {
+                    viewBtn.addEventListener('click', () => {
+                        this.showUserDetails(user.username);
+                    });
+                    viewBtn.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            this.showUserDetails(user.username);
+                        }
+                    });
+                }
+            } else {
+                // Use direct DOM manipulation to avoid any issues with HTML processing
+                const cardContent = document.createElement('div');
+                cardContent.className = 'user-card-content';
+                
+                const userHeader = document.createElement('div');
+                userHeader.className = 'user-header';
+                
+                const username = document.createElement('span');
+                username.className = 'username';
+                username.textContent = user.username;
+                
+                userHeader.appendChild(username);
+                
+                const progressContainer = document.createElement('div');
+                progressContainer.className = 'progress-container';
+                
+                const progressBar = document.createElement('div');
+                progressBar.className = 'progress-bar';
+                progressBar.style.backgroundColor = '#e9ecef'; // Light gray background
+                
+                const progressFill = document.createElement('div');
+                progressFill.className = 'progress-fill';
+                progressFill.style.width = `${overallProgress}%`;
+                progressFill.style.backgroundColor = '#28a745'; // Green fill color
+                
+                progressBar.appendChild(progressFill);
+                
+                const progressText = document.createElement('span');
+                progressText.className = 'progress-text';
+                progressText.textContent = overallProgressDisplay;
+                
+                progressContainer.appendChild(progressBar);
+                progressContainer.appendChild(progressText);
+                
+                const userStats = document.createElement('div');
+                userStats.className = 'user-stats';
+                
+                // Add expanded stats class for better layout
+                userStats.className = 'user-stats expanded-stats';
+                
+                // Quizzes Assigned stat
+                const assignedStat = document.createElement('div');
+                assignedStat.className = 'stat';
+                
+                const assignedLabel = document.createElement('span');
+                assignedLabel.className = 'stat-label';
+                assignedLabel.textContent = 'Quizzes Assigned:';
+                
+                const assignedValue = document.createElement('span');
+                assignedValue.className = 'stat-value';
+                assignedValue.textContent = quizzesAssigned.toString();
+                
+                assignedStat.appendChild(assignedLabel);
+                assignedStat.appendChild(assignedValue);
+                
+                // Quizzes Completed stat
+                const completedStat = document.createElement('div');
+                completedStat.className = 'stat';
+                
+                const completedLabel = document.createElement('span');
+                completedLabel.className = 'stat-label';
+                completedLabel.textContent = 'Quizzes Completed:';
+                
+                const completedValue = document.createElement('span');
+                completedValue.className = 'stat-value';
+                completedValue.textContent = quizzesCompleted.toString();
+                
+                completedStat.appendChild(completedLabel);
+                completedStat.appendChild(completedValue);
+                
+                // Quizzes Passed stat
+                const passedStat = document.createElement('div');
+                passedStat.className = 'stat';
+                
+                const passedLabel = document.createElement('span');
+                passedLabel.className = 'stat-label';
+                passedLabel.textContent = 'Quizzes Passed:';
+                
+                const passedValue = document.createElement('span');
+                passedValue.className = 'stat-value';
+                passedValue.textContent = quizzesPassed.toString();
+                
+                passedStat.appendChild(passedLabel);
+                passedStat.appendChild(passedValue);
+                
+                // Quizzes Failed stat
+                const failedStat = document.createElement('div');
+                failedStat.className = 'stat';
+                
+                const failedLabel = document.createElement('span');
+                failedLabel.className = 'stat-label';
+                failedLabel.textContent = 'Quizzes Failed:';
+                
+                const failedValue = document.createElement('span');
+                failedValue.className = 'stat-value';
+                failedValue.textContent = quizzesFailed.toString();
+                
+                failedStat.appendChild(failedLabel);
+                failedStat.appendChild(failedValue);
+                
+                // Quizzes In Progress stat
+                const inProgressStat = document.createElement('div');
+                inProgressStat.className = 'stat';
+                
+                const inProgressLabel = document.createElement('span');
+                inProgressLabel.className = 'stat-label';
+                inProgressLabel.textContent = 'Quizzes In Progress:';
+                
+                const inProgressValue = document.createElement('span');
+                inProgressValue.className = 'stat-value';
+                inProgressValue.textContent = quizzesInProgress.toString();
+                
+                inProgressStat.appendChild(inProgressLabel);
+                inProgressStat.appendChild(inProgressValue);
+                
+                // Quizzes Not Started stat
+                const notStartedStat = document.createElement('div');
+                notStartedStat.className = 'stat';
+                
+                const notStartedLabel = document.createElement('span');
+                notStartedLabel.className = 'stat-label';
+                notStartedLabel.textContent = 'Quizzes Not Started:';
+                
+                const notStartedValue = document.createElement('span');
+                notStartedValue.className = 'stat-value';
+                notStartedValue.textContent = quizzesNotStarted.toString();
+                
+                notStartedStat.appendChild(notStartedLabel);
+                notStartedStat.appendChild(notStartedValue);
+                
+                // Last Active stat
+                const lastActiveStat = document.createElement('div');
+                lastActiveStat.className = 'stat';
+
+                const lastActiveLabel = document.createElement('span');
+                lastActiveLabel.className = 'stat-label';
+                lastActiveLabel.textContent = 'Last Active:';
+                
+                const lastActiveValue = document.createElement('span');
+                lastActiveValue.className = 'stat-value';
+                lastActiveValue.textContent = this.formatDate(lastActive);
+                
+                lastActiveStat.appendChild(lastActiveLabel);
+                lastActiveStat.appendChild(lastActiveValue);
+                
+                userStats.appendChild(assignedStat);
+                userStats.appendChild(completedStat);
+                userStats.appendChild(passedStat);
+                userStats.appendChild(failedStat);
+                userStats.appendChild(inProgressStat);
+                userStats.appendChild(notStartedStat);
+                userStats.appendChild(lastActiveStat);
+                
+                cardContent.appendChild(userHeader);
+                cardContent.appendChild(progressContainer);
+                cardContent.appendChild(userStats);
+                
+                const viewDetailsBtn = document.createElement('button');
+                viewDetailsBtn.className = 'view-details-btn';
+                viewDetailsBtn.setAttribute('tabindex', '0');
+                viewDetailsBtn.setAttribute('aria-label', `View details for ${user.username}`);
+                viewDetailsBtn.textContent = 'View Details';
+                
+                viewDetailsBtn.addEventListener('click', () => {
+                    this.showUserDetails(user.username);
+                });
+                viewDetailsBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.showUserDetails(user.username);
+                    }
+                });
+                
+                card.appendChild(cardContent);
+                card.appendChild(viewDetailsBtn);
+            }
+
+            container.appendChild(card);
+            
+            // ENHANCED: Final verification and debugging
+            const scoreElements = card.querySelectorAll('.stat-value');
+            scoreElements.forEach(element => {
+                if (element.textContent === '0%') {
+                    console.log(`Direct fix: Found a zero percent value that needs updating in ${user.username}'s card`);
+                    element.textContent = overallProgressDisplay;
+                }
+            });
+        });
+
+        if (filteredUsers.length === 0) {
+            container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
+        }
+        
+        console.log(`[Admin] Users list update complete. Processed ${filteredUsers.length} users with enhanced data validation.`);
     }
     
     // Display timer settings in the settings section
@@ -6477,9 +6523,6 @@ export class Admin2Dashboard {
                 // Show success message
                 this.showInfo(`Auto-reset for ${quizName} ${response.data ? 'updated' : 'enabled'}`);
                 
-                // DISABLED: Frontend checking is now handled by backend
-                // this.checkScheduledResets() - removed to prevent duplicate processing
-                
                 return response.data;
             } else {
                 throw new Error(response.error || 'Unknown error');
@@ -6490,9 +6533,6 @@ export class Admin2Dashboard {
             throw error;
         }
     }
-    
-    // Calculate the next reset time based on the period
-    // Duplicate function removed - using the one at line 5034
 
     // Shows edit modal for auto reset settings
     showAutoResetEditModal(quizName) {
