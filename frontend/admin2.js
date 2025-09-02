@@ -167,7 +167,7 @@ export class Admin2Dashboard {
                 
                 // Display user cards immediately with basic API data (so users see something)
                 console.log('[Admin] Displaying user cards with basic API data...');
-                this.updateUsersList();
+                await this.updateUsersList();
                 
                 // Update statistics with basic data
                 const stats = this.updateStatistics();
@@ -175,10 +175,10 @@ export class Admin2Dashboard {
                 
                 // Load user progress progressively in the background to get accurate data
                 console.log('[Admin] Starting progressive loading in background...');
-                this.loadAllUserProgress().then(() => {
+                this.loadAllUserProgress().then(async () => {
                     console.log('[Admin] Progressive loading complete, updating cards with accurate data...');
                     // Update the cards with the enriched data
-                    this.updateUsersList();
+                    await this.updateUsersList();
                     // Update statistics with accurate data
                     const finalStats = this.updateStatistics();
                     this.updateStatisticsDisplay(finalStats);
@@ -1115,6 +1115,7 @@ export class Admin2Dashboard {
     }
     
     async updateUsersList() {
+        console.log('[Admin] updateUsersList() called');
         const container = document.getElementById('usersList');
         if (!container) return;
 
@@ -1200,10 +1201,9 @@ export class Admin2Dashboard {
         });
 
         // Clear existing content
+        console.log(`[Admin] Clearing container and creating ${filteredUsers.length} user cards...`);
         container.innerHTML = '';
 
-        // console.log(`Creating ${filteredUsers.length} user cards...`);
-        
         // Create and append user cards (process sequentially for API calls)
         for (const user of filteredUsers) {
             const lastActive = this.getLastActiveDate(user);
@@ -1506,7 +1506,8 @@ export class Admin2Dashboard {
             container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
         }
         
-        console.log(`[Admin] Users list update complete. Processed ${filteredUsers.length} users with enhanced data validation.`);
+        const finalCardCount = container.children.length;
+        console.log(`[Admin] Users list update complete. Processed ${filteredUsers.length} users, created ${finalCardCount} cards.`);
     }
     
     // Display timer settings in the settings section
