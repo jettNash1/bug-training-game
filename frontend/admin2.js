@@ -165,20 +165,13 @@ export class Admin2Dashboard {
                 // Store users data
                 this.users = response.data;
                 
-                // Update dashboard with user data
-                this.updateUsersList();
+                // Load user progress for all users FIRST (this will call updateUsersList when done)
+                await this.loadAllUserProgress();
                 
-                // Update statistics and display
-                const stats = this.updateStatistics();
-                this.updateStatisticsDisplay(stats);
-                
-                // Load user progress for all users
-                this.loadAllUserProgress();
-                
-                // Update badges section user dropdown
+                // Update badges section user dropdown (after users are displayed)
                 this.populateBadgesUserDropdown();
                 
-                // Update schedule section user dropdown
+                // Update schedule section user dropdown (after users are displayed)
                 this.populateUserDropdown();
                 
                 return response.data;
@@ -197,9 +190,6 @@ export class Admin2Dashboard {
         try {
             console.log('[Admin] Starting progressive user data loading...');
             
-            // Show loading message to users
-            this.showLoadingMessage('Loading accurate quiz data for all users...');
-            
             // Step 1: Load user progress progressively to get accurate data FIRST
             console.log('[Admin] Step 1: Loading user progress progressively to get accurate data...');
             await this.loadUserProgressProgressive();
@@ -213,15 +203,11 @@ export class Admin2Dashboard {
             const finalStats = this.updateStatistics();
             this.updateStatisticsDisplay(finalStats);
             
-            // Hide loading message
-            this.hideLoadingMessage();
-            
             console.log('[Admin] Progressive loading complete - cards now show accurate data');
             
         } catch (error) {
             console.error('[Admin] Error in progressive loading:', error);
             // On error, still try to show user cards with whatever data we have
-            this.hideLoadingMessage();
             await this.updateUsersList();
         }
     }
@@ -966,38 +952,7 @@ export class Admin2Dashboard {
         }
     }
     
-    /**
-     * Show a loading message to users while fetching data
-     */
-    showLoadingMessage(message) {
-        // Remove any existing loading message
-        this.hideLoadingMessage();
-        
-        // Create loading message element
-        const loadingDiv = document.createElement('div');
-        loadingDiv.id = 'admin-loading-message';
-        loadingDiv.className = 'admin-loading-message';
-        loadingDiv.innerHTML = `
-            <div class="loading-spinner"></div>
-            <p>${message}</p>
-        `;
-        
-        // Insert at the top of the users list
-        const usersList = document.getElementById('users-list');
-        if (usersList) {
-            usersList.insertBefore(loadingDiv, usersList.firstChild);
-        }
-    }
-    
-    /**
-     * Hide the loading message
-     */
-    hideLoadingMessage() {
-        const existingMessage = document.getElementById('admin-loading-message');
-        if (existingMessage) {
-            existingMessage.remove();
-        }
-    }
+
     
     /**
      * Update the visual status of a user card (background colors, etc.)
