@@ -305,8 +305,8 @@ export class Admin2Dashboard {
             sampleQuizProgress: user.quizProgress ? Object.values(user.quizProgress)[0] : null
         });
         
-        // Process each quiz sequentially to fetch accurate data
-        for (const quizType of visibleQuizzes) {
+        // Process each quiz in parallel to fetch accurate data faster
+        const quizPromises = visibleQuizzes.map(async (quizType) => {
             if (typeof quizType === 'string') {
                 const quizLower = quizType.toLowerCase();
                 const progress = user.quizProgress?.[quizLower];
@@ -321,8 +321,13 @@ export class Admin2Dashboard {
                                             progress?.questionHistory?.length || 
                                             result?.questionHistory?.length || 0;
                 
-                // If quiz appears to be completed (15+ questions), fetch accurate data from API
-                if (basicQuestionsAnswered >= 15) {
+                // Only fetch API data if we really need it (no reliable status data)
+                const hasReliableStatus = result?.status || 
+                                        (result?.questionHistory?.length > 0) ||
+                                        (progress?.questionHistory?.length > 0);
+                
+                // If quiz appears to be completed (15+ questions) AND we need accurate data, fetch from API
+                if (basicQuestionsAnswered >= 15 && !hasReliableStatus) {
                     try {
                         console.log(`[Admin] Fetching accurate data for ${user.username}/${quizType} (appears completed with ${basicQuestionsAnswered} questions)`);
                         
@@ -351,6 +356,30 @@ export class Admin2Dashboard {
                         questionsAnswered = basicQuestionsAnswered;
                         isPassed = false; // Default to failed if we can't get accurate data
                     }
+                } else if (basicQuestionsAnswered >= 15) {
+                    // Quiz completed and we have reliable status data - use it!
+                    questionsAnswered = basicQuestionsAnswered;
+                    
+                    if (result?.status === 'passed') {
+                        isPassed = true;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using stored status - PASSED`);
+                    } else if (result?.status === 'failed') {
+                        isPassed = false;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using stored status - FAILED`);
+                    } else if (result?.questionHistory?.length > 0) {
+                        const correctAnswers = result.questionHistory.filter(item => item && item.status === 'passed').length;
+                        const score = Math.round((correctAnswers / result.questionHistory.length) * 100);
+                        isPassed = score >= 70;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using stored questionHistory - ${score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
+                    } else if (progress?.questionHistory?.length > 0) {
+                        const correctAnswers = progress.questionHistory.filter(item => item && item.status === 'passed').length;
+                        const score = Math.round((correctAnswers / progress.questionHistory.length) * 100);
+                        isPassed = score >= 70;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using progress questionHistory - ${score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
+                    } else {
+                        isPassed = true; // Assume passed if completed but no reliable data
+                        console.log(`[Admin] ${user.username}/${quizType}: Completed quiz, assuming PASSED`);
+                    }
                 } else {
                     // Quiz not completed, use stored data
                     questionsAnswered = basicQuestionsAnswered;
@@ -358,24 +387,43 @@ export class Admin2Dashboard {
                     console.log(`[Admin] ${user.username}/${quizType}: Not completed (${questionsAnswered}/15 questions)`);
                 }
                 
-                if (questionsAnswered >= 15) {
+                // Return quiz stats for this quiz
+                return {
+                    quizType,
+                    questionsAnswered,
+                    isPassed,
+                    isCompleted: questionsAnswered >= 15,
+                    isInProgress: questionsAnswered > 0 && questionsAnswered < 15,
+                    isNotStarted: questionsAnswered === 0
+                };
+            }
+            return null; // Skip non-string quiz types
+        });
+
+        // Wait for all quiz data to be fetched in parallel
+        const quizResults = await Promise.all(quizPromises);
+        
+        // Process the results
+        quizResults.forEach(result => {
+            if (result) {
+                if (result.isCompleted) {
                     quizzesCompleted++;
-                    if (isPassed) {
+                    if (result.isPassed) {
                         quizzesPassed++;
-                        console.log(`[Admin] ${user.username}/${quizType}: PASSED (${questionsAnswered}/15 questions)`);
+                        console.log(`[Admin] ${user.username}/${result.quizType}: PASSED (${result.questionsAnswered}/15 questions)`);
                     } else {
                         quizzesFailed++;
-                        console.log(`[Admin] ${user.username}/${quizType}: FAILED (${questionsAnswered}/15 questions)`);
+                        console.log(`[Admin] ${user.username}/${result.quizType}: FAILED (${result.questionsAnswered}/15 questions)`);
                     }
-                } else if (questionsAnswered > 0) {
+                } else if (result.isInProgress) {
                     quizzesInProgress++;
-                    console.log(`[Admin] ${user.username}/${quizType}: IN PROGRESS (${questionsAnswered}/15)`);
-                } else {
+                    console.log(`[Admin] ${user.username}/${result.quizType}: IN PROGRESS (${result.questionsAnswered}/15)`);
+                } else if (result.isNotStarted) {
                     quizzesNotStarted++;
-                    console.log(`[Admin] ${user.username}/${quizType}: NOT STARTED (0/15)`);
+                    console.log(`[Admin] ${user.username}/${result.quizType}: NOT STARTED (0/15)`);
                 }
             }
-        };
+        });
         
         const summary = {
             assigned: quizzesAssigned,
@@ -1201,11 +1249,12 @@ export class Admin2Dashboard {
         });
 
         // Clear existing content
+        const startTime = performance.now();
         console.log(`[Admin] Clearing container and creating ${filteredUsers.length} user cards...`);
         container.innerHTML = '';
 
-        // Create and append user cards (process sequentially for API calls)
-        for (const user of filteredUsers) {
+        // Create and append user cards (process in parallel for faster loading)
+        const userCardPromises = filteredUsers.map(async (user) => {
             const lastActive = this.getLastActiveDate(user);
             
             // ENHANCED: Validate user data before calculating statistics
@@ -1490,8 +1539,6 @@ export class Admin2Dashboard {
                 card.appendChild(viewDetailsBtn);
             }
 
-            container.appendChild(card);
-            
             // ENHANCED: Final verification and debugging
             const scoreElements = card.querySelectorAll('.stat-value');
             scoreElements.forEach(element => {
@@ -1500,14 +1547,24 @@ export class Admin2Dashboard {
                     element.textContent = overallProgressDisplay;
                 }
             });
-        }
+            
+            return card;
+        });
+
+        // Wait for all user cards to be created in parallel, then append them
+        const userCards = await Promise.all(userCardPromises);
+        userCards.forEach(card => {
+            container.appendChild(card);
+        });
 
         if (filteredUsers.length === 0) {
             container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
         }
         
+        const endTime = performance.now();
+        const loadTime = Math.round(endTime - startTime);
         const finalCardCount = container.children.length;
-        console.log(`[Admin] Users list update complete. Processed ${filteredUsers.length} users, created ${finalCardCount} cards.`);
+        console.log(`[Admin] Users list update complete. Processed ${filteredUsers.length} users, created ${finalCardCount} cards in ${loadTime}ms.`);
     }
     
     // Display timer settings in the settings section
