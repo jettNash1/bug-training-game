@@ -145,8 +145,7 @@ export class Admin2Dashboard {
             // Initialize badges section
             this.setupBadgesSection();
 
-            // Update dashboard with initial data
-            await this.updateDashboard();
+            // Note: updateUsersList() already called in loadUsers(), no need to call updateDashboard()
             // console.log('Admin2Dashboard initialization complete');
         } catch (error) {
             console.error('Error initializing Admin2Dashboard:', error);
@@ -1231,8 +1230,7 @@ export class Admin2Dashboard {
     }
     
     async updateUsersList() {
-        const stackTrace = new Error().stack;
-        console.log('[Admin] updateUsersList() called from:', stackTrace.split('\n')[1]);
+        console.log('[Admin] updateUsersList() called');
         const container = document.getElementById('usersList');
         if (!container) return;
 
