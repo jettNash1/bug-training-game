@@ -237,6 +237,9 @@ export class Admin2Dashboard {
                 // Load progress for this user
                 await this.loadUserProgress(user.username);
                 
+                // Enrich with question history for completed quizzes
+                await this.enrichQuizProgressWithQuestionHistory(user.username, user);
+                
                 // Immediately update this user's card with new data
                 await this.updateSingleUserCard(user.username);
                 
@@ -313,26 +316,40 @@ export class Admin2Dashboard {
                 let scorePercentage = 0;
                 
                 if (result) {
+                    // Quiz results have the most accurate data
                     questionsAnswered = result.questionsAnswered || 0;
                     scorePercentage = result.score || 0;
                 } else if (progress) {
                     questionsAnswered = progress.questionsAnswered || 
                                       (progress.questionHistory ? progress.questionHistory.length : 0);
                     
+                    // Priority order for score calculation (most accurate first)
                     if (progress.questionHistory && progress.questionHistory.length > 0) {
+                        // Question history is the most accurate source
                         const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
                         scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using questionHistory - ${correctAnswers}/${progress.questionHistory.length} = ${scorePercentage}%`);
                     } else if (progress.scorePercentage !== undefined) {
+                        // Direct score percentage
                         scorePercentage = progress.scorePercentage;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using scorePercentage = ${scorePercentage}%`);
                     } else if (progress.score !== undefined) {
+                        // Direct score
                         scorePercentage = progress.score;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using score = ${scorePercentage}%`);
                     } else if (progress.correctAnswers !== undefined && questionsAnswered > 0) {
+                        // Calculated from correct answers
                         scorePercentage = Math.round((progress.correctAnswers / questionsAnswered) * 100);
+                        console.log(`[Admin] ${user.username}/${quizType}: Using correctAnswers - ${progress.correctAnswers}/${questionsAnswered} = ${scorePercentage}%`);
                     } else if (progress.experience !== undefined && questionsAnswered >= 15) {
+                        // Experience field as last resort for completed quizzes
                         const normalizedExperience = Math.max(-150, Math.min(300, progress.experience));
                         scorePercentage = Math.max(0, Math.min(100, Math.round(((normalizedExperience + 150) / 450) * 100)));
+                        console.log(`[Admin] ${user.username}/${quizType}: Using experience fallback - ${progress.experience} → ${scorePercentage}%`);
                     } else {
+                        // No reliable score data available
                         scorePercentage = 0;
+                        console.log(`[Admin] ${user.username}/${quizType}: No reliable score data, defaulting to 0%`);
                     }
                 }
                 
@@ -340,18 +357,22 @@ export class Admin2Dashboard {
                     quizzesCompleted++;
                     if (scorePercentage >= 70) {
                         quizzesPassed++;
+                        console.log(`[Admin] ${user.username}/${quizType}: PASSED (${scorePercentage}% >= 70%)`);
                     } else {
                         quizzesFailed++;
+                        console.log(`[Admin] ${user.username}/${quizType}: FAILED (${scorePercentage}% < 70%)`);
                     }
                 } else if (questionsAnswered > 0) {
                     quizzesInProgress++;
+                    console.log(`[Admin] ${user.username}/${quizType}: IN PROGRESS (${questionsAnswered}/15)`);
                 } else {
                     quizzesNotStarted++;
+                    console.log(`[Admin] ${user.username}/${quizType}: NOT STARTED (0/15)`);
                 }
             }
         });
         
-        return {
+        const summary = {
             assigned: quizzesAssigned,
             completed: quizzesCompleted,
             passed: quizzesPassed,
@@ -359,6 +380,10 @@ export class Admin2Dashboard {
             inProgress: quizzesInProgress,
             notStarted: quizzesNotStarted
         };
+        
+        console.log(`[Admin] ${user.username} Final Stats:`, summary);
+        
+        return summary;
     }
     
     /**
