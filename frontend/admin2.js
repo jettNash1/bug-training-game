@@ -1752,42 +1752,83 @@ export class Admin2Dashboard {
      * Setup event listeners for bulk actions
      */
     setupBulkActionEventListeners() {
+        // Remove existing listeners to prevent duplicates
+        this.removeBulkActionEventListeners();
+
         // Select all checkbox
         const selectAllCheckbox = document.getElementById('select-all-users');
         if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', (e) => {
-                this.handleSelectAll(e.target.checked);
-            });
+            this.selectAllHandler = (e) => this.handleSelectAll(e.target.checked);
+            selectAllCheckbox.addEventListener('change', this.selectAllHandler);
         }
 
-        // Individual user checkboxes
-        document.addEventListener('change', (e) => {
+        // Individual user checkboxes - use a single delegated listener
+        this.userCheckboxHandler = (e) => {
             if (e.target.classList.contains('bulk-user-checkbox')) {
                 this.handleUserSelection(e.target);
             }
-        });
+        };
+        document.addEventListener('change', this.userCheckboxHandler);
 
         // Search functionality
         const searchInput = document.getElementById('bulk-user-search');
         if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                this.filterBulkUsers(e.target.value);
-            });
+            this.searchHandler = (e) => this.filterBulkUsers(e.target.value);
+            searchInput.addEventListener('input', this.searchHandler);
         }
 
         // Bulk action buttons
         const resetButton = document.getElementById('bulk-reset-progress');
         if (resetButton) {
-            resetButton.addEventListener('click', () => {
-                this.handleBulkResetProgress();
-            });
+            this.resetHandler = () => this.handleBulkResetProgress();
+            resetButton.addEventListener('click', this.resetHandler);
         }
 
         const deleteButton = document.getElementById('bulk-delete-accounts');
         if (deleteButton) {
-            deleteButton.addEventListener('click', () => {
-                this.handleBulkDeleteAccounts();
-            });
+            this.deleteHandler = () => this.handleBulkDeleteAccounts();
+            deleteButton.addEventListener('click', this.deleteHandler);
+        }
+
+        // Refresh button
+        const refreshButton = document.getElementById('bulk-refresh-users');
+        if (refreshButton) {
+            this.refreshHandler = () => this.refreshBulkUsersList();
+            refreshButton.addEventListener('click', this.refreshHandler);
+        }
+    }
+
+    /**
+     * Remove bulk action event listeners to prevent duplicates
+     */
+    removeBulkActionEventListeners() {
+        const selectAllCheckbox = document.getElementById('select-all-users');
+        if (selectAllCheckbox && this.selectAllHandler) {
+            selectAllCheckbox.removeEventListener('change', this.selectAllHandler);
+        }
+
+        if (this.userCheckboxHandler) {
+            document.removeEventListener('change', this.userCheckboxHandler);
+        }
+
+        const searchInput = document.getElementById('bulk-user-search');
+        if (searchInput && this.searchHandler) {
+            searchInput.removeEventListener('input', this.searchHandler);
+        }
+
+        const resetButton = document.getElementById('bulk-reset-progress');
+        if (resetButton && this.resetHandler) {
+            resetButton.removeEventListener('click', this.resetHandler);
+        }
+
+        const deleteButton = document.getElementById('bulk-delete-accounts');
+        if (deleteButton && this.deleteHandler) {
+            deleteButton.removeEventListener('click', this.deleteHandler);
+        }
+
+        const refreshButton = document.getElementById('bulk-refresh-users');
+        if (refreshButton && this.refreshHandler) {
+            refreshButton.removeEventListener('click', this.refreshHandler);
         }
     }
 
@@ -1878,6 +1919,34 @@ export class Admin2Dashboard {
         // Update counters after filtering
         this.updateSelectedCounter();
         this.updateBulkActionButtons();
+    }
+
+    /**
+     * Refresh the bulk users list
+     */
+    async refreshBulkUsersList() {
+        try {
+            console.log('[Admin] Refreshing bulk users list...');
+            
+            // Clear search input
+            const searchInput = document.getElementById('bulk-user-search');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            
+            // Reload users from server
+            const response = await this.apiService.getUsers();
+            if (response.success) {
+                this.users = response.data;
+                await this.populateBulkUsersList();
+                this.showInfo('User list refreshed successfully');
+            } else {
+                throw new Error('Failed to refresh user list');
+            }
+        } catch (error) {
+            console.error('[Admin] Error refreshing bulk users list:', error);
+            this.showError(`Failed to refresh user list: ${error.message}`);
+        }
     }
 
     /**

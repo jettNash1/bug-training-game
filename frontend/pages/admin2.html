@@ -771,13 +771,19 @@
 
                             <!-- User List with Checkboxes -->
                             <div class="bulk-users-container">
-                                <div class="users-header">
-                                    <h3>Users</h3>
+                                                            <div class="users-header">
+                                <h3>Users</h3>
+                                <div class="header-controls">
                                     <div class="search-container">
                                         <input type="text" id="bulk-user-search" placeholder="Search users..." class="search-input">
                                         <i class="fas fa-search search-icon"></i>
                                     </div>
+                                    <button id="bulk-refresh-users" class="action-button refresh-btn" title="Refresh user list">
+                                        <i class="fas fa-sync-alt"></i>
+                                        Refresh
+                                    </button>
                                 </div>
+                            </div>
                                 
                                 <div class="bulk-users-list" id="bulk-users-list">
                                     <!-- User list with checkboxes will be populated here -->
@@ -2514,6 +2520,12 @@
             color: var(--primary-color);
         }
 
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
         .search-container {
             position: relative;
             width: 300px;
@@ -2617,6 +2629,20 @@
             background-color: #c82333;
         }
 
+        .action-button.refresh-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            white-space: nowrap;
+        }
+
+        .action-button.refresh-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .refresh-btn i {
+            margin-right: 0.5rem;
+        }
+
         @media (max-width: 768px) {
             .bulk-actions-header {
                 flex-direction: column;
@@ -2628,6 +2654,12 @@
                 flex-direction: column;
                 gap: 1rem;
                 align-items: stretch;
+            }
+
+            .header-controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
             }
 
             .search-container {
