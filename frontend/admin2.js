@@ -1680,7 +1680,7 @@ export class Admin2Dashboard {
             // Use existing users data or load fresh
             let users = this.users;
             if (!users || users.length === 0) {
-                const response = await this.apiService.getUsers();
+                const response = await this.apiService.getAllUsers();
                 if (response.success) {
                     users = response.data;
                 } else {
@@ -1940,8 +1940,8 @@ export class Admin2Dashboard {
                 searchInput.value = '';
             }
             
-            // Reload users from server
-            const response = await this.apiService.getUsers();
+            // Reload users from server using the same method as initial load
+            const response = await this.apiService.getAllUsers();
             if (response.success) {
                 // Update both local users data and repopulate the bulk list
                 this.users = response.data;
@@ -2021,8 +2021,7 @@ export class Admin2Dashboard {
 
             // Refresh both the bulk list and main dashboard
             console.log('[Admin] Refreshing user lists after reset operation...');
-            await this.refreshBulkUsersList(); // This will clear selections and refresh bulk list
-            await this.updateUsersList(); // Refresh main dashboard
+            await this.refreshBulkUsersList(); // This now handles both bulk list and main dashboard
 
         } catch (error) {
             this.hideBulkActionLoading();
@@ -2095,8 +2094,7 @@ export class Admin2Dashboard {
 
             // Refresh both the bulk list and main dashboard
             console.log('[Admin] Refreshing user lists after delete operation...');
-            await this.refreshBulkUsersList(); // This will clear selections and refresh bulk list
-            await this.updateUsersList(); // Refresh main dashboard
+            await this.refreshBulkUsersList(); // This now handles both bulk list and main dashboard
 
         } catch (error) {
             this.hideBulkActionLoading();
