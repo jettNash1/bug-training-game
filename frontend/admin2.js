@@ -1912,8 +1912,8 @@ export class Admin2Dashboard {
             for (const username of selectedUsers) {
                 try {
                     console.log(`[Admin] Resetting progress for ${username}`);
-                    const result = await this.resetUserProgress(username);
-                    results.push({ username, success: true, message: result.message });
+                    await this.resetAllProgress(username);
+                    results.push({ username, success: true, message: 'Progress reset successfully' });
                 } catch (error) {
                     console.error(`[Admin] Failed to reset progress for ${username}:`, error);
                     results.push({ username, success: false, message: error.message });
@@ -1985,12 +1985,8 @@ export class Admin2Dashboard {
             for (const username of selectedUsers) {
                 try {
                     console.log(`[Admin] Deleting account for ${username}`);
-                    const response = await this.apiService.deleteUser(username);
-                    if (response.success) {
-                        results.push({ username, success: true, message: 'Account deleted' });
-                    } else {
-                        throw new Error(response.message || 'Delete failed');
-                    }
+                    await this.deleteUserAccount(username);
+                    results.push({ username, success: true, message: 'Account deleted successfully' });
                 } catch (error) {
                     console.error(`[Admin] Failed to delete account for ${username}:`, error);
                     results.push({ username, success: false, message: error.message });
