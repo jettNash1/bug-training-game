@@ -281,7 +281,7 @@ export class Admin2Dashboard {
     /**
      * Calculate quiz statistics for a single user
      */
-    calculateUserQuizStats(user) {
+    async calculateUserQuizStats(user) {
         const hiddenQuizzes = user.hiddenQuizzes || [];
         const visibleQuizzes = this.quizTypes ? this.quizTypes.filter(quizType => {
             const quizLower = quizType.toLowerCase();
@@ -305,94 +305,57 @@ export class Admin2Dashboard {
             sampleQuizProgress: user.quizProgress ? Object.values(user.quizProgress)[0] : null
         });
         
-        visibleQuizzes.forEach(quizType => {
+        // Process each quiz sequentially to fetch accurate data
+        for (const quizType of visibleQuizzes) {
             if (typeof quizType === 'string') {
                 const quizLower = quizType.toLowerCase();
                 const progress = user.quizProgress?.[quizLower];
                 const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
                 
-                // ENHANCED: Debug individual quiz data
-                console.log(`[Admin] ${user.username}/${quizType} data sources:`, {
-                    hasResult: !!result,
-                    hasProgress: !!progress,
-                    resultData: result ? {
-                        questionsAnswered: result.questionsAnswered,
-                        hasQuestionHistory: !!result.questionHistory,
-                        questionHistoryLength: result.questionHistory ? result.questionHistory.length : 0,
-                        status: result.status,
-                        score: result.score,
-                        scorePercentage: result.scorePercentage,
-                        sampleQuestion: result.questionHistory && result.questionHistory.length > 0 ? result.questionHistory[0] : null
-                    } : null,
-                    progressData: progress ? {
-                        questionsAnswered: progress.questionsAnswered,
-                        hasQuestionHistory: !!progress.questionHistory,
-                        questionHistoryLength: progress.questionHistory ? progress.questionHistory.length : 0,
-                        score: progress.score,
-                        scorePercentage: progress.scorePercentage
-                    } : null
-                });
-                
                 let questionsAnswered = 0;
                 let isPassed = false;
                 
-                // PRIORITY 1: Use quiz results from server as single source of truth
-                if (result) {
-                    questionsAnswered = result.questionsAnswered || 
-                                      result.questionHistory?.length || 0;
-                    
-                    // Use the SAME logic as detailed view - prioritize question history
-                    const questionHistory = result.questionHistory;
-                    
-                    if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                        // Use the same logic as the detailed view - check if status is 'passed'
-                        const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
-                        const score = Math.round((correctAnswers / questionHistory.length) * 100);
-                        isPassed = score >= 70;
-                        console.log(`[Admin] ${user.username}/${quizType}: Using result questionHistory - ${correctAnswers}/${questionHistory.length} = ${score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
-                    } else if (result.status === 'passed') {
-                        isPassed = true;
-                        console.log(`[Admin] ${user.username}/${quizType}: Using result status field - PASSED`);
-                    } else if (result.status === 'failed') {
-                        isPassed = false;
-                        console.log(`[Admin] ${user.username}/${quizType}: Using result status field - FAILED`);
-                    } else if (result.score !== undefined) {
-                        // Use score if available
-                        isPassed = result.score >= 70;
-                        console.log(`[Admin] ${user.username}/${quizType}: Using result score = ${result.score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
-                    } else if (result.scorePercentage !== undefined) {
-                        // Use score percentage if available
-                        isPassed = result.scorePercentage >= 70;
-                        console.log(`[Admin] ${user.username}/${quizType}: Using result scorePercentage = ${result.scorePercentage}% (${isPassed ? 'PASSED' : 'FAILED'})`);
-                    } else {
-                        isPassed = false;
-                        console.log(`[Admin] ${user.username}/${quizType}: No reliable result data, defaulting to FAILED`);
+                // Check if we have basic completion info from progress
+                const basicQuestionsAnswered = progress?.questionsAnswered || 
+                                            result?.questionsAnswered || 
+                                            progress?.questionHistory?.length || 
+                                            result?.questionHistory?.length || 0;
+                
+                // If quiz appears to be completed (15+ questions), fetch accurate data from API
+                if (basicQuestionsAnswered >= 15) {
+                    try {
+                        console.log(`[Admin] Fetching accurate data for ${user.username}/${quizType} (appears completed with ${basicQuestionsAnswered} questions)`);
+                        
+                        // Use the same API call as the detailed view
+                        const response = await this.apiService.getQuizQuestions(user.username, quizType);
+                        
+                        if (response.success && response.data && response.data.questionHistory) {
+                            const questionHistory = response.data.questionHistory;
+                            questionsAnswered = questionHistory.length;
+                            
+                            // Use the same logic as detailed view - count 'passed' status
+                            const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
+                            const score = Math.round((correctAnswers / questionHistory.length) * 100);
+                            isPassed = score >= 70;
+                            
+                            console.log(`[Admin] ${user.username}/${quizType}: API data - ${correctAnswers}/${questionHistory.length} = ${score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
+                        } else {
+                            console.warn(`[Admin] Failed to fetch API data for ${user.username}/${quizType}, falling back to stored data`);
+                            // Fallback to stored data
+                            questionsAnswered = basicQuestionsAnswered;
+                            isPassed = false; // Default to failed if we can't get accurate data
+                        }
+                    } catch (error) {
+                        console.warn(`[Admin] Error fetching API data for ${user.username}/${quizType}:`, error);
+                        // Fallback to stored data
+                        questionsAnswered = basicQuestionsAnswered;
+                        isPassed = false; // Default to failed if we can't get accurate data
                     }
-                } else if (progress) {
-                    // PRIORITY 2: Fallback to progress data if no results available
-                    questionsAnswered = progress.questionsAnswered || 
-                                      (progress.questionHistory ? progress.questionHistory.length : 0);
-                    
-                    // Try to determine pass/fail from question history if available
-                    if (progress.questionHistory && progress.questionHistory.length > 0) {
-                        const correctAnswers = progress.questionHistory.filter(q => q.status === 'passed').length;
-                        isPassed = (correctAnswers / progress.questionHistory.length) >= 0.7; // 70% threshold
-                        console.log(`[Admin] ${user.username}/${quizType}: Using progress questionHistory - ${correctAnswers}/${progress.questionHistory.length} = ${isPassed ? 'PASSED' : 'FAILED'}`);
-                    } else if (progress.scorePercentage !== undefined) {
-                        isPassed = progress.scorePercentage >= 70;
-                        console.log(`[Admin] ${user.username}/${quizType}: Using progress scorePercentage = ${progress.scorePercentage}% (${isPassed ? 'PASSED' : 'FAILED'})`);
-                    } else if (progress.score !== undefined) {
-                        isPassed = progress.score >= 70;
-                        console.log(`[Admin] ${user.username}/${quizType}: Using progress score = ${progress.score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
-                    } else if (progress.correctAnswers !== undefined && questionsAnswered > 0) {
-                        const scorePercentage = Math.round((progress.correctAnswers / questionsAnswered) * 100);
-                        isPassed = scorePercentage >= 70;
-                        console.log(`[Admin] ${user.username}/${quizType}: Using progress correctAnswers - ${progress.correctAnswers}/${questionsAnswered} = ${scorePercentage}% (${isPassed ? 'PASSED' : 'FAILED'})`);
-                    } else {
-                        // No reliable data available
-                        isPassed = false;
-                        console.log(`[Admin] ${user.username}/${quizType}: No reliable pass/fail data, defaulting to FAILED`);
-                    }
+                } else {
+                    // Quiz not completed, use stored data
+                    questionsAnswered = basicQuestionsAnswered;
+                    isPassed = false; // Not completed = not passed
+                    console.log(`[Admin] ${user.username}/${quizType}: Not completed (${questionsAnswered}/15 questions)`);
                 }
                 
                 if (questionsAnswered >= 15) {
@@ -412,7 +375,7 @@ export class Admin2Dashboard {
                     console.log(`[Admin] ${user.username}/${quizType}: NOT STARTED (0/15)`);
                 }
             }
-        });
+        };
         
         const summary = {
             assigned: quizzesAssigned,
@@ -680,10 +643,23 @@ export class Admin2Dashboard {
                     console.log(`[Admin] ${username}/${quizType}: questionsAnswered=${progress.questionsAnswered}, hasHistory=${!!progress.questionHistory}, historyLength=${progress.questionHistory?.length || 0}`);
                 }
                 
-                // Only fetch for completed quizzes that don't have question history
-                if (progress && 
+                // ENHANCED: Debug enrichment conditions
+                const needsEnrichment = progress && 
                     progress.questionsAnswered >= 15 && 
-                    (!progress.questionHistory || progress.questionHistory.length === 0)) {
+                    (!progress.questionHistory || progress.questionHistory.length === 0);
+                
+                console.log(`[Admin] ${username}/${quizType} enrichment check:`, {
+                    hasProgress: !!progress,
+                    questionsAnswered: progress?.questionsAnswered,
+                    questionsAnsweredCondition: progress?.questionsAnswered >= 15,
+                    hasQuestionHistory: !!(progress?.questionHistory),
+                    questionHistoryLength: progress?.questionHistory?.length || 0,
+                    questionHistoryCondition: !progress?.questionHistory || progress.questionHistory.length === 0,
+                    needsEnrichment
+                });
+                
+                // Only fetch for completed quizzes that don't have question history
+                if (needsEnrichment) {
                     
                     enrichmentCount++;
                     try {
@@ -1228,8 +1204,8 @@ export class Admin2Dashboard {
 
         // console.log(`Creating ${filteredUsers.length} user cards...`);
         
-        // Create and append user cards
-        filteredUsers.forEach(user => {
+        // Create and append user cards (process sequentially for API calls)
+        for (const user of filteredUsers) {
             const lastActive = this.getLastActiveDate(user);
             
             // ENHANCED: Validate user data before calculating statistics
@@ -1238,8 +1214,8 @@ export class Admin2Dashboard {
             }
             
             // Use the existing calculateUserQuizStats method for consistent calculations
-            // This method now prioritizes server quiz results as the single source of truth
-            const stats = this.calculateUserQuizStats(user);
+            // This method now fetches accurate data from the same API as detailed view
+            const stats = await this.calculateUserQuizStats(user);
             
             // Extract the calculated values
             const quizzesAssigned = stats.assigned;
@@ -1524,349 +1500,7 @@ export class Admin2Dashboard {
                     element.textContent = overallProgressDisplay;
                 }
             });
-        });
-
-        if (filteredUsers.length === 0) {
-            container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
         }
-        
-        console.log(`[Admin] Users list update complete. Processed ${filteredUsers.length} users with enhanced data validation.`);
-    
-
-        // Sort users based on selected criteria
-        filteredUsers.sort((a, b) => {
-            switch (sortBy) {
-                case 'username-asc':
-                    return a.username.localeCompare(b.username);
-                case 'username-desc':
-                    return b.username.localeCompare(a.username);
-                case 'progress-high':
-                    return this.calculateQuestionsAnsweredPercent(b) - this.calculateQuestionsAnsweredPercent(a);
-                case 'progress-low':
-                    return this.calculateQuestionsAnsweredPercent(a) - this.calculateQuestionsAnsweredPercent(b);
-                case 'assigned-high':
-                    // Calculate assigned quizzes for each user
-                    const aAssigned = this.calculateAssignedQuizzes(a);
-                    const bAssigned = this.calculateAssignedQuizzes(b);
-                    return bAssigned - aAssigned;
-                case 'assigned-low':
-                    // Calculate assigned quizzes for each user
-                    const aAssignedLow = this.calculateAssignedQuizzes(a);
-                    const bAssignedLow = this.calculateAssignedQuizzes(b);
-                    return aAssignedLow - bAssignedLow;
-                case 'last-active':
-                    return this.getLastActiveDate(b) - this.getLastActiveDate(a);
-                default:
-                    return 0;
-            }
-        });
-
-        // Clear existing content
-        container.innerHTML = '';
-
-        // console.log(`Creating ${filteredUsers.length} user cards...`);
-        
-        // Update statistics based on filtered users
-        const stats = this.updateStatistics(filteredUsers);
-        this.updateStatisticsDisplay(stats);
-
-        // Create and append user cards
-        filteredUsers.forEach(user => {
-            const lastActive = this.getLastActiveDate(user);
-            
-            // ENHANCED: Validate user data before calculating statistics
-            if (!user.quizProgress && !user.quizResults) {
-                console.warn(`[Admin] User ${user.username} has no quiz data - may need to refresh`);
-            }
-            
-            // Use the existing calculateUserQuizStats method for consistent calculations
-            // This method now prioritizes server quiz results as the single source of truth
-            const stats = this.calculateUserQuizStats(user);
-            
-            // Extract the calculated values
-            const quizzesAssigned = stats.assigned;
-            const quizzesCompleted = stats.completed;
-            const quizzesPassed = stats.passed;
-            const quizzesFailed = stats.failed;
-            const quizzesInProgress = stats.inProgress;
-            const quizzesNotStarted = stats.notStarted;
-            
-            // ENHANCED: Log the calculated statistics for debugging and verification
-            console.log(`[Admin] ${user.username} Quiz Summary (from calculateUserQuizStats):`, {
-                ...stats,
-                hasQuizProgress: !!user.quizProgress,
-                hasQuizResults: !!user.quizResults,
-                quizProgressKeys: user.quizProgress ? Object.keys(user.quizProgress) : [],
-                quizResultsCount: user.quizResults ? user.quizResults.length : 0
-            });
-            
-            // ENHANCED: Validate that statistics make sense
-            if (quizzesPassed + quizzesFailed !== quizzesCompleted) {
-                console.warn(`[Admin] ${user.username}: Passed (${quizzesPassed}) + Failed (${quizzesFailed}) != Completed (${quizzesCompleted})`);
-            }
-            
-            if (quizzesCompleted + quizzesInProgress + quizzesNotStarted !== quizzesAssigned) {
-                console.warn(`[Admin] ${user.username}: Completed (${quizzesCompleted}) + InProgress (${quizzesInProgress}) + NotStarted (${quizzesNotStarted}) != Assigned (${quizzesAssigned})`);
-            }
-            
-            // Use the same calculation as the details overlay for overall progress
-            const overallProgress = this.calculateQuestionsAnsweredPercent(user);
-            const overallProgressDisplay = `${overallProgress.toFixed(1)}%`;
-
-            const card = document.createElement('div');
-            card.className = 'user-card';
-            
-            // Set data attributes for all the metrics
-            card.setAttribute('data-username', user.username);
-            card.setAttribute('data-progress', overallProgressDisplay);
-            card.setAttribute('data-assigned', quizzesAssigned.toString());
-            card.setAttribute('data-completed', quizzesCompleted.toString());
-            card.setAttribute('data-passed', quizzesPassed.toString());
-            card.setAttribute('data-failed', quizzesFailed.toString());
-            card.setAttribute('data-in-progress', quizzesInProgress.toString());
-            card.setAttribute('data-not-started', quizzesNotStarted.toString());
-            
-            if (isRowView) {
-                card.innerHTML = `
-                    <div class="row-content">
-                        <div class="user-info">
-                            <span class="username">${user.username}</span>
-                        </div>
-                        <div class="user-stats expanded-stats">
-                            <div class="stat">
-                                <span class="stat-label">Quizzes Assigned:</span>
-                                <span class="stat-value">${quizzesAssigned}</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Quizzes Completed:</span>
-                                <span class="stat-value">${quizzesCompleted}</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Quizzes Passed:</span>
-                                <span class="stat-value">${quizzesPassed}</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Quizzes Failed:</span>
-                                <span class="stat-value">${quizzesFailed}</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Quizzes In Progress:</span>
-                                <span class="stat-value">${quizzesInProgress}</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Quizzes Not Started:</span>
-                                <span class="stat-value">${quizzesNotStarted}</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Last Active:</span>
-                                <span class="stat-value">${this.formatDate(lastActive)}</span>
-                            </div>
-                        </div>
-                        <button class="view-details-btn row-btn" tabindex="0" aria-label="View details for ${user.username}">View Details</button>
-                    </div>
-                `;
-                
-                const viewBtn = card.querySelector('.view-details-btn');
-                if (viewBtn) {
-                    viewBtn.addEventListener('click', () => {
-                        this.showUserDetails(user.username);
-                    });
-                    viewBtn.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            this.showUserDetails(user.username);
-                        }
-                    });
-                }
-            } else {
-                // Use direct DOM manipulation to avoid any issues with HTML processing
-                const cardContent = document.createElement('div');
-                cardContent.className = 'user-card-content';
-                
-                const userHeader = document.createElement('div');
-                userHeader.className = 'user-header';
-                
-                const username = document.createElement('span');
-                username.className = 'username';
-                username.textContent = user.username;
-                
-                userHeader.appendChild(username);
-                
-                const progressContainer = document.createElement('div');
-                progressContainer.className = 'progress-container';
-                
-                const progressBar = document.createElement('div');
-                progressBar.className = 'progress-bar';
-                progressBar.style.backgroundColor = '#e9ecef'; // Light gray background
-                
-                const progressFill = document.createElement('div');
-                progressFill.className = 'progress-fill';
-                progressFill.style.width = `${overallProgress}%`;
-                progressFill.style.backgroundColor = '#28a745'; // Green fill color
-                
-                progressBar.appendChild(progressFill);
-                
-                const progressText = document.createElement('span');
-                progressText.className = 'progress-text';
-                progressText.textContent = overallProgressDisplay;
-                
-                progressContainer.appendChild(progressBar);
-                progressContainer.appendChild(progressText);
-                
-                const userStats = document.createElement('div');
-                userStats.className = 'user-stats';
-                
-                // Add expanded stats class for better layout
-                userStats.className = 'user-stats expanded-stats';
-                
-                // Quizzes Assigned stat
-                const assignedStat = document.createElement('div');
-                assignedStat.className = 'stat';
-                
-                const assignedLabel = document.createElement('span');
-                assignedLabel.className = 'stat-label';
-                assignedLabel.textContent = 'Quizzes Assigned:';
-                
-                const assignedValue = document.createElement('span');
-                assignedValue.className = 'stat-value';
-                assignedValue.textContent = quizzesAssigned.toString();
-                
-                assignedStat.appendChild(assignedLabel);
-                assignedStat.appendChild(assignedValue);
-                
-                // Quizzes Completed stat
-                const completedStat = document.createElement('div');
-                completedStat.className = 'stat';
-                
-                const completedLabel = document.createElement('span');
-                completedLabel.className = 'stat-label';
-                completedLabel.textContent = 'Quizzes Completed:';
-                
-                const completedValue = document.createElement('span');
-                completedValue.className = 'stat-value';
-                completedValue.textContent = quizzesCompleted.toString();
-                
-                completedStat.appendChild(completedLabel);
-                completedStat.appendChild(completedValue);
-                
-                // Quizzes Passed stat
-                const passedStat = document.createElement('div');
-                passedStat.className = 'stat';
-                
-                const passedLabel = document.createElement('span');
-                passedLabel.className = 'stat-label';
-                passedLabel.textContent = 'Quizzes Passed:';
-                
-                const passedValue = document.createElement('span');
-                passedValue.className = 'stat-value';
-                passedValue.textContent = quizzesPassed.toString();
-                
-                passedStat.appendChild(passedLabel);
-                passedStat.appendChild(passedValue);
-                
-                // Quizzes Failed stat
-                const failedStat = document.createElement('div');
-                failedStat.className = 'stat';
-                
-                const failedLabel = document.createElement('span');
-                failedLabel.className = 'stat-label';
-                failedLabel.textContent = 'Quizzes Failed:';
-                
-                const failedValue = document.createElement('span');
-                failedValue.className = 'stat-value';
-                failedValue.textContent = quizzesFailed.toString();
-                
-                failedStat.appendChild(failedLabel);
-                failedStat.appendChild(failedValue);
-                
-                // Quizzes In Progress stat
-                const inProgressStat = document.createElement('div');
-                inProgressStat.className = 'stat';
-                
-                const inProgressLabel = document.createElement('span');
-                inProgressLabel.className = 'stat-label';
-                inProgressLabel.textContent = 'Quizzes In Progress:';
-                
-                const inProgressValue = document.createElement('span');
-                inProgressValue.className = 'stat-value';
-                inProgressValue.textContent = quizzesInProgress.toString();
-                
-                inProgressStat.appendChild(inProgressLabel);
-                inProgressStat.appendChild(inProgressValue);
-                
-                // Quizzes Not Started stat
-                const notStartedStat = document.createElement('div');
-                notStartedStat.className = 'stat';
-                
-                const notStartedLabel = document.createElement('span');
-                notStartedLabel.className = 'stat-label';
-                notStartedLabel.textContent = 'Quizzes Not Started:';
-                
-                const notStartedValue = document.createElement('span');
-                notStartedValue.className = 'stat-value';
-                notStartedValue.textContent = quizzesNotStarted.toString();
-                
-                notStartedStat.appendChild(notStartedLabel);
-                notStartedStat.appendChild(notStartedValue);
-                
-                // Last Active stat
-                const lastActiveStat = document.createElement('div');
-                lastActiveStat.className = 'stat';
-
-                const lastActiveLabel = document.createElement('span');
-                lastActiveLabel.className = 'stat-label';
-                lastActiveLabel.textContent = 'Last Active:';
-                
-                const lastActiveValue = document.createElement('span');
-                lastActiveValue.className = 'stat-value';
-                lastActiveValue.textContent = this.formatDate(lastActive);
-                
-                lastActiveStat.appendChild(lastActiveLabel);
-                lastActiveStat.appendChild(lastActiveValue);
-                
-                userStats.appendChild(assignedStat);
-                userStats.appendChild(completedStat);
-                userStats.appendChild(passedStat);
-                userStats.appendChild(failedStat);
-                userStats.appendChild(inProgressStat);
-                userStats.appendChild(notStartedStat);
-                userStats.appendChild(lastActiveStat);
-                
-                cardContent.appendChild(userHeader);
-                cardContent.appendChild(progressContainer);
-                cardContent.appendChild(userStats);
-                
-                const viewDetailsBtn = document.createElement('button');
-                viewDetailsBtn.className = 'view-details-btn';
-                viewDetailsBtn.setAttribute('tabindex', '0');
-                viewDetailsBtn.setAttribute('aria-label', `View details for ${user.username}`);
-                viewDetailsBtn.textContent = 'View Details';
-                
-                viewDetailsBtn.addEventListener('click', () => {
-                    this.showUserDetails(user.username);
-                });
-                viewDetailsBtn.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        this.showUserDetails(user.username);
-                    }
-                });
-                
-                card.appendChild(cardContent);
-                card.appendChild(viewDetailsBtn);
-            }
-
-            container.appendChild(card);
-            
-            // ENHANCED: Final verification and debugging
-            const scoreElements = card.querySelectorAll('.stat-value');
-            scoreElements.forEach(element => {
-                if (element.textContent === '0%') {
-                    console.log(`Direct fix: Found a zero percent value that needs updating in ${user.username}'s card`);
-                    element.textContent = overallProgressDisplay;
-                }
-            });
-        });
 
         if (filteredUsers.length === 0) {
             container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
