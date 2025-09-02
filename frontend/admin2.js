@@ -165,26 +165,16 @@ export class Admin2Dashboard {
                 // Store users data
                 this.users = response.data;
                 
-                // Display user cards immediately with basic API data (so users see something)
-                console.log('[Admin] Displaying user cards with basic API data...');
+                // Display user cards with loading screen for API calls
+                console.log('[Admin] Displaying user cards with accurate API data...');
                 await this.updateUsersList();
                 
                 // Update statistics with basic data
                 const stats = this.updateStatistics();
                 this.updateStatisticsDisplay(stats);
                 
-                // Load user progress progressively in the background to get accurate data
-                console.log('[Admin] Starting progressive loading in background...');
-                this.loadAllUserProgress().then(async () => {
-                    console.log('[Admin] Progressive loading complete, updating cards with accurate data...');
-                    // Update the cards with the enriched data
-                    await this.updateUsersList();
-                    // Update statistics with accurate data
-                    const finalStats = this.updateStatistics();
-                    this.updateStatisticsDisplay(finalStats);
-                }).catch(error => {
-                    console.error('[Admin] Progressive loading failed:', error);
-                });
+                // Note: Progressive loading/enrichment is no longer needed since calculateUserQuizStats 
+                // now fetches accurate data directly from the API when needed
                 
                 // Update badges section user dropdown
                 this.populateBadgesUserDropdown();
@@ -1161,11 +1151,95 @@ export class Admin2Dashboard {
             }
         }
     }
+
+    /**
+     * Show loading overlay for user cards
+     */
+    showUsersLoadingOverlay() {
+        // Remove existing overlay if any
+        this.hideUsersLoadingOverlay();
+        
+        const overlay = document.createElement('div');
+        overlay.id = 'users-loading-overlay';
+        overlay.className = 'users-loading-overlay';
+        overlay.innerHTML = `
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <h3>Loading User Data</h3>
+                <p>Fetching accurate quiz statistics from server...</p>
+                <div class="loading-details">
+                    <small>This may take a few seconds for users with many completed quizzes</small>
+                </div>
+            </div>
+        `;
+        
+        // Add CSS if not already added
+        if (!document.getElementById('users-loading-styles')) {
+            const style = document.createElement('style');
+            style.id = 'users-loading-styles';
+            style.textContent = `
+                .users-loading-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(255, 255, 255, 0.95);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                    border-radius: 8px;
+                }
+                .loading-content {
+                    text-align: center;
+                    padding: 2rem;
+                }
+                .loading-spinner {
+                    width: 50px;
+                    height: 50px;
+                    border: 5px solid #f3f3f3;
+                    border-top: 5px solid #3498db;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 1rem;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                .loading-details {
+                    margin-top: 1rem;
+                    opacity: 0.7;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        const container = document.getElementById('usersList');
+        if (container) {
+            container.style.position = 'relative';
+            container.appendChild(overlay);
+        }
+    }
+
+    /**
+     * Hide loading overlay for user cards
+     */
+    hideUsersLoadingOverlay() {
+        const overlay = document.getElementById('users-loading-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
     
     async updateUsersList() {
         console.log('[Admin] updateUsersList() called');
         const container = document.getElementById('usersList');
         if (!container) return;
+
+        // Show loading overlay
+        this.showUsersLoadingOverlay();
 
         // Handle case when users haven't been loaded yet
         if (!this.users || !Array.isArray(this.users)) {
@@ -1175,6 +1249,7 @@ export class Admin2Dashboard {
             // Update statistics with empty data
             const stats = this.updateStatistics([]);
             this.updateStatisticsDisplay(stats);
+            this.hideUsersLoadingOverlay();
             return;
         }
         
@@ -1206,6 +1281,7 @@ export class Admin2Dashboard {
                     <p><strong>Error:</strong> CORS policy blocked or server returned 502 Bad Gateway</p>
                     <button onclick="location.reload()" class="retry-btn">🔄 Retry Connection</button>
                 `;
+            this.hideUsersLoadingOverlay();
             return;
         }
 
@@ -1559,12 +1635,17 @@ export class Admin2Dashboard {
 
         if (filteredUsers.length === 0) {
             container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
+            this.hideUsersLoadingOverlay();
+            return;
         }
         
         const endTime = performance.now();
         const loadTime = Math.round(endTime - startTime);
         const finalCardCount = container.children.length;
         console.log(`[Admin] Users list update complete. Processed ${filteredUsers.length} users, created ${finalCardCount} cards in ${loadTime}ms.`);
+        
+        // Hide loading overlay
+        this.hideUsersLoadingOverlay();
     }
     
     // Display timer settings in the settings section
