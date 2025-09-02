@@ -240,6 +240,9 @@ export class Admin2Dashboard {
                 // Enrich with question history for completed quizzes
                 await this.enrichQuizProgressWithQuestionHistory(user.username, user);
                 
+                // Update the user's data in memory with the enriched information
+                await this.updateUserDataInMemory(user.username);
+                
                 // Immediately update this user's card with new data
                 await this.updateSingleUserCard(user.username);
                 
@@ -324,7 +327,11 @@ export class Admin2Dashboard {
                                       (progress.questionHistory ? progress.questionHistory.length : 0);
                     
                     // Priority order for score calculation (most accurate first)
-                    if (progress.questionHistory && progress.questionHistory.length > 0) {
+                    if (progress.hasAccurateScore && progress.scorePercentage !== undefined) {
+                        // Use the updated accurate score from memory
+                        scorePercentage = progress.scorePercentage;
+                        console.log(`[Admin] ${user.username}/${quizType}: Using updated accurate score from memory = ${scorePercentage}%`);
+                    } else if (progress.questionHistory && progress.questionHistory.length > 0) {
                         // Question history is the most accurate source
                         const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
                         scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
@@ -461,39 +468,45 @@ export class Admin2Dashboard {
             if (response.success) {
                 console.log(`Loaded progress for ${username}:`, response.data);
                 
-                // Find the user and update their progress data
-                const userIndex = this.users.findIndex(u => u.username === username);
-                if (userIndex !== -1) {
-                    // Verify data format
-                    if (typeof response.data === 'object') {
-                        // Store quiz progress data
-                        this.users[userIndex].quizProgress = response.data.quizProgress || {};
-                        
-                        // Store quiz results data if available
-                        if (response.data.quizResults && Array.isArray(response.data.quizResults)) {
-                            this.users[userIndex].quizResults = response.data.quizResults;
-                        }
-                        
-                        // If response has a message but was still successful, it's likely using fallback data
-                        if (response.message) {
-                            console.warn(`Note for ${username}: ${response.message}`);
-                        }
-                        
-                        // For completed quizzes without question history, try to fetch it
-                        await this.enrichQuizProgressWithQuestionHistory(username, this.users[userIndex]);
-                        
-                        return response.data;
-                    } else {
-                        console.warn(`Invalid progress data format for ${username}. Using empty data.`);
-                        // Instead of throwing, set empty data
-                        this.users[userIndex].quizProgress = {};
-                        this.users[userIndex].quizResults = [];
-                        return { quizProgress: {}, quizResults: [] };
+                            // Find the user and update their progress data
+            const userIndex = this.users.findIndex(u => u.username === username);
+            if (userIndex !== -1) {
+                // Verify data format
+                if (typeof response.data === 'object') {
+                    // Store quiz progress data
+                    this.users[userIndex].quizProgress = response.data.quizProgress || {};
+                    
+                    // Store quiz results data if available
+                    if (response.data.quizResults && Array.isArray(response.data.quizResults)) {
+                        this.users[userIndex].quizResults = response.data.quizResults;
                     }
+                    
+                    // If response has a message but was still successful, it's likely using fallback data
+                    if (response.message) {
+                        console.warn(`Note for ${username}: ${response.message}`);
+                    }
+                    
+                    // Load enriched data from localStorage if available (this will override API data with more accurate scores)
+                    const hasEnrichedData = this.loadEnrichedDataFromStorage(username);
+                    if (hasEnrichedData) {
+                        console.log(`[Admin] ${username}: Using enriched data from localStorage instead of API data`);
+                    }
+                    
+                    // For completed quizzes without question history, try to fetch it
+                    await this.enrichQuizProgressWithQuestionHistory(username, this.users[userIndex]);
+                    
+                    return response.data;
                 } else {
-                    console.warn(`User ${username} not found in users list. Skipping.`);
+                    console.warn(`Invalid progress data format for ${username}. Using empty data.`);
+                    // Instead of throwing, set empty data
+                    this.users[userIndex].quizProgress = {};
+                    this.users[userIndex].quizResults = [];
                     return { quizProgress: {}, quizResults: [] };
                 }
+            } else {
+                console.warn(`User ${username} not found in users list. Skipping.`);
+                return { quizProgress: {}, quizResults: [] };
+            }
             } else {
                 console.warn(`Could not load progress for ${username}: ${response.message || 'Unknown error'}`);
                 // If user exists, set empty data instead of throwing
@@ -702,23 +715,102 @@ export class Admin2Dashboard {
             userCard.setAttribute('data-in-progress', quizzesInProgress.toString());
             userCard.setAttribute('data-not-started', quizzesNotStarted.toString());
             
-            // Update the displayed statistics in the card
-            const passedElement = userCard.querySelector('.stat-value[data-stat="passed"]') || 
-                                userCard.querySelector('.stat-value:nth-child(4)');
-            const failedElement = userCard.querySelector('.stat-value[data-stat="failed"]') || 
-                                userCard.querySelector('.stat-value:nth-child(5)');
-            const completedElement = userCard.querySelector('.stat-value[data-stat="completed"]') || 
-                                   userCard.querySelector('.stat-value:nth-child(3)');
-            const inProgressElement = userCard.querySelector('.stat-value[data-stat="in-progress"]') || 
-                                    userCard.querySelector('.stat-value:nth-child(6)');
-            const notStartedElement = userCard.querySelector('.stat-value[data-stat="not-started"]') || 
-                                     userCard.querySelector('.stat-value:nth-child(7)');
+            // Update the displayed statistics in the card - try multiple selector strategies
+            console.log(`[Admin] Updating DOM for ${username} card with stats:`, {
+                passed: quizzesPassed,
+                failed: quizzesFailed,
+                completed: quizzesCompleted,
+                inProgress: quizzesInProgress,
+                notStarted: quizzesNotStarted
+            });
             
-            if (passedElement) passedElement.textContent = quizzesPassed;
-            if (failedElement) failedElement.textContent = quizzesFailed;
-            if (completedElement) completedElement.textContent = quizzesCompleted;
-            if (inProgressElement) inProgressElement.textContent = quizzesInProgress;
-            if (notStartedElement) notStartedElement.textContent = quizzesNotStarted;
+            // Strategy 1: Look for elements with data-stat attributes
+            const passedElement = userCard.querySelector('.stat-value[data-stat="passed"]') || 
+                                userCard.querySelector('[data-stat="passed"]');
+            const failedElement = userCard.querySelector('.stat-value[data-stat="failed"]') || 
+                                userCard.querySelector('[data-stat="failed"]');
+            const completedElement = userCard.querySelector('.stat-value[data-stat="completed"]') || 
+                                   userCard.querySelector('[data-stat="completed"]');
+            const inProgressElement = userCard.querySelector('.stat-value[data-stat="in-progress"]') || 
+                                    userCard.querySelector('[data-stat="in-progress"]');
+            const notStartedElement = userCard.querySelector('.stat-value[data-stat="not-started"]') || 
+                                     userCard.querySelector('[data-stat="not-started"]');
+            
+            // Strategy 2: Look for elements by class and position
+            const allStatValues = userCard.querySelectorAll('.stat-value');
+            const allStats = userCard.querySelectorAll('.stat');
+            
+            console.log(`[Admin] Found ${allStatValues.length} stat-value elements and ${allStats.length} stat elements`);
+            
+            // Debug: Log the actual DOM structure
+            console.log(`[Admin] DOM structure for ${username} card:`, {
+                cardHTML: userCard.innerHTML.substring(0, 500) + '...',
+                statValues: Array.from(allStatValues).map(el => ({
+                    text: el.textContent,
+                    classes: el.className,
+                    dataStat: el.getAttribute('data-stat')
+                })),
+                stats: Array.from(allStats).map(el => ({
+                    text: el.textContent.substring(0, 100),
+                    classes: el.className
+                }))
+            });
+            
+            // Update elements if found by data-stat
+            if (passedElement) {
+                passedElement.textContent = quizzesPassed;
+                console.log(`[Admin] Updated passed element: ${quizzesPassed}`);
+            }
+            if (failedElement) {
+                failedElement.textContent = quizzesFailed;
+                console.log(`[Admin] Updated failed element: ${quizzesFailed}`);
+            }
+            if (completedElement) {
+                completedElement.textContent = quizzesCompleted;
+                console.log(`[Admin] Updated completed element: ${quizzesCompleted}`);
+            }
+            if (inProgressElement) {
+                inProgressElement.textContent = quizzesInProgress;
+                console.log(`[Admin] Updated in-progress element: ${quizzesInProgress}`);
+            }
+            if (notStartedElement) {
+                notStartedElement.textContent = quizzesNotStarted;
+                console.log(`[Admin] Updated not-started element: ${quizzesNotStarted}`);
+            }
+            
+            // Strategy 3: Update by position if data-stat didn't work
+            if (allStatValues.length >= 6) {
+                // Try to update by position in the stat-value array
+                allStatValues[2].textContent = quizzesCompleted; // Completed
+                allStatValues[3].textContent = quizzesPassed;    // Passed
+                allStatValues[4].textContent = quizzesFailed;    // Failed
+                allStatValues[5].textContent = quizzesInProgress; // In Progress
+                allStatValues[6].textContent = quizzesNotStarted; // Not Started
+                console.log(`[Admin] Updated stats by position for ${username}`);
+            }
+            
+            // Strategy 4: Update by looking for specific text patterns
+            const updateStatByLabel = (label, newValue) => {
+                const statElement = Array.from(allStats).find(stat => 
+                    stat.textContent.includes(label)
+                );
+                if (statElement) {
+                    const valueElement = statElement.querySelector('.stat-value');
+                    if (valueElement) {
+                        valueElement.textContent = newValue;
+                        console.log(`[Admin] Updated ${label} by label: ${newValue}`);
+                    }
+                }
+            };
+            
+            updateStatByLabel('Quizzes Passed:', quizzesPassed);
+            updateStatByLabel('Quizzes Failed:', quizzesFailed);
+            updateStatByLabel('Quizzes Completed:', quizzesCompleted);
+            updateStatByLabel('Quizzes In Progress:', quizzesInProgress);
+            updateStatByLabel('Quizzes Not Started:', quizzesNotStarted);
+            
+            // Force a visual refresh by updating the card's background colors if needed
+            this.updateCardVisualStatus(userCard, quizzesPassed, quizzesFailed);
             
             console.log(`[Admin] Updated ${username} card statistics:`, {
                 passed: quizzesPassed,
@@ -730,6 +822,194 @@ export class Admin2Dashboard {
             
         } catch (error) {
             console.error(`[Admin] Error refreshing user card statistics for ${username}:`, error);
+        }
+    }
+    
+    /**
+     * Update the user's data in memory with enriched quiz information
+     * This ensures that future card generations use the correct data
+     */
+    async updateUserDataInMemory(username) {
+        try {
+            console.log(`[Admin] Updating user data in memory for ${username}`);
+            
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                console.warn(`[Admin] User ${username} not found for memory update`);
+                return;
+            }
+            
+            // For each completed quiz, ensure we have the most accurate score data
+            if (user.quizProgress && this.quizTypes) {
+                let updatedCount = 0;
+                
+                for (const quizType of this.quizTypes) {
+                    const quizLower = quizType.toLowerCase();
+                    const progress = user.quizProgress[quizLower];
+                    
+                    if (progress && progress.questionsAnswered >= 15) {
+                        // This is a completed quiz - ensure we have accurate score data
+                        let accurateScore = null;
+                        
+                        // Priority 1: Use questionHistory if available (most accurate)
+                        if (progress.questionHistory && progress.questionHistory.length > 0) {
+                            const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                            accurateScore = (correctAnswers / progress.questionHistory.length) * 100;
+                            console.log(`[Admin] ${username}/${quizType}: Using questionHistory score: ${accurateScore}%`);
+                        }
+                        // Priority 2: Use quizResults if available
+                        else if (user.quizResults) {
+                            const result = user.quizResults.find(r => r.quizName.toLowerCase() === quizLower);
+                            if (result && result.score !== undefined) {
+                                accurateScore = result.score;
+                                console.log(`[Admin] ${username}/${quizType}: Using quizResults score: ${accurateScore}%`);
+                            }
+                        }
+                        // Priority 3: Use existing scorePercentage if available
+                        else if (progress.scorePercentage !== undefined) {
+                            accurateScore = progress.scorePercentage;
+                            console.log(`[Admin] ${username}/${quizType}: Using existing scorePercentage: ${accurateScore}%`);
+                        }
+                        // Priority 4: Use existing score if available
+                        else if (progress.score !== undefined) {
+                            accurateScore = progress.score;
+                            console.log(`[Admin] ${username}/${quizType}: Using existing score: ${accurateScore}%`);
+                        }
+                        
+                        // Update the progress object with the accurate score
+                        if (accurateScore !== null) {
+                            progress.scorePercentage = accurateScore;
+                            progress.score = accurateScore;
+                            
+                            // Mark this quiz as having accurate data
+                            progress.hasAccurateScore = true;
+                            progress.lastScoreUpdate = new Date().toISOString();
+                            
+                            updatedCount++;
+                            console.log(`[Admin] ${username}/${quizType}: Updated with accurate score ${accurateScore}%`);
+                        }
+                    }
+                }
+                
+                            console.log(`[Admin] Updated ${updatedCount} quiz scores in memory for ${username}`);
+        }
+        
+        // Also update the user's quizResults if we have more accurate data
+        if (user.quizProgress && user.quizResults) {
+            for (const result of user.quizResults) {
+                const quizLower = result.quizName.toLowerCase();
+                const progress = user.quizProgress[quizLower];
+                
+                if (progress && progress.questionsAnswered >= 15) {
+                    // Update the quiz result with the most accurate score
+                    if (progress.hasAccurateScore && progress.scorePercentage !== undefined) {
+                        result.score = progress.scorePercentage;
+                        console.log(`[Admin] ${username}/${result.quizName}: Updated quiz result score to ${progress.scorePercentage}%`);
+                    }
+                }
+            }
+        }
+        
+        // Persist the updated data to localStorage so it survives page refreshes
+        this.persistUserDataToStorage(username);
+        
+    } catch (error) {
+        console.error(`[Admin] Error updating user data in memory for ${username}:`, error);
+    }
+    }
+    
+    /**
+     * Persist user data to localStorage so accurate scores survive page refreshes
+     */
+    persistUserDataToStorage(username) {
+        try {
+            const user = this.users.find(u => u.username === username);
+            if (!user) return;
+            
+            // Create a storage key for this user's enriched data
+            const storageKey = `admin_user_${username}_enriched_data`;
+            
+            // Store the enriched quiz progress data
+            const enrichedData = {
+                quizProgress: user.quizProgress,
+                quizResults: user.quizResults,
+                lastUpdated: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            localStorage.setItem(storageKey, JSON.stringify(enrichedData));
+            console.log(`[Admin] Persisted enriched data for ${username} to localStorage`);
+            
+        } catch (error) {
+            console.warn(`[Admin] Error persisting data for ${username}:`, error);
+        }
+    }
+    
+    /**
+     * Load enriched user data from localStorage if available
+     */
+    loadEnrichedDataFromStorage(username) {
+        try {
+            const storageKey = `admin_user_${username}_enriched_data`;
+            const storedData = localStorage.getItem(storageKey);
+            
+            if (storedData) {
+                const enrichedData = JSON.parse(storedData);
+                const user = this.users.find(u => u.username === username);
+                
+                if (user && enrichedData.quizProgress) {
+                    // Merge the enriched data with the user's current data
+                    user.quizProgress = { ...user.quizProgress, ...enrichedData.quizProgress };
+                    
+                    if (enrichedData.quizResults) {
+                        user.quizResults = enrichedData.quizResults;
+                    }
+                    
+                    console.log(`[Admin] Loaded enriched data for ${username} from localStorage`);
+                    return true;
+                }
+            }
+            
+            return false;
+        } catch (error) {
+            console.warn(`[Admin] Error loading enriched data for ${username}:`, error);
+            return false;
+        }
+    }
+    
+    /**
+     * Update the visual status of a user card (background colors, etc.)
+     */
+    updateCardVisualStatus(userCard, passed, failed) {
+        try {
+            // Find and update the failed quizzes card background if there are failures
+            const failedCard = userCard.querySelector('.stat:has(.stat-value)') || 
+                              userCard.querySelector('.stat:nth-child(4)');
+            
+            if (failedCard && failed > 0) {
+                // Ensure failed card has red background
+                failedCard.style.backgroundColor = '#ffebee';
+                failedCard.style.borderColor = '#f44336';
+            } else if (failedCard && failed === 0) {
+                // Remove red background if no failures
+                failedCard.style.backgroundColor = '';
+                failedCard.style.borderColor = '';
+            }
+            
+            // Find and update the passed quizzes card background
+            const passedCard = userCard.querySelector('.stat:has(.stat-value)') || 
+                              userCard.querySelector('.stat:nth-child(3)');
+            
+            if (passedCard && passed > 0) {
+                // Ensure passed card has green background
+                passedCard.style.backgroundColor = '#e8f5e8';
+                passedCard.style.borderColor = '#4caf50';
+            }
+            
+            console.log(`[Admin] Updated visual status for card: passed=${passed}, failed=${failed}`);
+            
+        } catch (error) {
+            console.warn('[Admin] Error updating card visual status:', error);
         }
     }
     
