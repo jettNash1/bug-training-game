@@ -295,11 +295,43 @@ export class Admin2Dashboard {
         let quizzesInProgress = 0;
         let quizzesNotStarted = 0;
         
+        // ENHANCED: Debug user data structure
+        console.log(`[Admin] ${user.username} data structure:`, {
+            hasQuizResults: !!user.quizResults,
+            quizResultsCount: user.quizResults ? user.quizResults.length : 0,
+            hasQuizProgress: !!user.quizProgress,
+            quizProgressKeys: user.quizProgress ? Object.keys(user.quizProgress) : [],
+            sampleQuizResult: user.quizResults && user.quizResults.length > 0 ? user.quizResults[0] : null,
+            sampleQuizProgress: user.quizProgress ? Object.values(user.quizProgress)[0] : null
+        });
+        
         visibleQuizzes.forEach(quizType => {
             if (typeof quizType === 'string') {
                 const quizLower = quizType.toLowerCase();
                 const progress = user.quizProgress?.[quizLower];
                 const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                
+                // ENHANCED: Debug individual quiz data
+                console.log(`[Admin] ${user.username}/${quizType} data sources:`, {
+                    hasResult: !!result,
+                    hasProgress: !!progress,
+                    resultData: result ? {
+                        questionsAnswered: result.questionsAnswered,
+                        hasQuestionHistory: !!result.questionHistory,
+                        questionHistoryLength: result.questionHistory ? result.questionHistory.length : 0,
+                        status: result.status,
+                        score: result.score,
+                        scorePercentage: result.scorePercentage,
+                        sampleQuestion: result.questionHistory && result.questionHistory.length > 0 ? result.questionHistory[0] : null
+                    } : null,
+                    progressData: progress ? {
+                        questionsAnswered: progress.questionsAnswered,
+                        hasQuestionHistory: !!progress.questionHistory,
+                        questionHistoryLength: progress.questionHistory ? progress.questionHistory.length : 0,
+                        score: progress.score,
+                        scorePercentage: progress.scorePercentage
+                    } : null
+                });
                 
                 let questionsAnswered = 0;
                 let isPassed = false;
