@@ -708,22 +708,21 @@ export class Admin2Dashboard {
                             questionsAnswered = progress.questionsAnswered || 
                                               (progress.questionHistory ? progress.questionHistory.length : 0);
                             
-                            // Calculate score from progress - handle both old and new field names
-                            if (progress.scorePercentage !== undefined) {
+                            // Calculate score from progress - prioritize question history for accuracy
+                            if (progress.questionHistory && progress.questionHistory.length > 0) {
+                                // Use question history for most accurate score calculation
+                                const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                                scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
+                            } else if (progress.scorePercentage !== undefined) {
                                 scorePercentage = progress.scorePercentage;
                             } else if (progress.score !== undefined) {
                                 scorePercentage = progress.score;
-                            } else if (progress.questionHistory && progress.questionHistory.length > 0) {
-                                const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
-                                scorePercentage = (correctAnswers / progress.questionHistory.length) * 100;
                             } else if (progress.correctAnswers !== undefined && questionsAnswered > 0) {
                                 // Fallback: use correctAnswers field if available
                                 scorePercentage = Math.round((progress.correctAnswers / questionsAnswered) * 100);
-                            } else if (progress.experience !== undefined && questionsAnswered >= 15) {
-                                // For completed quizzes, calculate score from experience (max 300 = 100%)
-                                scorePercentage = Math.min(100, Math.round((progress.experience / 300) * 100));
                             } else {
-                                // Default to 0 if no score data available
+                                // Don't use experience field for score calculation as it's unreliable
+                                // Default to 0 if no reliable score data available
                                 scorePercentage = 0;
                             }
                             // Quiz progress data processed
@@ -6269,17 +6268,17 @@ export class Admin2Dashboard {
                     let score = 0;
                     if (result && result.score !== undefined) {
                         score = result.score;
-                    } else if (progress && progress.experience !== undefined && questionsAnswered >= 15) {
-                        // Calculate score from experience for completed quizzes
-                        score = Math.round(((progress.experience + 150) / 450) * 100);
                     } else if (progress && progress.questionHistory && progress.questionHistory.length > 0) {
-                        // Calculate score from question history
+                        // Calculate score from question history (most accurate)
                         const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
                         score = Math.round((correctAnswers / progress.questionHistory.length) * 100);
                     } else if (result && result.questionHistory && result.questionHistory.length > 0) {
                         // Calculate score from result question history
                         const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
                         score = Math.round((correctAnswers / result.questionHistory.length) * 100);
+                    } else if (progress && progress.experience !== undefined && questionsAnswered >= 15) {
+                        // Fallback: calculate score from experience for completed quizzes
+                        score = Math.round(((progress.experience + 150) / 450) * 100);
                     }
                     
                     // Determine status
@@ -6363,17 +6362,17 @@ export class Admin2Dashboard {
                     let score = 0;
                     if (result && result.score !== undefined) {
                         score = result.score;
-                    } else if (progress && progress.experience !== undefined && questionsAnswered >= 15) {
-                        // Calculate score from experience for completed quizzes
-                        score = Math.round(((progress.experience + 150) / 450) * 100);
                     } else if (progress && progress.questionHistory && progress.questionHistory.length > 0) {
-                        // Calculate score from question history
+                        // Calculate score from question history (most accurate)
                         const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
                         score = Math.round((correctAnswers / progress.questionHistory.length) * 100);
                     } else if (result && result.questionHistory && result.questionHistory.length > 0) {
                         // Calculate score from result question history
                         const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
                         score = Math.round((correctAnswers / result.questionHistory.length) * 100);
+                    } else if (progress && progress.experience !== undefined && questionsAnswered >= 15) {
+                        // Fallback: calculate score from experience for completed quizzes
+                        score = Math.round(((progress.experience + 150) / 450) * 100);
                     }
                     
                     // Determine status
@@ -6649,16 +6648,16 @@ export class Admin2Dashboard {
                     if (result?.score !== undefined) {
                         score = result.score;
                     } else {
-                        // Calculate from experience if quiz is completed
-                        const progress = user.quizProgress?.[quizId.toLowerCase()];
-                        if (progress?.experience !== undefined) {
-                            score = Math.round(((progress.experience + 150) / 450) * 100);
+                        // Calculate from question history first (most accurate)
+                        const questionHistory = result?.questionHistory || progress?.questionHistory;
+                        if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
+                            const correctAnswers = questionHistory.filter(q => q.isCorrect).length;
+                            score = Math.round((correctAnswers / questionHistory.length) * 100);
                         } else {
-                            // Calculate from question history
-                            const questionHistory = result?.questionHistory || progress?.questionHistory;
-                            if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                                const correctAnswers = questionHistory.filter(q => q.isCorrect).length;
-                                score = Math.round((correctAnswers / questionHistory.length) * 100);
+                            // Fallback: calculate from experience if quiz is completed
+                            const progress = user.quizProgress?.[quizId.toLowerCase()];
+                            if (progress?.experience !== undefined) {
+                                score = Math.round(((progress.experience + 150) / 450) * 100);
                             }
                         }
                     }
