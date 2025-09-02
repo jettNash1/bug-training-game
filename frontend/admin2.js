@@ -224,10 +224,18 @@ export class Admin2Dashboard {
                 await processUserChunk(chunk);
             }
             
+            // Wait a bit for any async enrichment to complete
+            console.log('[Admin] Waiting for quiz enrichment to complete...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
             // Update statistics and user list after loading all progress
             const stats = this.updateStatistics();
             this.updateStatisticsDisplay(stats);
             this.updateUsersList();
+            
+            // Force a refresh of the user list to ensure enriched data is displayed
+            console.log('[Admin] Refreshing user list with enriched data...');
+            await this.updateUsersList();
             
             // console.log("Completed loading progress for all users");
             // Ensure hero stats are updated after all progress is loaded
@@ -273,6 +281,9 @@ export class Admin2Dashboard {
                             console.warn(`Note for ${username}: ${response.message}`);
                         }
                         
+                        // For completed quizzes without question history, try to fetch it
+                        await this.enrichQuizProgressWithQuestionHistory(username, this.users[userIndex]);
+                        
                         return response.data;
                     } else {
                         console.warn(`Invalid progress data format for ${username}. Using empty data.`);
@@ -304,6 +315,42 @@ export class Admin2Dashboard {
                 this.users[userIndex].quizResults = [];
             }
             return { quizProgress: {}, quizResults: [] };
+        }
+    }
+    
+    /**
+     * Enrich quiz progress data with question history for completed quizzes
+     */
+    async enrichQuizProgressWithQuestionHistory(username, user) {
+        try {
+            if (!user.quizProgress || !this.quizTypes) return;
+            
+            // Check each quiz type for completed quizzes without question history
+            for (const quizType of this.quizTypes) {
+                const quizLower = quizType.toLowerCase();
+                const progress = user.quizProgress[quizLower];
+                
+                // Only fetch for completed quizzes that don't have question history
+                if (progress && 
+                    progress.questionsAnswered >= 15 && 
+                    (!progress.questionHistory || progress.questionHistory.length === 0)) {
+                    
+                    try {
+                        console.log(`[Admin] Enriching ${username}/${quizType} with question history`);
+                        const response = await this.apiService.getQuizQuestions(username, quizType);
+                        
+                        if (response.success && response.data && response.data.questionHistory) {
+                            // Update the progress with question history
+                            progress.questionHistory = response.data.questionHistory;
+                            console.log(`[Admin] Successfully enriched ${username}/${quizType} with question history`);
+                        }
+                    } catch (error) {
+                        console.warn(`[Admin] Failed to enrich ${username}/${quizType} with question history:`, error);
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn(`[Admin] Error enriching quiz progress for ${username}:`, error);
         }
     }
     
@@ -720,8 +767,13 @@ export class Admin2Dashboard {
                             } else if (progress.correctAnswers !== undefined && questionsAnswered > 0) {
                                 // Fallback: use correctAnswers field if available
                                 scorePercentage = Math.round((progress.correctAnswers / questionsAnswered) * 100);
+                            } else if (progress.experience !== undefined && questionsAnswered >= 15) {
+                                // For completed quizzes without question history, estimate score from experience
+                                // Experience ranges from -150 to +300, convert to 0-100% scale
+                                // Formula: ((experience + 150) / 450) * 100
+                                const normalizedExperience = Math.max(-150, Math.min(300, progress.experience));
+                                scorePercentage = Math.max(0, Math.min(100, Math.round(((normalizedExperience + 150) / 450) * 100)));
                             } else {
-                                // Don't use experience field for score calculation as it's unreliable
                                 // Default to 0 if no reliable score data available
                                 scorePercentage = 0;
                             }
