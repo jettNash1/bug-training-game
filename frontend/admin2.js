@@ -165,13 +165,20 @@ export class Admin2Dashboard {
                 // Store users data
                 this.users = response.data;
                 
-                // Load user progress for all users FIRST (this will call updateUsersList when done)
-                await this.loadAllUserProgress();
+                // Display user cards immediately with API data (so users see something)
+                this.updateUsersList();
                 
-                // Update badges section user dropdown (after users are displayed)
+                // Update statistics with API data
+                const stats = this.updateStatistics();
+                this.updateStatisticsDisplay(stats);
+                
+                // Load user progress progressively to get accurate data (this will update the cards)
+                this.loadAllUserProgress(); // Don't await - let it run in background
+                
+                // Update badges section user dropdown
                 this.populateBadgesUserDropdown();
                 
-                // Update schedule section user dropdown (after users are displayed)
+                // Update schedule section user dropdown
                 this.populateUserDropdown();
                 
                 return response.data;
@@ -190,13 +197,13 @@ export class Admin2Dashboard {
         try {
             console.log('[Admin] Starting progressive user data loading...');
             
-            // Step 1: Load user progress progressively to get accurate data FIRST
+            // Step 1: Load user progress progressively to get accurate data
             console.log('[Admin] Step 1: Loading user progress progressively to get accurate data...');
             await this.loadUserProgressProgressive();
             
-            // Step 2: Display user cards ONLY after we have accurate data
-            console.log('[Admin] Step 2: Displaying user cards with accurate data...');
-            await this.updateUsersList();
+            // Step 2: Update existing user cards with accurate data (don't regenerate them)
+            console.log('[Admin] Step 2: Updating existing user cards with accurate data...');
+            await this.updateExistingUserCards();
             
             // Step 3: Update statistics with accurate data
             console.log('[Admin] Step 3: Updating statistics with accurate data...');
@@ -207,8 +214,7 @@ export class Admin2Dashboard {
             
         } catch (error) {
             console.error('[Admin] Error in progressive loading:', error);
-            // On error, still try to show user cards with whatever data we have
-            await this.updateUsersList();
+            // On error, don't regenerate cards - just log the error
         }
     }
     
@@ -240,6 +246,57 @@ export class Admin2Dashboard {
                 console.warn(`[Admin] Failed to load progress for ${user.username}:`, error);
                 // Continue with next user
             }
+        }
+    }
+    
+    /**
+     * Update all existing user cards with accurate data without regenerating them
+     */
+    async updateExistingUserCards() {
+        try {
+            console.log('[Admin] Updating existing user cards with accurate data...');
+            
+            // Get all existing user cards from the DOM
+            const userCards = document.querySelectorAll('[data-username]');
+            console.log(`[Admin] Found ${userCards.length} existing user cards to update`);
+            
+            let updatedCount = 0;
+            
+            for (const userCard of userCards) {
+                const username = userCard.getAttribute('data-username');
+                const user = this.users.find(u => u.username === username);
+                
+                if (user) {
+                    try {
+                        // Recalculate statistics for this user with enriched data
+                        const stats = this.calculateUserQuizStats(user);
+                        
+                        // Update the card's data attributes
+                        userCard.setAttribute('data-passed', stats.passed.toString());
+                        userCard.setAttribute('data-failed', stats.failed.toString());
+                        userCard.setAttribute('data-completed', stats.completed.toString());
+                        userCard.setAttribute('data-in-progress', stats.inProgress.toString());
+                        userCard.setAttribute('data-not-started', stats.notStarted.toString());
+                        
+                        // Update the displayed values in the card
+                        this.updateUserCardDisplay(userCard, stats);
+                        
+                        // Update visual status (background colors)
+                        this.updateCardVisualStatus(userCard, stats.passed, stats.failed);
+                        
+                        updatedCount++;
+                        console.log(`[Admin] Updated card for ${username}:`, stats);
+                        
+                    } catch (error) {
+                        console.warn(`[Admin] Error updating card for ${username}:`, error);
+                    }
+                }
+            }
+            
+            console.log(`[Admin] Successfully updated ${updatedCount}/${userCards.length} user cards`);
+            
+        } catch (error) {
+            console.error('[Admin] Error updating existing user cards:', error);
         }
     }
     
