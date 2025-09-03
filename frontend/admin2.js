@@ -3645,7 +3645,7 @@ export class Admin2Dashboard {
                 // Create category content container
                 const categoryContent = document.createElement('div');
                 categoryContent.className = 'quiz-category-content';
-                categoryContent.style.display = 'block'; // Start expanded
+                // Start expanded - don't override CSS display property
                 
                 // Sort quizzes within category and add them
                 quizzes
@@ -3667,7 +3667,7 @@ export class Admin2Dashboard {
                         icon.classList.add('fa-chevron-right');
                         categoryHeader.setAttribute('aria-expanded', 'false');
                     } else {
-                        categoryContent.style.display = 'block';
+                        categoryContent.style.display = 'grid'; // Use grid instead of block
                         icon.classList.remove('fa-chevron-right');
                         icon.classList.add('fa-chevron-down');
                         categoryHeader.setAttribute('aria-expanded', 'true');
