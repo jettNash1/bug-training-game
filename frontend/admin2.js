@@ -3458,146 +3458,146 @@ export class Admin2Dashboard {
             
             // Create a function to generate quiz card content for reuse
             const createQuizCard = (quizType) => {
-                const quizLower = quizType.toLowerCase();
+                    const quizLower = quizType.toLowerCase();
+                    
+                    // All accounts now use hiddenQuizzes logic - visible if not hidden
+                    const isVisible = !hiddenQuizzes.includes(quizLower);
+                    
+                    console.log('Quiz visibility details:', {
+                        quizName: quizType,
+                        quizLower,
+                        hiddenQuizzes,
+                        inHiddenQuizzes: hiddenQuizzes.includes(quizLower),
+                        isVisible
+                    });
                 
-                // All accounts now use hiddenQuizzes logic - visible if not hidden
-                const isVisible = !hiddenQuizzes.includes(quizLower);
+                    const quizProgress = user.quizProgress?.[quizLower] || {};
+                    const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
                 
-                console.log('Quiz visibility details:', {
-                    quizName: quizType,
-                    quizLower,
-                    hiddenQuizzes,
-                    inHiddenQuizzes: hiddenQuizzes.includes(quizLower),
-                    isVisible
-                });
-            
-                const quizProgress = user.quizProgress?.[quizLower] || {};
-                const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-            
                 // Use data from either progress or results, prioritizing results
                 const questionsAnswered = quizResult?.questionsAnswered || 
                                         quizResult?.questionHistory?.length ||
                                         quizProgress?.questionsAnswered || 
                                         quizProgress?.questionHistory?.length || 0;
                 const experience = quizResult?.experience || quizProgress?.experience || 0;
-                
-                // Calculate score from question history if available
-                let score = 0;
-                const questionHistory = quizResult?.questionHistory || quizProgress?.questionHistory;
-                
-                console.log(`[Admin] Score calculation for ${quizType}:`, {
-                    quizResult: quizResult ? 'found' : 'not found',
-                    quizProgress: quizProgress ? 'found' : 'not found',
-                    questionHistory: questionHistory ? `array of ${questionHistory.length}` : 'not found',
-                    questionsAnswered
-                });
-                
-                if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                    // Use the same logic as the "View Questions" section - check if status is 'passed'
-                    const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
-                    score = Math.round((correctAnswers / questionHistory.length) * 100);
                     
-                    console.log(`[Admin] Calculated score from question history:`, {
-                        totalQuestions: questionHistory.length,
-                        correctAnswers,
-                        calculatedScore: score,
-                        questionStatuses: questionHistory.map(item => ({ status: item.status, passed: item.status === 'passed' }))
+                    // Calculate score from question history if available
+                    let score = 0;
+                    const questionHistory = quizResult?.questionHistory || quizProgress?.questionHistory;
+                    
+                    console.log(`[Admin] Score calculation for ${quizType}:`, {
+                        quizResult: quizResult ? 'found' : 'not found',
+                        quizProgress: quizProgress ? 'found' : 'not found',
+                        questionHistory: questionHistory ? `array of ${questionHistory.length}` : 'not found',
+                        questionsAnswered
                     });
-                } else if (questionsAnswered === 15 && !questionHistory) {
-                    // For completed quizzes without question history, we'll fetch it after card creation
-                    console.log(`[Admin] Quiz completed but no question history found. Will fetch from API after card creation.`);
                     
-                    // For now, show as completed but with unknown score
-                    score = 0; // This will be updated when the API call completes
-                    console.log(`[Admin] Using temporary score of 0 while fetching question history`);
-                } else {
-                    // Fallback to stored score if no question history available
-                    const rawScore = quizResult?.score || quizResult?.scorePercentage || 0;
-                    score = rawScore < 1 && rawScore > 0 ? Math.round(rawScore * 100) : Math.round(rawScore);
+                    if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
+                        // Use the same logic as the "View Questions" section - check if status is 'passed'
+                        const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
+                        score = Math.round((correctAnswers / questionHistory.length) * 100);
+                        
+                        console.log(`[Admin] Calculated score from question history:`, {
+                            totalQuestions: questionHistory.length,
+                            correctAnswers,
+                            calculatedScore: score,
+                            questionStatuses: questionHistory.map(item => ({ status: item.status, passed: item.status === 'passed' }))
+                        });
+                    } else if (questionsAnswered === 15 && !questionHistory) {
+                        // For completed quizzes without question history, we'll fetch it after card creation
+                        console.log(`[Admin] Quiz completed but no question history found. Will fetch from API after card creation.`);
+                        
+                        // For now, show as completed but with unknown score
+                        score = 0; // This will be updated when the API call completes
+                        console.log(`[Admin] Using temporary score of 0 while fetching question history`);
+                    } else {
+                        // Fallback to stored score if no question history available
+                        const rawScore = quizResult?.score || quizResult?.scorePercentage || 0;
+                        score = rawScore < 1 && rawScore > 0 ? Math.round(rawScore * 100) : Math.round(rawScore);
+                        
+                        console.log(`[Admin] Using fallback score:`, {
+                            rawScore,
+                            finalScore: score
+                        });
+                    }
+                    const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
                     
-                    console.log(`[Admin] Using fallback score:`, {
-                        rawScore,
-                        finalScore: score
-                    });
-                }
-                const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
-                
-                const status = questionsAnswered === 15 ? 'Completed' : 
-                            questionsAnswered > 0 ? 'In Progress' : 
-                            'Not Started';
-                
-                // Determine background color based on status and score (matching index page colors)
-                let backgroundColor = '#fff'; // Default white for not started (matches index page)
-                if (questionsAnswered > 0) {
-                    if (questionsAnswered === 15) {
-                        // All questions completed
-                        if (score >= 70) {
-                            backgroundColor = '#C8E6C9'; // Light green for 70% or higher (matches index page)
+                    const status = questionsAnswered === 15 ? 'Completed' : 
+                                questionsAnswered > 0 ? 'In Progress' : 
+                                'Not Started';
+                    
+                    // Determine background color based on status and score (matching index page colors)
+                    let backgroundColor = '#fff'; // Default white for not started (matches index page)
+                    if (questionsAnswered > 0) {
+                        if (questionsAnswered === 15) {
+                            // All questions completed
+                            if (score >= 70) {
+                                backgroundColor = '#C8E6C9'; // Light green for 70% or higher (matches index page)
+                            } else {
+                                backgroundColor = '#FFE0B2'; // Light orange for completed but less than 70% (matches index page)
+                            }
                         } else {
-                            backgroundColor = '#FFE0B2'; // Light orange for completed but less than 70% (matches index page)
+                            backgroundColor = '#FFF8E7'; // Light cream/yellow for in progress (matches index page)
                         }
-                    } else {
-                        backgroundColor = '#FFF8E7'; // Light cream/yellow for in progress (matches index page)
                     }
-                }
-                
-                // Determine quiz status class
-                let statusClass = 'not-started';
-                if (questionsAnswered === 15) {
-                    if (score >= 70) {
-                        statusClass = 'completed-perfect'; // 70% or higher score
-                    } else {
-                        statusClass = 'completed-partial'; // Completed but less than 70%
+                    
+                    // Determine quiz status class
+                    let statusClass = 'not-started';
+                    if (questionsAnswered === 15) {
+                        if (score >= 70) {
+                            statusClass = 'completed-perfect'; // 70% or higher score
+                        } else {
+                            statusClass = 'completed-partial'; // Completed but less than 70%
+                        }
+                    } else if (questionsAnswered > 0) {
+                        statusClass = 'in-progress';
                     }
-                } else if (questionsAnswered > 0) {
-                    statusClass = 'in-progress';
-                }
-                
-                // Create quiz card
-                const quizCard = document.createElement('div');
-                quizCard.className = `quiz-card ${statusClass}`;
-                quizCard.style.backgroundColor = backgroundColor;
-                quizCard.innerHTML = `
-                    <h3>${this.formatQuizName(quizType)}</h3>
-                    <div class="quiz-stats">
+                    
+                    // Create quiz card
+                    const quizCard = document.createElement('div');
+                    quizCard.className = `quiz-card ${statusClass}`;
+                    quizCard.style.backgroundColor = backgroundColor;
+                    quizCard.innerHTML = `
+                        <h3>${this.formatQuizName(quizType)}</h3>
+                        <div class="quiz-stats">
                         <div class="stat-row"><strong>Status:</strong> <span>${status}</span></div>
                         <div class="stat-row"><strong>Score:</strong> <span>${score}%</span></div>
                         <div class="stat-row"><strong>Questions:</strong> <span>${questionsAnswered}/15</span></div>
                         <div class="stat-row"><strong>Last Active:</strong> <span>${this.formatDate(lastActive)}</span></div>
-                        <div class="visibility-control">
-                            <strong>Visibility:</strong>
-                            <label class="visibility-toggle">
-                                <input type="checkbox" 
-                                    class="quiz-visibility-toggle"
-                                    data-quiz-name="${quizType}"
-                                    ${isVisible ? 'checked' : ''}
-                                    aria-label="Toggle visibility for ${this.formatQuizName(quizType)}"
-                                    tabindex="0">
-                                <span>Make visible to user</span>
-                            </label>
+                            <div class="visibility-control">
+                                <strong>Visibility:</strong>
+                                <label class="visibility-toggle">
+                                    <input type="checkbox" 
+                                        class="quiz-visibility-toggle"
+                                        data-quiz-name="${quizType}"
+                                        ${isVisible ? 'checked' : ''}
+                                        aria-label="Toggle visibility for ${this.formatQuizName(quizType)}"
+                                        tabindex="0">
+                                    <span>Make visible to user</span>
+                                </label>
+                            </div>
                         </div>
-                    </div>
-                    <div class="quiz-actions">
-                        <button class="reset-quiz-btn"
-                            data-quiz-name="${quizType}"
-                            data-username="${username}"
-                            aria-label="Reset progress for ${this.formatQuizName(quizType)}"
-                            tabindex="0">
-                            Reset Progress
-                        </button>
-                        <button class="view-questions-btn"
-                            data-quiz-name="${quizType}"
-                            data-username="${username}"
-                            aria-label="View questions for ${this.formatQuizName(quizType)}"
-                            tabindex="0">
-                            View Questions
-                        </button>
-                    </div>
-                `;
-                
-                // If we need to fetch score data asynchronously, do it after adding to DOM
-                if (questionsAnswered === 15 && !questionHistory && score === 0) {
-                    console.log(`[Admin] Triggering async score fetch for ${username}/${quizType}`);
+                        <div class="quiz-actions">
+                            <button class="reset-quiz-btn"
+                                data-quiz-name="${quizType}"
+                                data-username="${username}"
+                                aria-label="Reset progress for ${this.formatQuizName(quizType)}"
+                                tabindex="0">
+                                Reset Progress
+                            </button>
+                            <button class="view-questions-btn"
+                                data-quiz-name="${quizType}"
+                                data-username="${username}"
+                                aria-label="View questions for ${this.formatQuizName(quizType)}"
+                                tabindex="0">
+                                View Questions
+                            </button>
+                        </div>
+                    `;
+                    
+                    // If we need to fetch score data asynchronously, do it after adding to DOM
+                    if (questionsAnswered === 15 && !questionHistory && score === 0) {
+                        console.log(`[Admin] Triggering async score fetch for ${username}/${quizType}`);
                     setTimeout(() => {
                         this.fetchAndUpdateQuizScore(username, quizType, quizCard).catch(error => {
                             console.warn(`[Admin] Failed to fetch question history for ${username}/${quizType}:`, error);
@@ -3686,7 +3686,7 @@ export class Admin2Dashboard {
                 categoryContainer.appendChild(categoryHeader);
                 categoryContainer.appendChild(categoryContent);
                 quizProgressList.appendChild(categoryContainer);
-            });
+                });
             
             // User actions
             const userActions = document.createElement('div');
