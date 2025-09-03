@@ -3560,10 +3560,10 @@ export class Admin2Dashboard {
                 quizCard.innerHTML = `
                     <h3>${this.formatQuizName(quizType)}</h3>
                     <div class="quiz-stats">
-                        <p><strong>Status:</strong> ${status}</p>
-                        <p><strong>Score:</strong> ${score}%</p>
-                        <p><strong>Questions Answered:</strong> ${questionsAnswered}/15</p>
-                        <p><strong>Last Active:</strong> ${this.formatDate(lastActive)}</p>
+                        <div class="stat-row"><strong>Status:</strong> <span>${status}</span></div>
+                        <div class="stat-row"><strong>Score:</strong> <span>${score}%</span></div>
+                        <div class="stat-row"><strong>Questions:</strong> <span>${questionsAnswered}/15</span></div>
+                        <div class="stat-row"><strong>Last Active:</strong> <span>${this.formatDate(lastActive)}</span></div>
                         <div class="visibility-control">
                             <strong>Visibility:</strong>
                             <label class="visibility-toggle">
