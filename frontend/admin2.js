@@ -3453,159 +3453,240 @@ export class Admin2Dashboard {
             // Populate quiz progress list
             const quizProgressList = overviewContent.querySelector('.quiz-progress-list');
             
-            // Generate quiz progress items to match standard admin
-            this.quizTypes
-                .slice()
-                .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
-                .forEach(quizType => {
-                    const quizLower = quizType.toLowerCase();
-                    
-                    // All accounts now use hiddenQuizzes logic - visible if not hidden
-                    const isVisible = !hiddenQuizzes.includes(quizLower);
-                    
-                    console.log('Quiz visibility details:', {
-                        quizName: quizType,
-                        quizLower,
-                        hiddenQuizzes,
-                        inHiddenQuizzes: hiddenQuizzes.includes(quizLower),
-                        isVisible
-                    });
+            // Categorize quizzes using the same function as Create Account
+            const categorizedQuizzes = this.categorizeQuizzesForForm(this.quizTypes);
+            
+            // Create a function to generate quiz card content for reuse
+            const createQuizCard = (quizType) => {
+                const quizLower = quizType.toLowerCase();
                 
-                    const quizProgress = user.quizProgress?.[quizLower] || {};
-                    const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                // All accounts now use hiddenQuizzes logic - visible if not hidden
+                const isVisible = !hiddenQuizzes.includes(quizLower);
                 
+                console.log('Quiz visibility details:', {
+                    quizName: quizType,
+                    quizLower,
+                    hiddenQuizzes,
+                    inHiddenQuizzes: hiddenQuizzes.includes(quizLower),
+                    isVisible
+                });
+            
+                const quizProgress = user.quizProgress?.[quizLower] || {};
+                const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+            
                 // Use data from either progress or results, prioritizing results
                 const questionsAnswered = quizResult?.questionsAnswered || 
                                         quizResult?.questionHistory?.length ||
                                         quizProgress?.questionsAnswered || 
                                         quizProgress?.questionHistory?.length || 0;
                 const experience = quizResult?.experience || quizProgress?.experience || 0;
+                
+                // Calculate score from question history if available
+                let score = 0;
+                const questionHistory = quizResult?.questionHistory || quizProgress?.questionHistory;
+                
+                console.log(`[Admin] Score calculation for ${quizType}:`, {
+                    quizResult: quizResult ? 'found' : 'not found',
+                    quizProgress: quizProgress ? 'found' : 'not found',
+                    questionHistory: questionHistory ? `array of ${questionHistory.length}` : 'not found',
+                    questionsAnswered
+                });
+                
+                if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
+                    // Use the same logic as the "View Questions" section - check if status is 'passed'
+                    const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
+                    score = Math.round((correctAnswers / questionHistory.length) * 100);
                     
-                    // Calculate score from question history if available
-                    let score = 0;
-                    const questionHistory = quizResult?.questionHistory || quizProgress?.questionHistory;
-                    
-                    console.log(`[Admin] Score calculation for ${quizType}:`, {
-                        quizResult: quizResult ? 'found' : 'not found',
-                        quizProgress: quizProgress ? 'found' : 'not found',
-                        questionHistory: questionHistory ? `array of ${questionHistory.length}` : 'not found',
-                        questionsAnswered
+                    console.log(`[Admin] Calculated score from question history:`, {
+                        totalQuestions: questionHistory.length,
+                        correctAnswers,
+                        calculatedScore: score,
+                        questionStatuses: questionHistory.map(item => ({ status: item.status, passed: item.status === 'passed' }))
                     });
+                } else if (questionsAnswered === 15 && !questionHistory) {
+                    // For completed quizzes without question history, we'll fetch it after card creation
+                    console.log(`[Admin] Quiz completed but no question history found. Will fetch from API after card creation.`);
                     
-                    if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                        // Use the same logic as the "View Questions" section - check if status is 'passed'
-                        const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
-                        score = Math.round((correctAnswers / questionHistory.length) * 100);
-                        
-                        console.log(`[Admin] Calculated score from question history:`, {
-                            totalQuestions: questionHistory.length,
-                            correctAnswers,
-                            calculatedScore: score,
-                            questionStatuses: questionHistory.map(item => ({ status: item.status, passed: item.status === 'passed' }))
-                        });
-                    } else if (questionsAnswered === 15 && !questionHistory) {
-                        // For completed quizzes without question history, we'll fetch it after card creation
-                        console.log(`[Admin] Quiz completed but no question history found. Will fetch from API after card creation.`);
-                        
-                        // For now, show as completed but with unknown score
-                        score = 0; // This will be updated when the API call completes
-                        console.log(`[Admin] Using temporary score of 0 while fetching question history`);
-                    } else {
-                        // Fallback to stored score if no question history available
-                        const rawScore = quizResult?.score || quizResult?.scorePercentage || 0;
-                        score = rawScore < 1 && rawScore > 0 ? Math.round(rawScore * 100) : Math.round(rawScore);
-                        
-                        console.log(`[Admin] Using fallback score:`, {
-                            rawScore,
-                            finalScore: score
-                        });
-                    }
-                    const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
+                    // For now, show as completed but with unknown score
+                    score = 0; // This will be updated when the API call completes
+                    console.log(`[Admin] Using temporary score of 0 while fetching question history`);
+                } else {
+                    // Fallback to stored score if no question history available
+                    const rawScore = quizResult?.score || quizResult?.scorePercentage || 0;
+                    score = rawScore < 1 && rawScore > 0 ? Math.round(rawScore * 100) : Math.round(rawScore);
                     
-                    const status = questionsAnswered === 15 ? 'Completed' : 
-                                questionsAnswered > 0 ? 'In Progress' : 
-                                'Not Started';
-                    
-                    // Determine background color based on status and score (matching index page colors)
-                    let backgroundColor = '#fff'; // Default white for not started (matches index page)
-                    if (questionsAnswered > 0) {
-                        if (questionsAnswered === 15) {
-                            // All questions completed
-                            if (score >= 70) {
-                                backgroundColor = '#C8E6C9'; // Light green for 70% or higher (matches index page)
-                            } else {
-                                backgroundColor = '#FFE0B2'; // Light orange for completed but less than 70% (matches index page)
-                            }
-                        } else {
-                            backgroundColor = '#FFF8E7'; // Light cream/yellow for in progress (matches index page)
-                        }
-                    }
-                    
-                    // Determine quiz status class
-                    let statusClass = 'not-started';
+                    console.log(`[Admin] Using fallback score:`, {
+                        rawScore,
+                        finalScore: score
+                    });
+                }
+                const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
+                
+                const status = questionsAnswered === 15 ? 'Completed' : 
+                            questionsAnswered > 0 ? 'In Progress' : 
+                            'Not Started';
+                
+                // Determine background color based on status and score (matching index page colors)
+                let backgroundColor = '#fff'; // Default white for not started (matches index page)
+                if (questionsAnswered > 0) {
                     if (questionsAnswered === 15) {
+                        // All questions completed
                         if (score >= 70) {
-                            statusClass = 'completed-perfect'; // 70% or higher score
+                            backgroundColor = '#C8E6C9'; // Light green for 70% or higher (matches index page)
                         } else {
-                            statusClass = 'completed-partial'; // Completed but less than 70%
+                            backgroundColor = '#FFE0B2'; // Light orange for completed but less than 70% (matches index page)
                         }
-                    } else if (questionsAnswered > 0) {
-                        statusClass = 'in-progress';
+                    } else {
+                        backgroundColor = '#FFF8E7'; // Light cream/yellow for in progress (matches index page)
                     }
-                    
-                    // Create quiz card
-                    const quizCard = document.createElement('div');
-                    quizCard.className = `quiz-card ${statusClass}`;
-                    quizCard.style.backgroundColor = backgroundColor;
-                    quizCard.innerHTML = `
-                        <h3>${this.formatQuizName(quizType)}</h3>
-                        <div class="quiz-stats">
-                            <p><strong>Status:</strong> ${status}</p>
-                            <p><strong>Score:</strong> ${score}%</p>
-                            <p><strong>Questions Answered:</strong> ${questionsAnswered}/15</p>
-                            <p><strong>Last Active:</strong> ${this.formatDate(lastActive)}</p>
-                            <div class="visibility-control">
-                                <strong>Visibility:</strong>
-                                <label class="visibility-toggle">
-                                    <input type="checkbox" 
-                                        class="quiz-visibility-toggle"
-                                        data-quiz-name="${quizType}"
-                                        ${isVisible ? 'checked' : ''}
-                                        aria-label="Toggle visibility for ${this.formatQuizName(quizType)}"
-                                        tabindex="0">
-                                    <span>Make visible to user</span>
-                                </label>
-                            </div>
+                }
+                
+                // Determine quiz status class
+                let statusClass = 'not-started';
+                if (questionsAnswered === 15) {
+                    if (score >= 70) {
+                        statusClass = 'completed-perfect'; // 70% or higher score
+                    } else {
+                        statusClass = 'completed-partial'; // Completed but less than 70%
+                    }
+                } else if (questionsAnswered > 0) {
+                    statusClass = 'in-progress';
+                }
+                
+                // Create quiz card
+                const quizCard = document.createElement('div');
+                quizCard.className = `quiz-card ${statusClass}`;
+                quizCard.style.backgroundColor = backgroundColor;
+                quizCard.innerHTML = `
+                    <h3>${this.formatQuizName(quizType)}</h3>
+                    <div class="quiz-stats">
+                        <p><strong>Status:</strong> ${status}</p>
+                        <p><strong>Score:</strong> ${score}%</p>
+                        <p><strong>Questions Answered:</strong> ${questionsAnswered}/15</p>
+                        <p><strong>Last Active:</strong> ${this.formatDate(lastActive)}</p>
+                        <div class="visibility-control">
+                            <strong>Visibility:</strong>
+                            <label class="visibility-toggle">
+                                <input type="checkbox" 
+                                    class="quiz-visibility-toggle"
+                                    data-quiz-name="${quizType}"
+                                    ${isVisible ? 'checked' : ''}
+                                    aria-label="Toggle visibility for ${this.formatQuizName(quizType)}"
+                                    tabindex="0">
+                                <span>Make visible to user</span>
+                            </label>
                         </div>
-                        <div class="quiz-actions">
-                            <button class="reset-quiz-btn"
-                                data-quiz-name="${quizType}"
-                                data-username="${username}"
-                                aria-label="Reset progress for ${this.formatQuizName(quizType)}"
-                                tabindex="0">
-                                Reset Progress
-                            </button>
-                            <button class="view-questions-btn"
-                                data-quiz-name="${quizType}"
-                                data-username="${username}"
-                                aria-label="View questions for ${this.formatQuizName(quizType)}"
-                                tabindex="0">
-                                View Questions
-                            </button>
-                        </div>
-                    `;
-                    
-                    quizProgressList.appendChild(quizCard);
-                    
-                    // If we need to fetch score data asynchronously, do it after adding to DOM
-                    if (questionsAnswered === 15 && !questionHistory && score === 0) {
-                        console.log(`[Admin] Triggering async score fetch for ${username}/${quizType}`);
-                        // Now we can safely call fetchAndUpdateQuizScore with the created quizCard
+                    </div>
+                    <div class="quiz-actions">
+                        <button class="reset-quiz-btn"
+                            data-quiz-name="${quizType}"
+                            data-username="${username}"
+                            aria-label="Reset progress for ${this.formatQuizName(quizType)}"
+                            tabindex="0">
+                            Reset Progress
+                        </button>
+                        <button class="view-questions-btn"
+                            data-quiz-name="${quizType}"
+                            data-username="${username}"
+                            aria-label="View questions for ${this.formatQuizName(quizType)}"
+                            tabindex="0">
+                            View Questions
+                        </button>
+                    </div>
+                `;
+                
+                // If we need to fetch score data asynchronously, do it after adding to DOM
+                if (questionsAnswered === 15 && !questionHistory && score === 0) {
+                    console.log(`[Admin] Triggering async score fetch for ${username}/${quizType}`);
+                    setTimeout(() => {
                         this.fetchAndUpdateQuizScore(username, quizType, quizCard).catch(error => {
                             console.warn(`[Admin] Failed to fetch question history for ${username}/${quizType}:`, error);
                         });
+                    }, 100);
+                }
+                
+                return quizCard;
+            };
+            
+            // Generate categorized quiz sections
+            Object.entries(categorizedQuizzes).forEach(([category, quizzes]) => {
+                // Create category container
+                const categoryContainer = document.createElement('div');
+                categoryContainer.className = 'quiz-category-container';
+                
+                // Create category header with expand/collapse functionality
+                const categoryHeader = document.createElement('div');
+                categoryHeader.className = 'quiz-category-header';
+                categoryHeader.setAttribute('tabindex', '0');
+                categoryHeader.setAttribute('role', 'button');
+                categoryHeader.setAttribute('aria-expanded', 'true');
+                categoryHeader.setAttribute('aria-label', `Toggle ${category} category`);
+                
+                // Calculate category progress
+                const categoryProgress = quizzes.reduce((acc, quizName) => {
+                    const quizLower = quizName.toLowerCase();
+                    const quizProgress = user.quizProgress?.[quizLower] || {};
+                    const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                    const questionsAnswered = quizResult?.questionsAnswered || 
+                                            quizResult?.questionHistory?.length ||
+                                            quizProgress?.questionsAnswered || 
+                                            quizProgress?.questionHistory?.length || 0;
+                    return acc + (questionsAnswered === 15 ? 1 : 0);
+                }, 0);
+                
+                categoryHeader.innerHTML = `
+                    <div class="category-title-section">
+                        <i class="fas fa-chevron-down category-toggle-icon" aria-hidden="true"></i>
+                        <h4>${category}</h4>
+                        <span class="category-progress-badge">${categoryProgress}/${quizzes.length}</span>
+                    </div>
+                `;
+                
+                // Create category content container
+                const categoryContent = document.createElement('div');
+                categoryContent.className = 'quiz-category-content';
+                categoryContent.style.display = 'block'; // Start expanded
+                
+                // Sort quizzes within category and add them
+                quizzes
+                    .slice()
+                    .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+                    .forEach(quizType => {
+                        const quizCard = createQuizCard(quizType);
+                        categoryContent.appendChild(quizCard);
+                    });
+                
+                // Add click event listener for expand/collapse
+                const toggleCategory = () => {
+                    const isExpanded = categoryContent.style.display !== 'none';
+                    const icon = categoryHeader.querySelector('.category-toggle-icon');
+                    
+                    if (isExpanded) {
+                        categoryContent.style.display = 'none';
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-chevron-right');
+                        categoryHeader.setAttribute('aria-expanded', 'false');
+                    } else {
+                        categoryContent.style.display = 'block';
+                        icon.classList.remove('fa-chevron-right');
+                        icon.classList.add('fa-chevron-down');
+                        categoryHeader.setAttribute('aria-expanded', 'true');
+                    }
+                };
+                
+                categoryHeader.addEventListener('click', toggleCategory);
+                categoryHeader.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleCategory();
                     }
                 });
+                
+                // Assemble category
+                categoryContainer.appendChild(categoryHeader);
+                categoryContainer.appendChild(categoryContent);
+                quizProgressList.appendChild(categoryContainer);
+            });
             
             // User actions
             const userActions = document.createElement('div');
