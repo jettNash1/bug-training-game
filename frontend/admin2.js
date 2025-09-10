@@ -3349,9 +3349,9 @@ export class Admin2Dashboard {
                 });
                 
                 // Update the quiz card with the correct score
-                const scoreElement = quizCard.querySelector('p:nth-child(2)'); // The "Score: X%" element
+                const scoreElement = quizCard.querySelector('.stat-row:nth-child(2) span'); // The score value in the second stat row
                 if (scoreElement) {
-                    scoreElement.innerHTML = `<strong>Score:</strong> ${calculatedScore}%`;
+                    scoreElement.textContent = `${calculatedScore}%`;
                 }
                 
                 // Update the card styling based on the new score (matching index page colors)
