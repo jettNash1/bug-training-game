@@ -7925,7 +7925,7 @@ export class Admin2Dashboard {
                         // If partially complete, show the percentage based on questions answered
                         const questionsAnswered = this.getQuestionsAnswered(quizLower, user);
                         const percentage = Math.round((questionsAnswered / 15) * 100);
-                        displayValue = `Partially Complete (${percentage}%)`;
+                        displayValue = `In Progress (${percentage}%)`;
                     } else if (score > 0) {
                         const status = score >= 80 ? 'Pass' : 'Fail';
                         displayValue = `${score} - ${status}`;
@@ -7988,7 +7988,7 @@ export class Admin2Dashboard {
                     // If partially complete, show the percentage based on questions answered
                     const questionsAnswered = this.getQuestionsAnswered(quizLower, user);
                     const percentage = Math.round((questionsAnswered / 15) * 100);
-                    displayValue = `Partially Complete (${percentage}%)`;
+                    displayValue = `In Progress (${percentage}%)`;
                 } else if (score > 0) {
                     const status = score >= 80 ? 'Pass' : 'Fail';
                     displayValue = `${score} - ${status}`;
@@ -8042,7 +8042,7 @@ export class Admin2Dashboard {
                 // If partially complete, show the percentage based on questions answered
                 const questionsAnswered = this.getQuestionsAnswered(quizLower, user);
                 const percentage = Math.round((questionsAnswered / 15) * 100);
-                displayValue = `Partially Complete (${percentage}%)`;
+                displayValue = `In Progress (${percentage}%)`;
             } else if (score > 0) {
                 const status = score >= 80 ? 'Pass' : 'Fail';
                 displayValue = `${score} - ${status}`;
