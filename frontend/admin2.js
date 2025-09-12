@@ -7589,6 +7589,7 @@ export class Admin2Dashboard {
             // Create a combined simplified overview sheet
             const combinedSimplifiedData = this.createSimplifiedOverviewData(selectedCategories);
             const combinedSimplifiedSheet = XLSX.utils.aoa_to_sheet(combinedSimplifiedData);
+            this.addConditionalFormatting(combinedSimplifiedSheet, combinedSimplifiedData);
             const combinedSimplifiedSheetName = this.createValidSheetName('Combined_Scores');
             console.log(`Creating combined simplified sheet: "${combinedSimplifiedSheetName}"`);
             XLSX.utils.book_append_sheet(workbook, combinedSimplifiedSheet, combinedSimplifiedSheetName);
@@ -7599,6 +7600,7 @@ export class Admin2Dashboard {
                 if (categoryQuizzes.length > 0) {
                     const categorySimplifiedData = this.createSimplifiedCategoryData(categoryName, categoryQuizzes);
                     const categorySimplifiedSheet = XLSX.utils.aoa_to_sheet(categorySimplifiedData);
+                    this.addConditionalFormatting(categorySimplifiedSheet, categorySimplifiedData);
                     const categorySimplifiedSheetName = this.createValidSheetName(`${categoryName}_Scores`);
                     console.log(`Creating category simplified sheet: "${categorySimplifiedSheetName}"`);
                     XLSX.utils.book_append_sheet(workbook, categorySimplifiedSheet, categorySimplifiedSheetName);
@@ -7609,6 +7611,7 @@ export class Admin2Dashboard {
             for (const quizName of allQuizzes) {
                 const quizSimplifiedData = this.createSimplifiedQuizData(quizName);
                 const quizSimplifiedSheet = XLSX.utils.aoa_to_sheet(quizSimplifiedData);
+                this.addConditionalFormatting(quizSimplifiedSheet, quizSimplifiedData);
                 const formattedQuizName = this.formatQuizName(quizName);
                 const sheetName = this.createValidSheetName(`${formattedQuizName}_Scores`);
                 console.log(`Creating simplified quiz sheet: "${sheetName}" for quiz: ${quizName}`);
@@ -7867,7 +7870,7 @@ export class Admin2Dashboard {
         });
         data.push(header);
         
-        // Data rows - just usernames and scores with visual indicators
+        // Data rows - just usernames and scores
         this.users.forEach(user => {
             const row = [user.username];
             
@@ -7892,19 +7895,7 @@ export class Admin2Dashboard {
                         score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
                     }
                     
-                    // Add visual indicator based on score
-                    let displayScore = score;
-                    if (score > 0) {
-                        if (score >= 80) {
-                            displayScore = `🟢 ${score}%`; // Green circle for high scores
-                        } else {
-                            displayScore = `🔴 ${score}%`; // Red circle for low scores
-                        }
-                    } else {
-                        displayScore = `⚪ ${score}%`; // White circle for no attempt
-                    }
-                    
-                    row.push(displayScore);
+                    row.push(score);
                 });
             });
             
@@ -7922,7 +7913,7 @@ export class Admin2Dashboard {
         const header = categoryQuizzes.map(quizName => this.formatQuizName(quizName));
         data.push(header);
         
-        // Data rows - just usernames and scores with visual indicators
+        // Data rows - just usernames and scores
         this.users.forEach(user => {
             const row = [user.username];
             
@@ -7944,19 +7935,7 @@ export class Admin2Dashboard {
                     score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
                 }
                 
-                // Add visual indicator based on score
-                let displayScore = score;
-                if (score > 0) {
-                    if (score >= 80) {
-                        displayScore = `🟢 ${score}%`; // Green circle for high scores
-                    } else {
-                        displayScore = `🔴 ${score}%`; // Red circle for low scores
-                    }
-                } else {
-                    displayScore = `⚪ ${score}%`; // White circle for no attempt
-                }
-                
-                row.push(displayScore);
+                row.push(score);
             });
             
             data.push(row);
@@ -7973,7 +7952,7 @@ export class Admin2Dashboard {
         // Header row - just username and score
         data.push(['Username', 'Score %']);
         
-        // Data rows - just usernames and scores with visual indicators
+        // Data rows - just usernames and scores
         this.users.forEach(user => {
             const progress = user.quizProgress?.[quizLower];
             const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
@@ -7991,19 +7970,7 @@ export class Admin2Dashboard {
                 score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
             }
             
-            // Add visual indicator based on score
-            let displayScore = score;
-            if (score > 0) {
-                if (score >= 80) {
-                    displayScore = `🟢 ${score}%`; // Green circle for high scores
-                } else {
-                    displayScore = `🔴 ${score}%`; // Red circle for low scores
-                }
-            } else {
-                displayScore = `⚪ ${score}%`; // White circle for no attempt
-            }
-            
-            data.push([user.username, displayScore]);
+            data.push([user.username, score]);
         });
         
         return data;
@@ -8017,61 +7984,46 @@ export class Admin2Dashboard {
         const numRows = range.e.r + 1;
         const numCols = range.e.c + 1;
         
-        // Initialize styles array if it doesn't exist
-        if (!sheet['!styles']) {
-            sheet['!styles'] = [];
-        }
+        // Create conditional formatting rules
+        const conditionalFormatting = [];
         
-        // Apply direct cell formatting based on values
-        for (let row = 1; row < numRows; row++) { // Skip header row
-            for (let col = 1; col < numCols; col++) { // Skip username column
-                const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
-                const cellValue = data[row][col];
-                
-                if (typeof cellValue === 'number' && cellValue > 0) {
-                    let styleIndex = 0;
-                    
-                    if (cellValue >= 80) {
-                        // Green style
-                        styleIndex = this.getOrCreateStyle(sheet, {
-                            fill: { fgColor: { rgb: '90EE90' } },
-                            font: { color: { rgb: '000000' } }
-                        });
-                    } else {
-                        // Red style
-                        styleIndex = this.getOrCreateStyle(sheet, {
-                            fill: { fgColor: { rgb: 'FFB6C1' } },
-                            font: { color: { rgb: '000000' } }
-                        });
-                    }
-                    
-                    // Set cell style
-                    if (!sheet[cellRef]) {
-                        sheet[cellRef] = { v: cellValue };
-                    }
-                    
-                    sheet[cellRef].s = styleIndex;
-                }
+        // Green rule for >= 80%
+        conditionalFormatting.push({
+            type: 'cellIs',
+            operator: 'greaterThanOrEqual',
+            formula: [80],
+            format: {
+                fill: { fgColor: { rgb: '90EE90' } },
+                font: { color: { rgb: '000000' } }
             }
-        }
-    }
-
-    // Helper method to get or create a style and return its index
-    getOrCreateStyle(sheet, style) {
-        if (!sheet['!styles']) {
-            sheet['!styles'] = [];
-        }
+        });
         
-        // Check if style already exists
-        for (let i = 0; i < sheet['!styles'].length; i++) {
-            if (JSON.stringify(sheet['!styles'][i]) === JSON.stringify(style)) {
-                return i;
+        // Red rule for < 80% and > 0
+        conditionalFormatting.push({
+            type: 'cellIs',
+            operator: 'lessThan',
+            formula: [80],
+            format: {
+                fill: { fgColor: { rgb: 'FFB6C1' } },
+                font: { color: { rgb: '000000' } }
             }
+        });
+        
+        // Apply conditional formatting to data range (skip header row and username column)
+        const dataRange = {
+            s: { r: 1, c: 1 }, // Start at row 1, col 1 (skip username column)
+            e: { r: numRows - 1, c: numCols - 1 } // End at last data row, last data column
+        };
+        
+        // Set conditional formatting on the sheet
+        if (!sheet['!conditionalFormatting']) {
+            sheet['!conditionalFormatting'] = [];
         }
         
-        // Create new style
-        sheet['!styles'].push(style);
-        return sheet['!styles'].length - 1;
+        sheet['!conditionalFormatting'].push({
+            ref: XLSX.utils.encode_range(dataRange),
+            rules: conditionalFormatting
+        });
     }
 
     // Create individual quiz data
