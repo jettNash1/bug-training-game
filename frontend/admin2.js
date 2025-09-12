@@ -8067,11 +8067,14 @@ export class Admin2Dashboard {
         const progress = user.quizProgress?.[quizLower];
         const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
 
+        // Use the same priority order as the UI
         let questionsAnswered = 0;
-        if (result && result.questionHistory) {
-            questionsAnswered = result.questionHistory.length;
-        } else if (progress && progress.questionHistory) {
-            questionsAnswered = progress.questionHistory.length;
+        if (result) {
+            questionsAnswered = result.questionsAnswered || 
+                              result.questionHistory?.length || 0;
+        } else if (progress) {
+            questionsAnswered = progress.questionsAnswered || 
+                              progress.questionHistory?.length || 0;
         }
 
         return questionsAnswered;
