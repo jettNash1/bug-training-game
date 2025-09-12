@@ -7589,6 +7589,7 @@ export class Admin2Dashboard {
             // Create a combined simplified overview sheet
             const combinedSimplifiedData = this.createSimplifiedOverviewData(selectedCategories);
             const combinedSimplifiedSheet = XLSX.utils.aoa_to_sheet(combinedSimplifiedData);
+            console.log('Applying conditional formatting to combined simplified sheet...');
             this.addConditionalFormatting(combinedSimplifiedSheet, combinedSimplifiedData);
             const combinedSimplifiedSheetName = this.createValidSheetName('Combined_Scores');
             console.log(`Creating combined simplified sheet: "${combinedSimplifiedSheetName}"`);
@@ -7600,6 +7601,7 @@ export class Admin2Dashboard {
                 if (categoryQuizzes.length > 0) {
                     const categorySimplifiedData = this.createSimplifiedCategoryData(categoryName, categoryQuizzes);
                     const categorySimplifiedSheet = XLSX.utils.aoa_to_sheet(categorySimplifiedData);
+                    console.log(`Applying conditional formatting to ${categoryName} simplified sheet...`);
                     this.addConditionalFormatting(categorySimplifiedSheet, categorySimplifiedData);
                     const categorySimplifiedSheetName = this.createValidSheetName(`${categoryName}_Scores`);
                     console.log(`Creating category simplified sheet: "${categorySimplifiedSheetName}"`);
@@ -7611,6 +7613,7 @@ export class Admin2Dashboard {
             for (const quizName of allQuizzes) {
                 const quizSimplifiedData = this.createSimplifiedQuizData(quizName);
                 const quizSimplifiedSheet = XLSX.utils.aoa_to_sheet(quizSimplifiedData);
+                console.log(`Applying conditional formatting to ${quizName} simplified sheet...`);
                 this.addConditionalFormatting(quizSimplifiedSheet, quizSimplifiedData);
                 const formattedQuizName = this.formatQuizName(quizName);
                 const sheetName = this.createValidSheetName(`${formattedQuizName}_Scores`);
@@ -7859,18 +7862,23 @@ export class Admin2Dashboard {
     createSimplifiedOverviewData(selectedCategories) {
         const data = [];
         
-        // Header row - just quiz names
+        // Title row
+        data.push(['Complete Overview - Quiz Scores']);
+        data.push([]); // Empty row for spacing
+        
+        // Header row - quiz names with status columns
         const header = [];
         selectedCategories.forEach(categoryName => {
             const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
             categoryQuizzes.forEach(quizName => {
                 const formattedName = this.formatQuizName(quizName);
                 header.push(formattedName);
+                header.push(`${formattedName} Status`);
             });
         });
         data.push(header);
         
-        // Data rows - just usernames and scores
+        // Data rows - usernames, scores, and status
         this.users.forEach(user => {
             const row = [user.username];
             
@@ -7895,7 +7903,15 @@ export class Admin2Dashboard {
                         score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
                     }
                     
+                    // Add score
                     row.push(score);
+                    
+                    // Add status
+                    let status = 'Not Started';
+                    if (score > 0) {
+                        status = score >= 80 ? 'Pass' : 'Fail';
+                    }
+                    row.push(status);
                 });
             });
             
@@ -7909,11 +7925,20 @@ export class Admin2Dashboard {
     createSimplifiedCategoryData(categoryName, categoryQuizzes) {
         const data = [];
         
-        // Header row - just quiz names
-        const header = categoryQuizzes.map(quizName => this.formatQuizName(quizName));
+        // Title row
+        data.push([`${categoryName} Overview - Quiz Scores`]);
+        data.push([]); // Empty row for spacing
+        
+        // Header row - quiz names with status columns
+        const header = [];
+        categoryQuizzes.forEach(quizName => {
+            const formattedName = this.formatQuizName(quizName);
+            header.push(formattedName);
+            header.push(`${formattedName} Status`);
+        });
         data.push(header);
         
-        // Data rows - just usernames and scores
+        // Data rows - usernames, scores, and status
         this.users.forEach(user => {
             const row = [user.username];
             
@@ -7935,7 +7960,15 @@ export class Admin2Dashboard {
                     score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
                 }
                 
+                // Add score
                 row.push(score);
+                
+                // Add status
+                let status = 'Not Started';
+                if (score > 0) {
+                    status = score >= 80 ? 'Pass' : 'Fail';
+                }
+                row.push(status);
             });
             
             data.push(row);
@@ -7949,10 +7982,14 @@ export class Admin2Dashboard {
         const data = [];
         const quizLower = quizName.toLowerCase();
         
-        // Header row - just username and score
-        data.push(['Username', 'Score %']);
+        // Title row
+        data.push([`${quizName} - Quiz Scores`]);
+        data.push([]); // Empty row for spacing
         
-        // Data rows - just usernames and scores
+        // Header row - username, score, and status
+        data.push(['Username', 'Score %', 'Status']);
+        
+        // Data rows - usernames, scores, and status
         this.users.forEach(user => {
             const progress = user.quizProgress?.[quizLower];
             const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
@@ -7970,7 +8007,13 @@ export class Admin2Dashboard {
                 score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
             }
             
-            data.push([user.username, score]);
+            // Add status
+            let status = 'Not Started';
+            if (score > 0) {
+                status = score >= 80 ? 'Pass' : 'Fail';
+            }
+            
+            data.push([user.username, score, status]);
         });
         
         return data;
@@ -7978,15 +8021,22 @@ export class Admin2Dashboard {
 
     // Add conditional formatting to Excel sheets (green for >= 80%, red for < 80%)
     addConditionalFormatting(sheet, data) {
-        if (!sheet['!ref'] || !data || data.length < 2) return; // No data to format
+        if (!sheet['!ref'] || !data || data.length < 2) {
+            console.log('No data to format or invalid sheet reference');
+            return;
+        }
         
         const range = XLSX.utils.decode_range(sheet['!ref']);
         const numRows = range.e.r + 1;
         const numCols = range.e.c + 1;
         
-        // Apply direct cell styling to progress cells (not row A or column A)
-        for (let row = 1; row < numRows; row++) { // Skip header row
-            for (let col = 1; col < numCols; col++) { // Skip username column
+        console.log(`Applying conditional formatting to ${numRows} rows x ${numCols} cols`);
+        
+        let cellsFormatted = 0;
+        
+        // Apply direct cell styling to score cells only (every other column starting from column 1)
+        for (let row = 3; row < numRows; row++) { // Skip title row, empty row, and header row
+            for (let col = 1; col < numCols; col += 2) { // Only score columns (skip status columns)
                 const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
                 const cellValue = data[row][col];
                 
@@ -8000,13 +8050,19 @@ export class Admin2Dashboard {
                     if (cellValue >= 80) {
                         // Green background for high scores
                         sheet[cellRef].s = { fill: { fgColor: { rgb: '00FF00' } } };
+                        console.log(`Applied GREEN formatting to cell ${cellRef} with value ${cellValue}`);
+                        cellsFormatted++;
                     } else {
                         // Red background for low scores
                         sheet[cellRef].s = { fill: { fgColor: { rgb: 'FF0000' } } };
+                        console.log(`Applied RED formatting to cell ${cellRef} with value ${cellValue}`);
+                        cellsFormatted++;
                     }
                 }
             }
         }
+        
+        console.log(`Total cells formatted: ${cellsFormatted}`);
     }
 
     // Create individual quiz data
