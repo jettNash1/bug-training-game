@@ -7476,13 +7476,17 @@ export class Admin2Dashboard {
             // Create overview sheet with all quizzes
             const overviewData = this.createCategoryOverviewData(selectedCategory, categoryQuizzes);
             const overviewSheet = XLSX.utils.aoa_to_sheet(overviewData);
-            XLSX.utils.book_append_sheet(workbook, overviewSheet, selectedCategory.replace(/\s+/g, '_'));
+            const overviewSheetName = this.createValidSheetName(selectedCategory);
+            console.log(`Creating overview sheet: "${overviewSheetName}" (length: ${overviewSheetName.length})`);
+            XLSX.utils.book_append_sheet(workbook, overviewSheet, overviewSheetName);
             
             // Create individual sheets for each quiz
             for (const quizName of categoryQuizzes) {
                 const quizData = this.createIndividualQuizData(quizName);
                 const quizSheet = XLSX.utils.aoa_to_sheet(quizData);
-                const sheetName = this.formatQuizName(quizName).replace(/[^a-zA-Z0-9]/g, '_');
+                const formattedQuizName = this.formatQuizName(quizName);
+                const sheetName = this.createValidSheetName(formattedQuizName);
+                console.log(`Creating quiz sheet: "${sheetName}" (length: ${sheetName.length}) for quiz: ${quizName}`);
                 XLSX.utils.book_append_sheet(workbook, quizSheet, sheetName);
             }
             
@@ -7520,6 +7524,30 @@ export class Admin2Dashboard {
             script.onerror = reject;
             document.head.appendChild(script);
         });
+    }
+
+    // Helper function to create valid Excel sheet names (max 31 characters)
+    createValidSheetName(name, maxLength = 31) {
+        // Clean the name: replace spaces and special characters with underscores
+        let cleanName = name.replace(/[^a-zA-Z0-9]/g, '_');
+        
+        // Remove multiple consecutive underscores
+        cleanName = cleanName.replace(/_+/g, '_');
+        
+        // Remove leading/trailing underscores
+        cleanName = cleanName.replace(/^_+|_+$/g, '');
+        
+        // Truncate if too long
+        if (cleanName.length > maxLength) {
+            cleanName = cleanName.substring(0, maxLength);
+        }
+        
+        // Ensure it's not empty
+        if (!cleanName) {
+            cleanName = 'Sheet';
+        }
+        
+        return cleanName;
     }
 
     // Create overview data for the category
