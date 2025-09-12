@@ -711,7 +711,7 @@
                                     <button id="exportCategoryCSV" class="action-button" disabled>
                                         Export Selected Categories (Detailed)
                                     </button>
-                                    <button id="exportCategorySimplified" class="action-button" disabled>
+                                    <button id="exportCategorySimplified" class="action-button export-button-spacing" disabled>
                                         Export Selected Categories (Simplified)
                                     </button>
                                 </div>
@@ -2299,6 +2299,10 @@
         .action-button[disabled] {
             opacity: 0.6;
             cursor: not-allowed;
+        }
+
+        .export-button-spacing {
+            margin-top: 0.5rem;
         }
 
         .no-settings-message {

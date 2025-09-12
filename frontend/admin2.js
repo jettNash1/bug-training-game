@@ -7978,51 +7978,37 @@ export class Admin2Dashboard {
 
     // Add conditional formatting to Excel sheets (green for >= 80%, red for < 80%)
     addConditionalFormatting(sheet, data) {
-        if (!sheet['!ref']) return; // No data to format
+        if (!sheet['!ref'] || !data || data.length < 2) return; // No data to format
         
         const range = XLSX.utils.decode_range(sheet['!ref']);
         const numRows = range.e.r + 1;
         const numCols = range.e.c + 1;
         
-        // Initialize conditional formatting if it doesn't exist
-        if (!sheet['!conditionalFormatting']) {
-            sheet['!conditionalFormatting'] = [];
-        }
-        
-        // Apply formatting to all score columns (skip first column which is usernames)
-        for (let col = 1; col < numCols; col++) {
-            // Green for scores >= 80%
-            const greenRule = {
-                type: 'cellIs',
-                operator: 'greaterThanOrEqual',
-                formula: [80],
-                style: {
-                    fill: { fgColor: { rgb: '90EE90' } }, // Light green
-                    font: { color: { rgb: '000000' } }    // Black text
+        // Apply direct cell formatting based on values
+        for (let row = 1; row < numRows; row++) { // Skip header row
+            for (let col = 1; col < numCols; col++) { // Skip username column
+                const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+                const cellValue = data[row][col];
+                
+                if (typeof cellValue === 'number' && cellValue > 0) {
+                    let backgroundColor = '';
+                    if (cellValue >= 80) {
+                        backgroundColor = '90EE90'; // Light green
+                    } else {
+                        backgroundColor = 'FFB6C1'; // Light red
+                    }
+                    
+                    // Set cell style
+                    if (!sheet[cellRef]) {
+                        sheet[cellRef] = { v: cellValue };
+                    }
+                    
+                    sheet[cellRef].s = {
+                        fill: { fgColor: { rgb: backgroundColor } },
+                        font: { color: { rgb: '000000' } }
+                    };
                 }
-            };
-            
-            // Red for scores < 80% and > 0
-            const redRule = {
-                type: 'cellIs',
-                operator: 'lessThan',
-                formula: [80],
-                style: {
-                    fill: { fgColor: { rgb: 'FFB6C1' } }, // Light red
-                    font: { color: { rgb: '000000' } }    // Black text
-                }
-            };
-            
-            // Apply rules to the entire column (excluding header row)
-            const columnRange = {
-                s: { r: 1, c: col }, // Start from row 1 (after header)
-                e: { r: numRows - 1, c: col } // End at last data row
-            };
-            
-            sheet['!conditionalFormatting'].push({
-                ref: XLSX.utils.encode_range(columnRange),
-                rules: [greenRule, redRule]
-            });
+            }
         }
     }
 
