@@ -964,21 +964,48 @@ export class Admin2Dashboard {
         }
 
         // Category export functionality
-        const categorySelect = document.getElementById('categoryExportSelect');
         const exportCategoryBtn = document.getElementById('exportCategoryCSV');
+        const exportCategorySimplifiedBtn = document.getElementById('exportCategorySimplified');
+        const selectAllCategoriesBtn = document.getElementById('selectAllCategories');
+        const deselectAllCategoriesBtn = document.getElementById('deselectAllCategories');
         
-        if (categorySelect) {
-            categorySelect.addEventListener('change', () => {
-                const isCategorySelected = categorySelect.value !== '';
-                if (exportCategoryBtn) {
-                    exportCategoryBtn.disabled = !isCategorySelected;
-                }
+        // Handle category checkbox changes
+        const categoryCheckboxes = document.querySelectorAll('.category-checkbox');
+        categoryCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                this.updateCategoryExportButton();
+            });
+        });
+        
+        // Handle select all categories
+        if (selectAllCategoriesBtn) {
+            selectAllCategoriesBtn.addEventListener('click', () => {
+                categoryCheckboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                });
+                this.updateCategoryExportButton();
+            });
+        }
+        
+        // Handle deselect all categories
+        if (deselectAllCategoriesBtn) {
+            deselectAllCategoriesBtn.addEventListener('click', () => {
+                categoryCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                this.updateCategoryExportButton();
             });
         }
         
         if (exportCategoryBtn) {
             exportCategoryBtn.addEventListener('click', () => {
                 this.exportCategoryData();
+            });
+        }
+        
+        if (exportCategorySimplifiedBtn) {
+            exportCategorySimplifiedBtn.addEventListener('click', () => {
+                this.exportCategoryDataSimplified();
             });
         }
 
@@ -7449,17 +7476,11 @@ export class Admin2Dashboard {
 
     // Export data organized by quiz categories with separate tabs
     async exportCategoryData() {
-        const categorySelect = document.getElementById('categoryExportSelect');
-        const selectedCategory = categorySelect.value;
+        const selectedCategories = Array.from(document.querySelectorAll('.category-checkbox:checked'))
+            .map(cb => cb.value);
         
-        if (!selectedCategory) {
-            this.showError('Please select a category to export');
-            return;
-        }
-
-        const categoryQuizzes = QUIZ_CATEGORIES[selectedCategory];
-        if (!categoryQuizzes || categoryQuizzes.length === 0) {
-            this.showError('No quizzes found for the selected category');
+        if (selectedCategories.length === 0) {
+            this.showError('Please select at least one category to export');
             return;
         }
 
@@ -7473,15 +7494,34 @@ export class Admin2Dashboard {
             // Create workbook
             const workbook = XLSX.utils.book_new();
             
-            // Create overview sheet with all quizzes
-            const overviewData = this.createCategoryOverviewData(selectedCategory, categoryQuizzes);
-            const overviewSheet = XLSX.utils.aoa_to_sheet(overviewData);
-            const overviewSheetName = this.createValidSheetName(selectedCategory);
-            console.log(`Creating overview sheet: "${overviewSheetName}" (length: ${overviewSheetName.length})`);
-            XLSX.utils.book_append_sheet(workbook, overviewSheet, overviewSheetName);
+            // Collect all quizzes from selected categories
+            const allQuizzes = [];
+            selectedCategories.forEach(categoryName => {
+                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                allQuizzes.push(...categoryQuizzes);
+            });
+
+            // Create a combined overview sheet with all selected categories
+            const combinedOverviewData = this.createCombinedOverviewData(selectedCategories);
+            const combinedOverviewSheet = XLSX.utils.aoa_to_sheet(combinedOverviewData);
+            const combinedOverviewSheetName = this.createValidSheetName('Combined_Overview');
+            console.log(`Creating combined overview sheet: "${combinedOverviewSheetName}"`);
+            XLSX.utils.book_append_sheet(workbook, combinedOverviewSheet, combinedOverviewSheetName);
             
-            // Create individual sheets for each quiz
-            for (const quizName of categoryQuizzes) {
+            // Create individual category overview sheets
+            for (const categoryName of selectedCategories) {
+                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                if (categoryQuizzes.length > 0) {
+                    const categoryOverviewData = this.createCategoryOverviewData(categoryName, categoryQuizzes);
+                    const categoryOverviewSheet = XLSX.utils.aoa_to_sheet(categoryOverviewData);
+                    const categoryOverviewSheetName = this.createValidSheetName(`${categoryName}_Overview`);
+                    console.log(`Creating category overview sheet: "${categoryOverviewSheetName}"`);
+                    XLSX.utils.book_append_sheet(workbook, categoryOverviewSheet, categoryOverviewSheetName);
+                }
+            }
+            
+            // Create individual sheets for each quiz from all selected categories
+            for (const quizName of allQuizzes) {
                 const quizData = this.createIndividualQuizData(quizName);
                 const quizSheet = XLSX.utils.aoa_to_sheet(quizData);
                 const formattedQuizName = this.formatQuizName(quizName);
@@ -7490,23 +7530,120 @@ export class Admin2Dashboard {
                 XLSX.utils.book_append_sheet(workbook, quizSheet, sheetName);
             }
             
-            // Generate and download the Excel file
+            // Generate filename based on selected categories
+            let filename = 'Quiz_Export';
+            if (selectedCategories.length === 1) {
+                filename = `${selectedCategories[0].replace(/\s+/g, '_')}_Export`;
+            } else if (selectedCategories.length < 5) {
+                filename = `${selectedCategories.map(c => c.replace(/\s+/g, '_')).join('_')}_Export`;
+            }
+            
+            // Generate and download the file
             const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', `${selectedCategory.replace(/\s+/g, '_')}_Export.xlsx`);
+            link.setAttribute('download', `${filename}.xlsx`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             
-            this.showSuccess(`Successfully exported ${selectedCategory} data with separate tabs`);
+            const categoryText = selectedCategories.length === 1 ? selectedCategories[0] : `${selectedCategories.length} categories`;
+            this.showSuccess(`Successfully exported ${categoryText} data with separate tabs`);
             
         } catch (error) {
             console.error('Error exporting category Excel file:', error);
             this.showError('Failed to export category Excel file');
+        }
+    }
+
+    // Export simplified category data (scores only)
+    async exportCategoryDataSimplified() {
+        const selectedCategories = Array.from(document.querySelectorAll('.category-checkbox:checked'))
+            .map(cb => cb.value);
+        
+        if (selectedCategories.length === 0) {
+            this.showError('Please select at least one category to export');
+            return;
+        }
+
+        try {
+            // Check if SheetJS is available
+            if (typeof XLSX === 'undefined') {
+                // Load SheetJS dynamically
+                await this.loadSheetJS();
+            }
+
+            // Create workbook
+            const workbook = XLSX.utils.book_new();
+            
+            // Collect all quizzes from selected categories
+            const allQuizzes = [];
+            selectedCategories.forEach(categoryName => {
+                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                allQuizzes.push(...categoryQuizzes);
+            });
+
+            // Create a combined simplified overview sheet
+            const combinedSimplifiedData = this.createSimplifiedOverviewData(selectedCategories);
+            const combinedSimplifiedSheet = XLSX.utils.aoa_to_sheet(combinedSimplifiedData);
+            this.addConditionalFormatting(combinedSimplifiedSheet, combinedSimplifiedData);
+            const combinedSimplifiedSheetName = this.createValidSheetName('Combined_Scores');
+            console.log(`Creating combined simplified sheet: "${combinedSimplifiedSheetName}"`);
+            XLSX.utils.book_append_sheet(workbook, combinedSimplifiedSheet, combinedSimplifiedSheetName);
+            
+            // Create individual category simplified sheets
+            for (const categoryName of selectedCategories) {
+                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                if (categoryQuizzes.length > 0) {
+                    const categorySimplifiedData = this.createSimplifiedCategoryData(categoryName, categoryQuizzes);
+                    const categorySimplifiedSheet = XLSX.utils.aoa_to_sheet(categorySimplifiedData);
+                    this.addConditionalFormatting(categorySimplifiedSheet, categorySimplifiedData);
+                    const categorySimplifiedSheetName = this.createValidSheetName(`${categoryName}_Scores`);
+                    console.log(`Creating category simplified sheet: "${categorySimplifiedSheetName}"`);
+                    XLSX.utils.book_append_sheet(workbook, categorySimplifiedSheet, categorySimplifiedSheetName);
+                }
+            }
+            
+            // Create individual simplified sheets for each quiz
+            for (const quizName of allQuizzes) {
+                const quizSimplifiedData = this.createSimplifiedQuizData(quizName);
+                const quizSimplifiedSheet = XLSX.utils.aoa_to_sheet(quizSimplifiedData);
+                this.addConditionalFormatting(quizSimplifiedSheet, quizSimplifiedData);
+                const formattedQuizName = this.formatQuizName(quizName);
+                const sheetName = this.createValidSheetName(`${formattedQuizName}_Scores`);
+                console.log(`Creating simplified quiz sheet: "${sheetName}" for quiz: ${quizName}`);
+                XLSX.utils.book_append_sheet(workbook, quizSimplifiedSheet, sheetName);
+            }
+            
+            // Generate filename based on selected categories
+            let filename = 'Quiz_Scores_Export';
+            if (selectedCategories.length === 1) {
+                filename = `${selectedCategories[0].replace(/\s+/g, '_')}_Scores_Export`;
+            } else if (selectedCategories.length < 5) {
+                filename = `${selectedCategories.map(c => c.replace(/\s+/g, '_')).join('_')}_Scores_Export`;
+            }
+            
+            // Generate and download the file
+            const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${filename}.xlsx`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            const categoryText = selectedCategories.length === 1 ? selectedCategories[0] : `${selectedCategories.length} categories`;
+            this.showSuccess(`Successfully exported ${categoryText} simplified scores`);
+            
+        } catch (error) {
+            console.error('Error exporting simplified category Excel file:', error);
+            this.showError('Failed to export simplified category Excel file');
         }
     }
 
@@ -7548,6 +7685,108 @@ export class Admin2Dashboard {
         }
         
         return cleanName;
+    }
+
+    // Update category export button state and count
+    updateCategoryExportButton() {
+        const selectedCategories = Array.from(document.querySelectorAll('.category-checkbox:checked'))
+            .map(cb => cb.value);
+        const selectedCount = selectedCategories.length;
+        
+        // Update count display
+        const countElement = document.getElementById('selectedCategoriesCount');
+        if (countElement) {
+            countElement.textContent = selectedCount;
+        }
+        
+        // Update button states
+        const exportBtn = document.getElementById('exportCategoryCSV');
+        const exportSimplifiedBtn = document.getElementById('exportCategorySimplified');
+        
+        if (exportBtn) {
+            exportBtn.disabled = selectedCount === 0;
+        }
+        if (exportSimplifiedBtn) {
+            exportSimplifiedBtn.disabled = selectedCount === 0;
+        }
+    }
+
+    // Create combined overview data for multiple categories
+    createCombinedOverviewData(selectedCategories) {
+        const data = [];
+        
+        // Header row
+        const header = ['Username', 'Email', 'Last Active'];
+        
+        // Add columns for each category
+        selectedCategories.forEach(categoryName => {
+            const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+            categoryQuizzes.forEach(quizName => {
+                const formattedName = this.formatQuizName(quizName);
+                header.push(`${formattedName} Questions`, `${formattedName} Score%`, `${formattedName} Status`);
+            });
+        });
+        
+        header.push('Overall Progress%');
+        data.push(header);
+        
+        // Data rows
+        this.users.forEach(user => {
+            const row = [
+                user.username,
+                user.email || 'N/A',
+                this.formatDate(this.getLastActiveDate(user))
+            ];
+            
+            let totalQuestionsAnswered = 0;
+            let totalQuestions = 0;
+            
+            // Add data for each category
+            selectedCategories.forEach(categoryName => {
+                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                totalQuestions += categoryQuizzes.length * 15; // 15 questions per quiz
+                
+                categoryQuizzes.forEach(quizType => {
+                    const quizLower = quizType.toLowerCase();
+                    const progress = user.quizProgress?.[quizLower];
+                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                    
+                    const questionsAnswered = result?.questionsAnswered || 
+                                            result?.questionHistory?.length ||
+                                            progress?.questionsAnswered || 
+                                            progress?.questionHistory?.length || 0;
+                    
+                    let score = 0;
+                    if (result && result.score !== undefined) {
+                        score = Math.round(result.score);
+                    } else if (result && result.questionHistory) {
+                        const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                        score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+                    } else if (progress && progress.questionHistory) {
+                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                        score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+                    }
+                    
+                    let status = 'Not Started';
+                    if (questionsAnswered === 15) {
+                        status = score >= 70 ? 'Passed' : 'Failed';
+                        totalQuestionsAnswered += 15;
+                    } else if (questionsAnswered > 0) {
+                        status = 'In Progress';
+                        totalQuestionsAnswered += questionsAnswered;
+                    }
+                    
+                    row.push(questionsAnswered, `${score}%`, status);
+                });
+            });
+            
+            const overallProgressPercent = Math.round((totalQuestionsAnswered / totalQuestions) * 100);
+            row.push(`${overallProgressPercent}%`);
+            
+            data.push(row);
+        });
+        
+        return data;
     }
 
     // Create overview data for the category
@@ -7614,6 +7853,177 @@ export class Admin2Dashboard {
         });
         
         return data;
+    }
+
+    // Create simplified overview data for multiple categories (scores only)
+    createSimplifiedOverviewData(selectedCategories) {
+        const data = [];
+        
+        // Header row - just quiz names
+        const header = [];
+        selectedCategories.forEach(categoryName => {
+            const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+            categoryQuizzes.forEach(quizName => {
+                const formattedName = this.formatQuizName(quizName);
+                header.push(formattedName);
+            });
+        });
+        data.push(header);
+        
+        // Data rows - just usernames and scores
+        this.users.forEach(user => {
+            const row = [user.username];
+            
+            selectedCategories.forEach(categoryName => {
+                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                
+                categoryQuizzes.forEach(quizType => {
+                    const quizLower = quizType.toLowerCase();
+                    const progress = user.quizProgress?.[quizLower];
+                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                    
+                    let score = 0;
+                    if (result && result.score !== undefined) {
+                        score = Math.round(result.score);
+                    } else if (result && result.questionHistory) {
+                        const questionsAnswered = result.questionHistory.length;
+                        const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                        score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+                    } else if (progress && progress.questionHistory) {
+                        const questionsAnswered = progress.questionHistory.length;
+                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                        score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+                    }
+                    
+                    row.push(score);
+                });
+            });
+            
+            data.push(row);
+        });
+        
+        return data;
+    }
+
+    // Create simplified category data (scores only)
+    createSimplifiedCategoryData(categoryName, categoryQuizzes) {
+        const data = [];
+        
+        // Header row - just quiz names
+        const header = categoryQuizzes.map(quizName => this.formatQuizName(quizName));
+        data.push(header);
+        
+        // Data rows - just usernames and scores
+        this.users.forEach(user => {
+            const row = [user.username];
+            
+            categoryQuizzes.forEach(quizType => {
+                const quizLower = quizType.toLowerCase();
+                const progress = user.quizProgress?.[quizLower];
+                const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                
+                let score = 0;
+                if (result && result.score !== undefined) {
+                    score = Math.round(result.score);
+                } else if (result && result.questionHistory) {
+                    const questionsAnswered = result.questionHistory.length;
+                    const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                    score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+                } else if (progress && progress.questionHistory) {
+                    const questionsAnswered = progress.questionHistory.length;
+                    const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                    score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+                }
+                
+                row.push(score);
+            });
+            
+            data.push(row);
+        });
+        
+        return data;
+    }
+
+    // Create simplified individual quiz data (scores only)
+    createSimplifiedQuizData(quizName) {
+        const data = [];
+        const quizLower = quizName.toLowerCase();
+        
+        // Header row - just username and score
+        data.push(['Username', 'Score %']);
+        
+        // Data rows - just usernames and scores
+        this.users.forEach(user => {
+            const progress = user.quizProgress?.[quizLower];
+            const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+            
+            let score = 0;
+            if (result && result.score !== undefined) {
+                score = Math.round(result.score);
+            } else if (result && result.questionHistory) {
+                const questionsAnswered = result.questionHistory.length;
+                const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+            } else if (progress && progress.questionHistory) {
+                const questionsAnswered = progress.questionHistory.length;
+                const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+            }
+            
+            data.push([user.username, score]);
+        });
+        
+        return data;
+    }
+
+    // Add conditional formatting to Excel sheets (green for >= 80%, red for < 80%)
+    addConditionalFormatting(sheet, data) {
+        if (!sheet['!ref']) return; // No data to format
+        
+        const range = XLSX.utils.decode_range(sheet['!ref']);
+        const numRows = range.e.r + 1;
+        const numCols = range.e.c + 1;
+        
+        // Initialize conditional formatting if it doesn't exist
+        if (!sheet['!conditionalFormatting']) {
+            sheet['!conditionalFormatting'] = [];
+        }
+        
+        // Apply formatting to all score columns (skip first column which is usernames)
+        for (let col = 1; col < numCols; col++) {
+            // Green for scores >= 80%
+            const greenRule = {
+                type: 'cellIs',
+                operator: 'greaterThanOrEqual',
+                formula: [80],
+                style: {
+                    fill: { fgColor: { rgb: '90EE90' } }, // Light green
+                    font: { color: { rgb: '000000' } }    // Black text
+                }
+            };
+            
+            // Red for scores < 80% and > 0
+            const redRule = {
+                type: 'cellIs',
+                operator: 'lessThan',
+                formula: [80],
+                style: {
+                    fill: { fgColor: { rgb: 'FFB6C1' } }, // Light red
+                    font: { color: { rgb: '000000' } }    // Black text
+                }
+            };
+            
+            // Apply rules to the entire column (excluding header row)
+            const columnRange = {
+                s: { r: 1, c: col }, // Start from row 1 (after header)
+                e: { r: numRows - 1, c: col } // End at last data row
+            };
+            
+            sheet['!conditionalFormatting'].push({
+                ref: XLSX.utils.encode_range(columnRange),
+                rules: [greenRule, redRule]
+            });
+        }
     }
 
     // Create individual quiz data

@@ -671,18 +671,50 @@
                             </div>
                             <div class="export-card">
                                 <h3>Category Export</h3>
-                                <p>Export data organized by quiz categories with separate tabs for each quiz</p>
-                                <select id="categoryExportSelect" class="form-control">
-                                    <option value="">-- Select Category --</option>
-                                    <option value="Core QA Skills">Core QA Skills</option>
-                                    <option value="Test Execution">Test Execution</option>
-                                    <option value="Project Management">Project Management</option>
-                                    <option value="Content Testing">Content Testing</option>
-                                    <option value="Interview Preparation">Interview Preparation</option>
-                                </select>
-                                <button id="exportCategoryCSV" class="action-button" disabled>
-                                    Export Category Excel
-                                </button>
+                                <p>Select one or more categories to export. Each category will have its own overview tab plus individual quiz tabs.</p>
+                                
+                                <div class="category-selection-container">
+                                    <div class="selection-controls">
+                                        <button id="selectAllCategories" class="control-button">Select All</button>
+                                        <button id="deselectAllCategories" class="control-button">Deselect All</button>
+                                    </div>
+                                    
+                                    <div id="categoryCheckboxList" class="checkbox-list">
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="category-core-qa" class="category-checkbox" value="Core QA Skills">
+                                            <label for="category-core-qa">Core QA Skills</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="category-test-execution" class="category-checkbox" value="Test Execution">
+                                            <label for="category-test-execution">Test Execution</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="category-project-management" class="category-checkbox" value="Project Management">
+                                            <label for="category-project-management">Project Management</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="category-content-testing" class="category-checkbox" value="Content Testing">
+                                            <label for="category-content-testing">Content Testing</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="category-interview-prep" class="category-checkbox" value="Interview Preparation">
+                                            <label for="category-interview-prep">Interview Preparation</label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="selected-count">
+                                        <span id="selectedCategoriesCount">0</span> categories selected
+                                    </div>
+                                </div>
+                                
+                                <div class="export-buttons">
+                                    <button id="exportCategoryCSV" class="action-button" disabled>
+                                        Export Selected Categories (Detailed)
+                                    </button>
+                                    <button id="exportCategorySimplified" class="action-button" disabled>
+                                        Export Selected Categories (Simplified)
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
