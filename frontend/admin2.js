@@ -7984,46 +7984,35 @@ export class Admin2Dashboard {
         const numRows = range.e.r + 1;
         const numCols = range.e.c + 1;
         
-        // Create conditional formatting rules
-        const conditionalFormatting = [];
-        
-        // Green rule for >= 80%
-        conditionalFormatting.push({
-            type: 'cellIs',
-            operator: 'greaterThanOrEqual',
-            formula: [80],
-            format: {
-                fill: { fgColor: { rgb: '90EE90' } },
-                font: { color: { rgb: '000000' } }
+        // Apply direct cell styling based on values
+        for (let row = 1; row < numRows; row++) { // Skip header row
+            for (let col = 1; col < numCols; col++) { // Skip username column
+                const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+                const cellValue = data[row][col];
+                
+                if (typeof cellValue === 'number' && cellValue > 0) {
+                    // Ensure cell exists
+                    if (!sheet[cellRef]) {
+                        sheet[cellRef] = { v: cellValue };
+                    }
+                    
+                    // Apply styling based on score
+                    if (cellValue >= 80) {
+                        // Green background for high scores
+                        sheet[cellRef].s = {
+                            fill: { fgColor: { rgb: '90EE90' } },
+                            font: { color: { rgb: '000000' } }
+                        };
+                    } else {
+                        // Red background for low scores
+                        sheet[cellRef].s = {
+                            fill: { fgColor: { rgb: 'FFB6C1' } },
+                            font: { color: { rgb: '000000' } }
+                        };
+                    }
+                }
             }
-        });
-        
-        // Red rule for < 80% and > 0
-        conditionalFormatting.push({
-            type: 'cellIs',
-            operator: 'lessThan',
-            formula: [80],
-            format: {
-                fill: { fgColor: { rgb: 'FFB6C1' } },
-                font: { color: { rgb: '000000' } }
-            }
-        });
-        
-        // Apply conditional formatting to data range (skip header row and username column)
-        const dataRange = {
-            s: { r: 1, c: 1 }, // Start at row 1, col 1 (skip username column)
-            e: { r: numRows - 1, c: numCols - 1 } // End at last data row, last data column
-        };
-        
-        // Set conditional formatting on the sheet
-        if (!sheet['!conditionalFormatting']) {
-            sheet['!conditionalFormatting'] = [];
         }
-        
-        sheet['!conditionalFormatting'].push({
-            ref: XLSX.utils.encode_range(dataRange),
-            rules: conditionalFormatting
-        });
     }
 
     // Create individual quiz data
