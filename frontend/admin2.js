@@ -7984,7 +7984,7 @@ export class Admin2Dashboard {
         const numRows = range.e.r + 1;
         const numCols = range.e.c + 1;
         
-        // Apply direct cell styling based on values
+        // Apply direct cell styling to progress cells (not row A or column A)
         for (let row = 1; row < numRows; row++) { // Skip header row
             for (let col = 1; col < numCols; col++) { // Skip username column
                 const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
@@ -7999,16 +7999,10 @@ export class Admin2Dashboard {
                     // Apply styling based on score
                     if (cellValue >= 80) {
                         // Green background for high scores
-                        sheet[cellRef].s = {
-                            fill: { fgColor: { rgb: '90EE90' } },
-                            font: { color: { rgb: '000000' } }
-                        };
+                        sheet[cellRef].s = { fill: { fgColor: { rgb: '00FF00' } } };
                     } else {
                         // Red background for low scores
-                        sheet[cellRef].s = {
-                            fill: { fgColor: { rgb: 'FFB6C1' } },
-                            font: { color: { rgb: '000000' } }
-                        };
+                        sheet[cellRef].s = { fill: { fgColor: { rgb: 'FF0000' } } };
                     }
                 }
             }
