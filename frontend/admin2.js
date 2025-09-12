@@ -7913,7 +7913,9 @@ export class Admin2Dashboard {
                     let displayValue = 'Not Started';
                     if (score > 0) {
                         // Check if partially complete
-                        if (this.isQuizPartiallyComplete(quizLower, user)) {
+                        const isPartial = this.isQuizPartiallyComplete(quizLower, user);
+                        console.log(`User: ${user.username}, Quiz: ${quizType}, Score: ${score}, IsPartial: ${isPartial}`);
+                        if (isPartial) {
                             displayValue = `Partially Complete (${score}%)`;
                         } else {
                             const status = score >= 80 ? 'Pass' : 'Fail';
@@ -8049,6 +8051,8 @@ export class Admin2Dashboard {
         } else if (progress && progress.questionHistory) {
             questionsAnswered = progress.questionHistory.length;
         }
+        
+        console.log(`Checking partial completion for ${user.username} - ${quizLower}: ${questionsAnswered} questions answered`);
         
         // Consider partially complete if they've answered some questions but not all 15
         return questionsAnswered > 0 && questionsAnswered < 15;
