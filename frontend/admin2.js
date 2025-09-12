@@ -7873,8 +7873,8 @@ export class Admin2Dashboard {
         data.push(['Complete Overview - Quiz Scores']);
         data.push([]); // Empty row for spacing
         
-        // Header row - just quiz names
-        const header = [];
+        // Header row - empty first column, then quiz names
+        const header = [''];
         selectedCategories.forEach(categoryName => {
             const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
             categoryQuizzes.forEach(quizName => {
@@ -7939,8 +7939,8 @@ export class Admin2Dashboard {
         data.push([`${categoryName} Overview - Quiz Scores`]);
         data.push([]); // Empty row for spacing
         
-        // Header row - just quiz names
-        const header = [];
+        // Header row - empty first column, then quiz names
+        const header = [''];
         categoryQuizzes.forEach(quizName => {
             const formattedName = this.formatQuizName(quizName);
             header.push(formattedName);
@@ -8062,8 +8062,8 @@ export class Admin2Dashboard {
         data.push(['Completion Tracking - Questions Answered']);
         data.push([]); // Empty row for spacing
         
-        // Header row - quiz names
-        const header = ['Username'];
+        // Header row - empty first column, then quiz names
+        const header = ['', 'Username'];
         selectedCategories.forEach(categoryName => {
             const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
             categoryQuizzes.forEach(quizName => {
@@ -8075,7 +8075,7 @@ export class Admin2Dashboard {
         
         // Data rows - usernames and questions answered
         this.users.forEach(user => {
-            const row = [user.username];
+            const row = ['', user.username];
             
             selectedCategories.forEach(categoryName => {
                 const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
@@ -8119,7 +8119,7 @@ export class Admin2Dashboard {
         
         // Apply direct cell styling to score cells (all columns except username column)
         for (let row = 3; row < numRows; row++) { // Skip title row, empty row, and header row
-            for (let col = 1; col < numCols; col++) { // All data columns (skip username column)
+            for (let col = 2; col < numCols; col++) { // All data columns (skip empty column and username column)
                 const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
                 const cellValue = data[row][col];
                 
