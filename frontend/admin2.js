@@ -2978,11 +2978,7 @@ export class Admin2Dashboard {
 
     // Helper method to provide hardcoded quiz types
     getHardcodedQuizTypes() {
-        return [
-            'cms-testing',
-            'reports',
-            'raising-tickets'
-        ];
+        return Object.values(QUIZ_CATEGORIES).flat();
     }
 
     // Add fetchQuizScenarios method to match the parent class
@@ -4144,15 +4140,8 @@ export class Admin2Dashboard {
     categorizeQuizzesForForm(quizTypes) {
         if (!quizTypes || !Array.isArray(quizTypes)) {
             console.error('Invalid quizTypes provided to categorizeQuizzesForForm:', quizTypes);
-            quizTypes = [
-                'communication', 'initiative', 'time-management', 'tester-mindset',
-                'risk-analysis', 'risk-management', 'non-functional', 'test-support',
-                'issue-verification', 'build-verification', 'issue-tracking-tools',
-                'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
-                'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
-                'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
-                'sanity-smoke', 'functional-interview'
-            ];
+            // Use QUIZ_CATEGORIES as fallback
+            quizTypes = Object.values(QUIZ_CATEGORIES).flat();
         }
 
         // Build a set for quick lookup
@@ -7870,44 +7859,7 @@ export class Admin2Dashboard {
             return;
         }
 
-        // Use the correct QUIZ_CATEGORIES from quiz-list.js
-        const QUIZ_CATEGORIES = {
-            'Core QA Skills': [
-                'tester-mindset',
-                'communication',
-                'initiative',
-                'standard-script-testing',
-                'fully-scripted',
-                'exploratory'
-            ],
-            'Technical Testing': [
-                'script-metrics-troubleshooting',
-                'locale-testing',
-                'build-verification',
-                'test-types-tricks',
-                'test-support',
-                'sanity-smoke'
-            ],
-            'Project Management': [
-                'time-management',
-                'risk-analysis',
-                'risk-management',
-                'non-functional',
-                'issue-verification',
-                'issue-tracking-tools',
-                'raising-tickets'
-            ],
-            'Content Testing': [
-                'cms-testing',
-                'email-testing',
-                'content-copy',
-                'reports'
-            ],
-            'Interview Preparation': [
-                'automation-interview',
-                'functional-interview'
-            ]
-        };
+        // Use the imported QUIZ_CATEGORIES from quiz-list.js
 
         const allQuizzes = Object.values(QUIZ_CATEGORIES).flat();
         

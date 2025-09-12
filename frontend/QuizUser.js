@@ -1,5 +1,6 @@
 import { config } from './config.js';
 import { APIService } from './api-service.js';
+import { QUIZ_CATEGORIES } from './quiz-list.js';
 
 export class QuizUser {
     constructor(username) {
@@ -379,49 +380,10 @@ export class QuizUser {
             // Debug: Log all quiz results
             console.log("All quiz results:", JSON.stringify(this.quizResults, null, 2));
             
-            // Update progress bars for each category
-            this.updateCategoryProgress('Core QA Skills', [
-                'tester-mindset',
-                'communication',
-                'initiative',
-                'standard-script-testing',
-                'fully-scripted',
-                'exploratory'
-            ]);
-            
-            this.updateCategoryProgress('Technical Testing', [
-                'script-metrics-troubleshooting',
-                'locale-testing',
-                'build-verification',
-                'test-types-tricks',
-                'test-support',
-                'sanity-smoke'
-            ]);
-            
-            this.updateCategoryProgress('Project Management', [
-                'time-management',
-                'risk-analysis',
-                'risk-management'
-            ]);
-            
-            this.updateCategoryProgress('Bug Management', [
-                'issue-tracking-tools',
-                'raising-tickets',
-                'issue-verification',
-                'reports'
-            ]);
-            
-            this.updateCategoryProgress('Specialized Testing', [
-                'cms-testing',
-                'email-testing',
-                'non-functional',
-                'content-copy'
-            ]);
-            
-            this.updateCategoryProgress('Interview Preparation', [
-                'automation-interview',
-                'functional-interview'
-            ]);
+            // Update progress bars for each category using QUIZ_CATEGORIES
+            Object.entries(QUIZ_CATEGORIES).forEach(([categoryName, quizzes]) => {
+                this.updateCategoryProgress(categoryName, quizzes);
+            });
 
             // Call our new function to apply styles directly
             this.applyQuizStyles();
