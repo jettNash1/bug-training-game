@@ -163,6 +163,7 @@ export class Admin2Dashboard {
                 
                 // Store users data
                 this.users = response.data;
+                console.log(`Loaded ${this.users.length} users:`, this.users.map(u => u.username));
                 
                 // Display user cards with loading screen for API calls
                 console.log('[Admin] Displaying user cards with accurate API data...');
@@ -1991,6 +1992,7 @@ export class Admin2Dashboard {
             if (response.success) {
                 // Update both local users data and repopulate the bulk list
                 this.users = response.data;
+                console.log(`Updated ${this.users.length} users:`, this.users.map(u => u.username));
                 await this.populateBulkUsersList();
                 
                 // Also refresh main dashboard if we're updating this.users
@@ -7568,6 +7570,8 @@ export class Admin2Dashboard {
             this.showError('Please select at least one category to export');
             return;
         }
+        
+        console.log(`Starting simplified export with ${this.users.length} users:`, this.users.map(u => u.username));
 
         try {
             // Check if SheetJS is available
@@ -7885,7 +7889,9 @@ export class Admin2Dashboard {
         data.push(header);
         
         // Data rows - usernames and combined score-status
+        console.log(`Processing ${this.users.length} users for simplified overview:`, this.users.map(u => u.username));
         this.users.forEach(user => {
+            console.log(`Processing user: ${user.username}`);
             const row = [user.username];
             
             selectedCategories.forEach(categoryName => {
