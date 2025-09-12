@@ -963,6 +963,25 @@ export class Admin2Dashboard {
             });
         }
 
+        // Category export functionality
+        const categorySelect = document.getElementById('categoryExportSelect');
+        const exportCategoryBtn = document.getElementById('exportCategoryCSV');
+        
+        if (categorySelect) {
+            categorySelect.addEventListener('change', () => {
+                const isCategorySelected = categorySelect.value !== '';
+                if (exportCategoryBtn) {
+                    exportCategoryBtn.disabled = !isCategorySelected;
+                }
+            });
+        }
+        
+        if (exportCategoryBtn) {
+            exportCategoryBtn.addEventListener('click', () => {
+                this.exportCategoryData();
+            });
+        }
+
         // Badges section
         document.getElementById('badgesUserDropdown')?.addEventListener('change', (e) => {
             const username = e.target.value;
@@ -7436,6 +7455,104 @@ export class Admin2Dashboard {
             this.exportSimpleCSV();
         } else {
             this.exportUserDataToCSV();
+        }
+    }
+
+    // Export data organized by quiz categories
+    exportCategoryData() {
+        const categorySelect = document.getElementById('categoryExportSelect');
+        const selectedCategory = categorySelect.value;
+        
+        if (!selectedCategory) {
+            this.showError('Please select a category to export');
+            return;
+        }
+
+        const categoryQuizzes = QUIZ_CATEGORIES[selectedCategory];
+        if (!categoryQuizzes || categoryQuizzes.length === 0) {
+            this.showError('No quizzes found for the selected category');
+            return;
+        }
+
+        try {
+            // Create a single CSV with all quizzes from the category
+            // Each quiz will be represented as separate columns
+            let csvContent = "Username,Email,Last Active,";
+            
+            // Add quiz columns for each quiz in the category
+            categoryQuizzes.forEach(quizName => {
+                const formattedName = this.formatQuizName(quizName);
+                csvContent += `${formattedName} Questions,${formattedName} Score%,${formattedName} Status,`;
+            });
+            
+            csvContent += "Category Progress%\n";
+            
+            // Add data for each user
+            this.users.forEach(user => {
+                // Add basic user info
+                csvContent += `${user.username},${user.email || 'N/A'},${this.getLastActiveDate(user)},`;
+                
+                let categoryQuestionsAnswered = 0;
+                let categoryTotalQuestions = categoryQuizzes.length * 15; // 15 questions per quiz
+                
+                // Add data for each quiz in the category
+                categoryQuizzes.forEach(quizType => {
+                    const quizLower = quizType.toLowerCase();
+                    const progress = user.quizProgress?.[quizLower];
+                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                    
+                    // Get questions answered
+                    const questionsAnswered = result?.questionsAnswered || 
+                                            result?.questionHistory?.length ||
+                                            progress?.questionsAnswered || 
+                                            progress?.questionHistory?.length || 0;
+                    
+                    // Calculate score
+                    let score = 0;
+                    if (result && result.score !== undefined) {
+                        score = Math.round(result.score);
+                    } else if (result && result.questionHistory) {
+                        const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                        score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+                    } else if (progress && progress.questionHistory) {
+                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                        score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+                    }
+                    
+                    // Determine status
+                    let status = 'Not Started';
+                    if (questionsAnswered === 15) {
+                        status = score >= 70 ? 'Passed' : 'Failed';
+                        categoryQuestionsAnswered += 15;
+                    } else if (questionsAnswered > 0) {
+                        status = 'In Progress';
+                        categoryQuestionsAnswered += questionsAnswered;
+                    }
+                    
+                    csvContent += `${questionsAnswered},${score}%,${status},`;
+                });
+                
+                // Calculate category progress percentage
+                const categoryProgressPercent = Math.round((categoryQuestionsAnswered / categoryTotalQuestions) * 100);
+                csvContent += `${categoryProgressPercent}%\n`;
+            });
+            
+            // Create and download the file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${selectedCategory.replace(/\s+/g, '_')}_Export.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            this.showSuccess(`Successfully exported ${selectedCategory} data`);
+            
+        } catch (error) {
+            console.error('Error exporting category CSV:', error);
+            this.showError('Failed to export category CSV file');
         }
     }
 
