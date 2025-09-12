@@ -7458,8 +7458,8 @@ export class Admin2Dashboard {
         }
     }
 
-    // Export data organized by quiz categories
-    exportCategoryData() {
+    // Export data organized by quiz categories with separate tabs
+    async exportCategoryData() {
         const categorySelect = document.getElementById('categoryExportSelect');
         const selectedCategory = categorySelect.value;
         
@@ -7475,85 +7475,180 @@ export class Admin2Dashboard {
         }
 
         try {
-            // Create a single CSV with all quizzes from the category
-            // Each quiz will be represented as separate columns
-            let csvContent = "Username,Email,Last Active,";
+            // Check if SheetJS is available
+            if (typeof XLSX === 'undefined') {
+                // Load SheetJS dynamically
+                await this.loadSheetJS();
+            }
+
+            // Create workbook
+            const workbook = XLSX.utils.book_new();
             
-            // Add quiz columns for each quiz in the category
-            categoryQuizzes.forEach(quizName => {
-                const formattedName = this.formatQuizName(quizName);
-                csvContent += `${formattedName} Questions,${formattedName} Score%,${formattedName} Status,`;
-            });
+            // Create overview sheet with all quizzes
+            const overviewData = this.createCategoryOverviewData(selectedCategory, categoryQuizzes);
+            const overviewSheet = XLSX.utils.aoa_to_sheet(overviewData);
+            XLSX.utils.book_append_sheet(workbook, overviewSheet, selectedCategory.replace(/\s+/g, '_'));
             
-            csvContent += "Category Progress%\n";
+            // Create individual sheets for each quiz
+            for (const quizName of categoryQuizzes) {
+                const quizData = this.createIndividualQuizData(quizName);
+                const quizSheet = XLSX.utils.aoa_to_sheet(quizData);
+                const sheetName = this.formatQuizName(quizName).replace(/[^a-zA-Z0-9]/g, '_');
+                XLSX.utils.book_append_sheet(workbook, quizSheet, sheetName);
+            }
             
-            // Add data for each user
-            this.users.forEach(user => {
-                // Add basic user info
-                csvContent += `${user.username},${user.email || 'N/A'},${this.getLastActiveDate(user)},`;
-                
-                let categoryQuestionsAnswered = 0;
-                let categoryTotalQuestions = categoryQuizzes.length * 15; // 15 questions per quiz
-                
-                // Add data for each quiz in the category
-                categoryQuizzes.forEach(quizType => {
-                    const quizLower = quizType.toLowerCase();
-                    const progress = user.quizProgress?.[quizLower];
-                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                    
-                    // Get questions answered
-                    const questionsAnswered = result?.questionsAnswered || 
-                                            result?.questionHistory?.length ||
-                                            progress?.questionsAnswered || 
-                                            progress?.questionHistory?.length || 0;
-                    
-                    // Calculate score
-                    let score = 0;
-                    if (result && result.score !== undefined) {
-                        score = Math.round(result.score);
-                    } else if (result && result.questionHistory) {
-                        const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
-                        score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
-                    } else if (progress && progress.questionHistory) {
-                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
-                        score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
-                    }
-                    
-                    // Determine status
-                    let status = 'Not Started';
-                    if (questionsAnswered === 15) {
-                        status = score >= 70 ? 'Passed' : 'Failed';
-                        categoryQuestionsAnswered += 15;
-                    } else if (questionsAnswered > 0) {
-                        status = 'In Progress';
-                        categoryQuestionsAnswered += questionsAnswered;
-                    }
-                    
-                    csvContent += `${questionsAnswered},${score}%,${status},`;
-                });
-                
-                // Calculate category progress percentage
-                const categoryProgressPercent = Math.round((categoryQuestionsAnswered / categoryTotalQuestions) * 100);
-                csvContent += `${categoryProgressPercent}%\n`;
-            });
-            
-            // Create and download the file
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            // Generate and download the Excel file
+            const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', `${selectedCategory.replace(/\s+/g, '_')}_Export.csv`);
+            link.setAttribute('download', `${selectedCategory.replace(/\s+/g, '_')}_Export.xlsx`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             
-            this.showSuccess(`Successfully exported ${selectedCategory} data`);
+            this.showSuccess(`Successfully exported ${selectedCategory} data with separate tabs`);
             
         } catch (error) {
-            console.error('Error exporting category CSV:', error);
-            this.showError('Failed to export category CSV file');
+            console.error('Error exporting category Excel file:', error);
+            this.showError('Failed to export category Excel file');
         }
+    }
+
+    // Load SheetJS library dynamically
+    async loadSheetJS() {
+        return new Promise((resolve, reject) => {
+            if (typeof XLSX !== 'undefined') {
+                resolve();
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    // Create overview data for the category
+    createCategoryOverviewData(categoryName, categoryQuizzes) {
+        const data = [];
+        
+        // Header row
+        const header = ['Username', 'Email', 'Last Active'];
+        categoryQuizzes.forEach(quizName => {
+            const formattedName = this.formatQuizName(quizName);
+            header.push(`${formattedName} Questions`, `${formattedName} Score%`, `${formattedName} Status`);
+        });
+        header.push('Category Progress%');
+        data.push(header);
+        
+        // Data rows
+        this.users.forEach(user => {
+            const row = [
+                user.username,
+                user.email || 'N/A',
+                this.formatDate(this.getLastActiveDate(user))
+            ];
+            
+            let categoryQuestionsAnswered = 0;
+            let categoryTotalQuestions = categoryQuizzes.length * 15;
+            
+            categoryQuizzes.forEach(quizType => {
+                const quizLower = quizType.toLowerCase();
+                const progress = user.quizProgress?.[quizLower];
+                const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                
+                const questionsAnswered = result?.questionsAnswered || 
+                                        result?.questionHistory?.length ||
+                                        progress?.questionsAnswered || 
+                                        progress?.questionHistory?.length || 0;
+                
+                let score = 0;
+                if (result && result.score !== undefined) {
+                    score = Math.round(result.score);
+                } else if (result && result.questionHistory) {
+                    const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                    score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+                } else if (progress && progress.questionHistory) {
+                    const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                    score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+                }
+                
+                let status = 'Not Started';
+                if (questionsAnswered === 15) {
+                    status = score >= 70 ? 'Passed' : 'Failed';
+                    categoryQuestionsAnswered += 15;
+                } else if (questionsAnswered > 0) {
+                    status = 'In Progress';
+                    categoryQuestionsAnswered += questionsAnswered;
+                }
+                
+                row.push(questionsAnswered, `${score}%`, status);
+            });
+            
+            const categoryProgressPercent = Math.round((categoryQuestionsAnswered / categoryTotalQuestions) * 100);
+            row.push(`${categoryProgressPercent}%`);
+            
+            data.push(row);
+        });
+        
+        return data;
+    }
+
+    // Create individual quiz data
+    createIndividualQuizData(quizName) {
+        const data = [];
+        const quizLower = quizName.toLowerCase();
+        
+        // Header row
+        data.push(['Username', 'Email', 'Last Active', 'Questions Answered', 'Score %', 'Status', 'Completed At']);
+        
+        // Data rows
+        this.users.forEach(user => {
+            const progress = user.quizProgress?.[quizLower];
+            const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+            
+            const questionsAnswered = result?.questionsAnswered || 
+                                    result?.questionHistory?.length ||
+                                    progress?.questionsAnswered || 
+                                    progress?.questionHistory?.length || 0;
+            
+            let score = 0;
+            if (result && result.score !== undefined) {
+                score = Math.round(result.score);
+            } else if (result && result.questionHistory) {
+                const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+            } else if (progress && progress.questionHistory) {
+                const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+            }
+            
+            let status = 'Not Started';
+            if (questionsAnswered === 15) {
+                status = score >= 70 ? 'Passed' : 'Failed';
+            } else if (questionsAnswered > 0) {
+                status = 'In Progress';
+            }
+            
+            const completedAt = result?.completedAt ? this.formatDate(new Date(result.completedAt).getTime()) : 'N/A';
+            
+            data.push([
+                user.username,
+                user.email || 'N/A',
+                this.formatDate(this.getLastActiveDate(user)),
+                questionsAnswered,
+                `${score}%`,
+                status,
+                completedAt
+            ]);
+        });
+        
+        return data;
     }
 
     exportUserDataToCSV() {

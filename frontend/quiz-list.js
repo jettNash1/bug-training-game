@@ -6,32 +6,32 @@ export const QUIZ_CATEGORIES = {
         'tester-mindset',
         'communication',
         'initiative',
+        'time-management'
+    ],
+    'Test Execution': [
+        'test-types-tricks',
+        'build-verification',
+        'sanity-smoke',
+        'locale-testing',
+        'exploratory',
         'standard-script-testing',
         'fully-scripted',
-        'exploratory'
-    ],
-    'Technical Testing': [
-        'script-metrics-troubleshooting',
-        'locale-testing',
-        'build-verification',
-        'test-types-tricks',
-        'test-support',
-        'sanity-smoke'
-    ],
-    'Project Management': [
-        'time-management',
-        'risk-analysis',
-        'risk-management',
         'non-functional',
         'issue-verification',
+        'raising-tickets',
+        'reports',
+        'script-metrics-troubleshooting',
+        'test-support',
+    ],
+    'Project Management': [
+        'risk-analysis',
+        'risk-management',
         'issue-tracking-tools',
-        'raising-tickets'
     ],
     'Content Testing': [
         'cms-testing',
         'email-testing',
         'content-copy',
-        'reports'
     ],
     'Interview Preparation': [
         'automation-interview',
