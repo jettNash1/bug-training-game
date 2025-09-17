@@ -10,26 +10,22 @@ export const issueVerificationScenarios = {
                     {
                         text: 'Start with highest priority and severity issues, ensuring critical fixes are verified first',
                         outcome: 'Perfect! This ensures most important issues are verified.',
-                        experience: 15,
-                        isCorrect: true,
+                        experience: 15
                     },
                     {
                         text: 'Verify tickets in chronological order to address the most current issues first',
                         outcome: 'Priority and severity should guide verification order.',
-                        experience: -10,
-                        isCorrect: false
+                        experience: -10
                     },
                     {
                         text: 'Start with easiest tickets to gain the most coverage of open tickets',
                         outcome: 'Critical issues need verification first.',
-                        experience: -5,
-                        isCorrect: false
+                        experience: -5
                     },
                     {
                         text: 'Verify issues based on your familiarity with specific tickets',
                         outcome: 'Structured prioritisation is required to address the most critical issues first.',
-                        experience: 0,
-                        isCorrect: false
+                        experience: 0
                     }
                 ]
             },
@@ -154,26 +150,22 @@ export const issueVerificationScenarios = {
                     {
                         text: 'Partially Fixed',
                         outcome: 'Correct! This is an issue that has been noted as partly showing expected behaviour or improvements, but part of the issue remains unresolved.',
-                        experience: 15,
-                        isCorrect: true,
+                        experience: 15
                     },
                     {
                         text: 'Won\'t Fix',
                         outcome: 'Won\'t Fix means the client has decided not to address the issue.',
-                        experience: -5,
-                        isCorrect: false
+                        experience: -5
                     },
                     {
                         text: 'Not Reproducible',
                         outcome: 'Not Reproducible means the issue cannot be recreated during testing.',
-                        experience: -10,
-                        isCorrect: false
+                        experience: -10
                     },
                     {
                         text: 'Out of Scope',
                         outcome: 'Out of Scope indicates the issue is beyond the project requirements.',
-                        experience: 0,
-                        isCorrect: false
+                        experience: 0
                     }
                 ]
             },
@@ -186,26 +178,22 @@ export const issueVerificationScenarios = {
                     {
                         text: 'Creating detailed test cases for future test cycles',
                         outcome: 'Creating test cases is part of planning activities and not generally part of issue verification',
-                        experience: -5,
-                        isCorrect: false
+                        experience: -5
                     },
                     {
                         text: 'Interviewing developers about their implementation methods',
                         outcome: 'Whilst comments can be added to tickets about findings and queries. Interviewing developers is not part of issue verification.',
-                        experience: -10,
-                        isCorrect: false
+                        experience: -10
                     },
                     {
                         text: 'Regression testing in areas where fixes have been made',
                         outcome: 'Correct! It is critical you ensure time for regression testing to identify new issues that may have been introduced as a result of fixes.',
-                        experience: 15,
-                        isCorrect: true,
+                        experience: 15
                     },
                     {
                         text: 'Redesigning the user interface to prevent future issues',
                         outcome: 'User Interface redesign is not part of the tester\'s responsibility during issue verification',
-                        experience: 0,
-                        isCorrect: false
+                        experience: 0
                     }
                 ]
             },
@@ -218,26 +206,22 @@ export const issueVerificationScenarios = {
                     {
                         text: 'Issue verification requires less attention to detail than exploratory testing',
                         outcome: 'Issue verification requires being Observant, Detail oriented and aware of change, so it doesn\'t require less attention to detail.',
-                        experience: -5,
-                        isCorrect: false
+                        experience: -5
                     },
                     {
                         text: 'Issue verification is always performed by a different tester than the original test execution',
                         outcome: 'The same tester that performed the original test execution on the system can perform the regression tests as well as different testers.', 
-                        experience: -10,
-                        isCorrect: false
+                        experience: -10
                     },
                     {
                         text: 'Issue verification focuses more on reporting than on detailing destructive test methods',
                         outcome: 'Correct! The reporting process differs from, exploratory testing which is focused on detailing destructive/edge case methods and reporting the issues found. Instead, it is centred around verifying and building a picture of product quality.',
-                        experience: 15,
-                        isCorrect: true,
+                        experience: 15
                     },
                     {
                         text: 'Issue verification allows for more creative test approaches than exploratory testing',
                         outcome: 'Issue verification generally relies on following a set of steps for each ticket raised rather than a more creative approach that exploratory testing employs.',
-                        experience: 0,
-                        isCorrect: false
+                        experience: 0
                     }
                 ]
             },
@@ -250,26 +234,22 @@ export const issueVerificationScenarios = {
                     {
                         text: 'The issue is present on all environments and all operating systems based on tested samples',
                         outcome: 'Correct! Stating global is making a calculated assumption based on observations that the issue is present on all environments and all operating systems.',
-                        experience: 15,
-                        isCorrect: true,
+                        experience: 15
                     },
                     {
                         text: 'The issue affects all users in all countries worldwide',
                         outcome: 'While this might seem logical, global is defined in terms of environments and operating systems, not geographic regions.',
-                        experience: -10,
-                        isCorrect: false
+                        experience: -10
                     },
                     {
                         text: 'The issue requires approval from global management.',
                         outcome: 'This is incorrect, and management should not be involved in ticket raising criteria.',
-                        experience: -5,
-                        isCorrect: false
+                        experience: -5
                     },
                     {
                         text: 'The issue can only be verified by international teams.',
                         outcome: 'This is incorrect as global issues should require the testers experience and knowledge',
-                        experience: 0,
-                        isCorrect: false
+                        experience: 0
                     }
                 ]
             },
@@ -282,26 +262,22 @@ export const issueVerificationScenarios = {
                     {
                         text: 'Identify unresolved issues as lower priority for retesting',
                         outcome: 'Correct! Where possible, confirm with the project manager which & how many issues the client has been able to work on ahead of the issue verification session. If there are known unresolved issues, identify them as lower priority for retest.',
-                        experience: 15,
-                        isCorrect: true,
+                        experience: 15
                     },
                     {
                         text: 'Cancel the session and reschedule for a later date',
                         outcome: 'This should not be the process. Any unresolved issues should be identified as low priority for re-test.',
-                        experience: -10,
-                        isCorrect: false
+                        experience: -10
                     },
                     {
                         text: 'Test only the fixed issues and ignore all others',
                         outcome: 'Prioritising of all issues should be the process, rather than ignoring any tickets that have any other status.',
-                        experience: -5,
-                        isCorrect: false
+                        experience: -5
                     },
                     {
                         text: 'Automatically mark all untested issues as \'Not Fixed\'',
                         outcome: 'Automatically marking issues as Not Fixed without testing would be inaccurate and contradicts the purpose of verification.',
-                        experience: 0,
-                        isCorrect: false
+                        experience: 0
                     }
                 ]
             }

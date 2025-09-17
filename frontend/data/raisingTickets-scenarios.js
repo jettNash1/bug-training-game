@@ -10,26 +10,22 @@ export const raisingTicketsScenarios = {
                     {
                         text: 'Bugs, Queries, Suggestions/Improvements, and Reference tickets',
                         outcome: 'Perfect! These are the main ticket types used for different purposes.',
-                        experience: 15,
-                        isCorrect: true,
+                        experience: 15
                     },
                     {
                         text: 'Bug reports should be raised as this is the primary objective of quality assurance',
                         outcome: 'Multiple ticket types are required including queries and suggestions as they serve different purposes.',
-                        experience: -5,
-                        isCorrect: false
+                        experience: -5
                     },
                     {
                         text: 'Tasks should be raised by the tester for clients to assign to developers',
                         outcome: 'Whilst this is a valid ticket type in some but tracking systems, tasks are generally entered by developers or client project managers themselves.',
-                        experience: -10,
-                        isCorrect: false
+                        experience: -10
                     },
                     {
                         text: 'User stories should be raised by the tester for full feature coverage',
                         outcome: 'Whilst this is a valid ticket type. User stories are generally entered by developers or client project managers themselves.',
-                        experience: 0,
-                        isCorrect: false
+                        experience: 0
                     }
                 ]
             },
@@ -68,7 +64,7 @@ export const raisingTicketsScenarios = {
                 description: 'What should be included in the issue description?',
                 options: [
                     {
-                        text: 'Observed behaviour, expected behaviour, and reference to specifications if available',
+                        text: 'A detailed description of the defect and it\'s impact, and reference to specifications if available',
                         outcome: 'Perfect! This provides clear context for the client and developer to debug the issue.',
                         experience: 15,
                     },
@@ -236,7 +232,7 @@ export const raisingTicketsScenarios = {
                 description: 'Which of the following is a key characteristic of well-written tickets?',
                 options: [
                     {
-                        text: 'Tickets should be factual, neutral, and helpful information and are key characteristics',
+                        text: 'Tickets should be factual, neutral, include helpful information and the key characteristics of the issue',
                         outcome: 'Correct! these are all characteristics of a well-written ticket.',
                         experience: 15,
                     },
@@ -496,7 +492,7 @@ export const raisingTicketsScenarios = {
                 description: 'When should tickets be raised during testing?',
                 options: [
                     {
-                        text: 'Tickets should be raise immediately when issues are observed to maintain accuracy',
+                        text: 'Tickets should be raised immediately when issues are observed to maintain accuracy',
                         outcome: 'Perfect! Immediate reporting ensures accuracy.',
                         experience: 25, 
                     },

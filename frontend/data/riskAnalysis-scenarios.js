@@ -10,26 +10,22 @@ export const riskAnalysisScenarios = {
                     {
                         text: 'Consider number of affected parties, duration of effect, likelihood, and impact',
                         outcome: 'Perfect! Comprehensive risk severity assessment considers multiple factors.',
-                        experience: 15,
-                        isCorrect: true,
+                        experience: 15
                     },
                     {
                         text: 'Consider immediate impact on the system under test',
                         outcome: 'Whilst impact is important risk severity needs to take in broader consideration, like risk likelihood and impact on the user.',
-                        experience: -5,
-                        isCorrect: false
+                        experience: -5
                     },
                     {
                         text: 'Consider the developers feedback and base severity on their expertise on the system under test',
                         outcome: 'Whilst a developers input can be important, the severity of a risk requires a more measured approach taking into consideration a range of factors.',
-                        experience: -10,
-                        isCorrect: false
+                        experience: -10
                     },
                     {
                         text: 'Consider number of affected parties, duration of effect and impact',
                         outcome: 'While all these factors will form a structured assessment of the severity of a risk. Likelihood of the issue occurring is also a main factor that can\'t be left out.',
-                        experience: 0,
-                        isCorrect: false
+                        experience: 0
                     }
                 ]
             },
