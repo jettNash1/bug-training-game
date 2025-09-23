@@ -3038,6 +3038,7 @@ export class Admin2Dashboard {
         if (fileName === 'test-types-tricks') fileName = 'testTypes';
         if (fileName === 'test-support') fileName = 'testSupport';
         if (fileName === 'sanity-smoke') fileName = 'sanitySmoke';
+        if (fileName === 'ticket-template') fileName = 'newTicketTemplate';
         
         try {
             // Try to load the scenarios from the JS file directly with cache-busting
@@ -3070,7 +3071,8 @@ export class Admin2Dashboard {
                 'test-support': 'testSupportScenarios',
                 'test-types-tricks': 'testTypesScenarios',
                 'tester-mindset': 'testerMindsetScenarios',
-                'time-management': 'timeManagementScenarios'
+                'time-management': 'timeManagementScenarios',
+                'ticket-template': 'newTicketTemplateScenarios'
             };
 
             // Try different possible export names based on the file naming pattern
