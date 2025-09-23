@@ -304,7 +304,7 @@ export const raisingTicketsScenarios = {
                     },
                     {
                         text: 'When uploading a photo to set as a profile picture, the application crashes immediately after the image is selected. ',
-                        outcome: 'Perfect! This summary is to the point and follows the Zoonou approach to writing tickets.',                       
+                        outcome: 'Perfect! This summary is to the point and follows the Zoonou approach to writing tickets.',
                         experience: 15
                     }
                 ]
