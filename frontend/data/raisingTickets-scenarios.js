@@ -280,6 +280,34 @@ export const raisingTicketsScenarios = {
                         experience: 0
                     }
                 ]
+            },
+            {
+                id: 21,
+                level: 'Basic',
+                title: 'Zoonou Approach to Tickets',
+                description: 'Which one of the following issue summaries resemble the correct Zoonou approach to writing tickets?',
+                options: [
+                    {
+                        text: 'It has been observed that the app crashes immediately after selecting a photo to upload as a profile picture. \n It is expected that the app does not crash',
+                        outcome: 'Both \'It has been observed\' and \'It is expected that the app does not crash\' are strictly against the Zoonou approach.',
+                        experience: -10,
+                    },
+                    {
+                        text: 'The app crashes immediately after selecting a photo to upload as a profile picture \n It is expected that the app does not crash',
+                        outcome: 'This summary could use more information and the expected outcome section needs adjustment to meet the Zoonou approach.',
+                        experience: -5
+                    },
+                    {
+                        text: 'When uploading a photo to set as a profile picture, the application crashes immediately after the image is selected. \n It is expected that the app does not crash',
+                        outcome: 'Whilst not strictly following the Zoonou approach, this summary is still to the point, the \'It is expected that the app does not crash\' needs to be adjusted.',
+                        experience: 0
+                    },
+                    {
+                        text: 'When uploading a photo to set as a profile picture, the application crashes immediately after the image is selected. ',
+                        outcome: 'Perfect! This summary is to the point and follows the Zoonou approach to writing tickets.',                       
+                        experience: 15
+                    }
+                ]
             }
         ],
 
@@ -292,12 +320,12 @@ export const raisingTicketsScenarios = {
                 description: 'How do you determine and document reproduction rate?',
                 options: [
                     {
-                        text: 'Test multiple times and calculate percentage based on successful reproductions',
-                        outcome: 'Excellent! This provides accurate reproduction statistics.',
+                        text: 'Test multiple times and determine the most applicable reproduction statement from the options provided within the ticket template',
+                        outcome: 'Excellent! This provides accurate reproduction statistics and follows the Zoonou approach to writing tickets.',
                         experience: 20, 
                     },
                     {
-                        text: 'Test multiple times on one environment to ensure accurate reproduction rate',
+                        text: 'Test one time on one environment to ensure accurate reproduction rate',
                         outcome: 'To ensure accurate reproduction rates, tests should be carried out on multiple environments.',
                         experience: -15
                     },
