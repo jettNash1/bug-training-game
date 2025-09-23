@@ -3040,8 +3040,9 @@ export class Admin2Dashboard {
         if (fileName === 'sanity-smoke') fileName = 'sanitySmoke';
         
         try {
-            // Try to load the scenarios from the JS file directly
-            const module = await import(`./data/${fileName}-scenarios.js`);
+            // Try to load the scenarios from the JS file directly with cache-busting
+            const timestamp = Date.now();
+            const module = await import(`./data/${fileName}-scenarios.js?cb=${timestamp}`);
             
             // Create a mapping of quiz names to their actual export names
             const exportNameMap = {
