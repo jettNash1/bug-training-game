@@ -39,7 +39,8 @@ function normalizeQuizName(quizName) {
         'fully-scripted', 
         'exploratory',
         'sanity-smoke', 
-        'functional-interview'
+        'functional-interview',
+        'ticket-template'
     ];
     
     // If it's an exact match with our known list, return it directly

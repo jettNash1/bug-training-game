@@ -15,7 +15,7 @@ const KNOWN_QUIZ_NAMES = [
     'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
     'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
     'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
-    'sanity-smoke', 'functional-interview'
+    'sanity-smoke', 'functional-interview', 'ticket-template'
 ];
 
 export class QuizProgressService {
@@ -101,7 +101,8 @@ export class QuizProgressService {
             'non-functional',
             'content-copy',
             'automation-interview',
-            'functional-interview'
+            'functional-interview',
+            'ticket-template'
         ];
         
         // If the normalized name matches a known quiz name (case-insensitive), use the known name

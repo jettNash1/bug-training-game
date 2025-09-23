@@ -22,6 +22,7 @@ export const QUIZ_CATEGORIES = {
         'reports',
         'script-metrics-troubleshooting',
         'test-support',
+        'ticket-template'
     ],
     'Project Management': [
         'risk-analysis',
@@ -223,7 +224,8 @@ export class QuizList {
             'fully-scripted': 'Test fully scripted scenarios',
             'exploratory': 'Explore and test without predefined scripts',
             'sanity-smoke': 'Learn sanity and smoke testing',
-            'functional-interview': 'Prepare for functional interviews'
+            'functional-interview': 'Prepare for functional interviews',
+            'ticket-template': 'Learn best practices for raising and managing tickets'
         };
         return descriptions[quizName] || 'Master essential testing skills';
     }
