@@ -148,22 +148,22 @@ export const raisingTicketsScenarios = {
                 description: 'Which of the following is the appropriate reproduction rate to indicate for an issue that can be recreated in 3 out of 4 attempts?',
                 options: [
                     {
-                        text: '75% - Mostly reproducible',
-                        outcome: 'Correct! The guide specifically states that 75% means in 3 out of 4 attempts we were able to recreate the issue with minimal difficulty.',
+                        text: 'Mostly reproducible',
+                        outcome: 'Correct! The guide specifically states that Mostly reproducible means in 3 out of 4 attempts we were able to recreate the issue with minimal difficulty.',
                         experience: 15,
                     },
                     {
-                        text: '99% - Consistently reproducible',
-                        outcome: '99% means the tester can reproduce the issue every time it is attempted.',
+                        text: 'Consistently reproducible',
+                        outcome: 'Consistently reproducible means the tester can reproduce the issue every time it is attempted.',
                         experience: -5
                     },
                     {
-                        text: '25% - Sporadic issue',
+                        text: 'Sporadic issue',
                         outcome: 'This type of issue has only been able to be reproduced 1 in every 4 attempts.',
                         experience: -10
                     },
                     {
-                        text: '0% - Not reproducible',
+                        text: 'Not reproducible',
                         outcome: 'This rating is for issues that have been observed once but cannot be recreated at all.',
                         experience: 0
                     }
