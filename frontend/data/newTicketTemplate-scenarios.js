@@ -340,6 +340,34 @@ export const newTicketTemplateScenarios = {
                         experience: -5
                     }
                 ]
+            },
+            {
+                id: 20,
+                level: 'Intermediate',
+                title: 'Supporting Material',
+                description: 'Aside from Video and Screenshots, what else can be used as supporting material?',
+                options: [
+                    {
+                        text: 'References to documentation, log files from the browser console, relevant error codes and other related materials',
+                        outcome: 'Supporting material should not simply be limited to video and screenshots, other materials can be used to help the developer understand the issue.',
+                        experience: 20
+                    },
+                    {
+                        text: 'Only written descriptions of the issue are needed',
+                        outcome: 'Written descriptions alone are often insufficient - supporting evidence helps developers understand and reproduce issues more effectively.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Personal opinions about the severity and priority of the issue',
+                        outcome: 'Tickets should remain factual and objective. Personal opinions about severity and priority are not appropriate supporting materials.',
+                        experience: -10,
+                    },
+                    {
+                        text: 'Code snippets showing how to fix the issue',
+                        outcome: 'Testers should focus on describing and evidencing the issue, not suggesting code fixes which is the developer\'s responsibility.',
+                        experience: -5
+                    }
+                ]
             }
         ],
 
