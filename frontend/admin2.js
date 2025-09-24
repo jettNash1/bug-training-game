@@ -9372,8 +9372,8 @@ export class Admin2Dashboard {
         console.log('[Quiz Visibility] Initializing quiz visibility interface...');
         
         try {
-            // Load quiz list
-            await this.loadQuizList();
+            // Load quiz list as radio buttons like custom export
+            await this.loadQuizVisibilityList();
             
             // Set up event listeners
             this.setupQuizVisibilityEventListeners();
@@ -9390,7 +9390,7 @@ export class Admin2Dashboard {
         const quizSearch = document.getElementById('quiz-search');
         if (quizSearch) {
             quizSearch.addEventListener('input', (e) => {
-                this.filterQuizList(e.target.value);
+                this.filterQuizVisibilityList(e.target.value);
             });
         }
 
@@ -9398,7 +9398,7 @@ export class Admin2Dashboard {
         const userSearch = document.getElementById('user-search');
         if (userSearch) {
             userSearch.addEventListener('input', (e) => {
-                this.filterUserList(e.target.value);
+                this.filterUserVisibilityList(e.target.value);
             });
         }
 
@@ -9418,10 +9418,10 @@ export class Admin2Dashboard {
         }
     }
 
-    async loadQuizList() {
+    async loadQuizVisibilityList() {
         console.log('[Quiz Visibility] Loading quiz list...');
         
-        const quizList = document.getElementById('quiz-list');
+        const quizList = document.getElementById('quiz-visibility-list');
         if (!quizList) {
             console.error('[Quiz Visibility] Quiz list container not found');
             return;
@@ -9438,37 +9438,33 @@ export class Admin2Dashboard {
             'sanity-smoke', 'functional-interview', 'ticket-template'
         ];
 
-        // Create quiz items
+        // Create quiz radio buttons like custom export
         quizList.innerHTML = allQuizzes.map(quiz => {
             const formattedName = this.formatQuizName(quiz);
-            const firstLetter = formattedName.charAt(0).toUpperCase();
             
             return `
-                <div class="quiz-item" data-quiz="${quiz}">
-                    <div class="quiz-icon">${firstLetter}</div>
-                    <div class="quiz-name">${formattedName}</div>
+                <div class="checkbox-item">
+                    <input type="radio" name="quiz-visibility" value="${quiz}" id="quiz-${quiz}" class="quiz-radio">
+                    <label for="quiz-${quiz}">${formattedName}</label>
                 </div>
             `;
         }).join('');
 
-        // Add click event listeners to quiz items
-        quizList.querySelectorAll('.quiz-item').forEach(item => {
-            item.addEventListener('click', () => {
-                this.selectQuiz(item.dataset.quiz);
+        // Add change event listeners to quiz radio buttons
+        quizList.querySelectorAll('.quiz-radio').forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.checked) {
+                    this.selectQuizForVisibility(radio.value);
+                }
             });
         });
 
         console.log(`[Quiz Visibility] Loaded ${allQuizzes.length} quizzes`);
     }
 
-    async selectQuiz(quizName) {
+    async selectQuizForVisibility(quizName) {
         console.log(`[Quiz Visibility] Selecting quiz: ${quizName}`);
         
-        // Update UI to show selected quiz
-        document.querySelectorAll('.quiz-item').forEach(item => {
-            item.classList.toggle('selected', item.dataset.quiz === quizName);
-        });
-
         // Update header
         const titleElement = document.getElementById('selected-quiz-title');
         if (titleElement) {
@@ -9481,11 +9477,17 @@ export class Admin2Dashboard {
             bulkControls.style.display = 'flex';
         }
 
+        // Update status
+        const statusElement = document.getElementById('visibility-status');
+        if (statusElement) {
+            statusElement.textContent = `Loading users for ${this.formatQuizName(quizName)}...`;
+        }
+
         // Load users for this quiz
-        await this.loadUsersForQuiz(quizName);
+        await this.loadUsersForQuizVisibility(quizName);
     }
 
-    async loadUsersForQuiz(quizName) {
+    async loadUsersForQuizVisibility(quizName) {
         console.log(`[Quiz Visibility] Loading users for quiz: ${quizName}`);
         
         const userList = document.getElementById('user-visibility-list');
@@ -9498,24 +9500,43 @@ export class Admin2Dashboard {
             // Show loading state
             userList.innerHTML = '<div class="loading-message">Loading users...</div>';
 
-            // Fetch users with visibility data for this quiz
-            const response = await this.apiService.makeRequest(`/admin/quiz-visibility/${quizName}/users`, {
-                method: 'GET'
+            // Use the same pattern as other admin functions
+            const url = `${this.apiService.getBaseUrl()}/admin/quiz-visibility/${quizName}/users`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                    'Content-Type': 'application/json'
+                }
             });
 
-            if (!response.success) {
-                throw new Error(response.message || 'Failed to load users');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const users = response.data.users;
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load users');
+            }
+
+            const users = data.data.users;
             console.log(`[Quiz Visibility] Loaded ${users.length} users for quiz ${quizName}`);
 
             // Store current quiz and users for filtering
             this.currentQuiz = quizName;
-            this.allUsers = users;
+            this.currentQuizUsers = users;
 
             // Display users
-            this.displayUsers(users);
+            this.displayUsersForVisibility(users);
+
+            // Update status
+            const statusElement = document.getElementById('visibility-status');
+            if (statusElement) {
+                const visibleCount = users.filter(u => u.isVisible).length;
+                const hiddenCount = users.length - visibleCount;
+                statusElement.textContent = `${users.length} users: ${visibleCount} visible, ${hiddenCount} hidden`;
+            }
 
         } catch (error) {
             console.error(`[Quiz Visibility] Error loading users for quiz ${quizName}:`, error);
@@ -9525,10 +9546,15 @@ export class Admin2Dashboard {
                     <p>Error loading users: ${error.message}</p>
                 </div>
             `;
+            
+            const statusElement = document.getElementById('visibility-status');
+            if (statusElement) {
+                statusElement.textContent = `Error loading users for ${this.formatQuizName(quizName)}`;
+            }
         }
     }
 
-    displayUsers(users) {
+    displayUsersForVisibility(users) {
         const userList = document.getElementById('user-visibility-list');
         if (!userList || !users) return;
 
@@ -9590,10 +9616,12 @@ export class Admin2Dashboard {
                 label.textContent = newVisible ? 'Visible' : 'Hidden';
             }
 
-            // Make API call to update visibility
-            const response = await this.apiService.makeRequest(`/admin/users/${username}/quiz-visibility/${this.currentQuiz}`, {
+            // Make API call using the correct pattern
+            const url = `${this.apiService.getBaseUrl()}/admin/users/${username}/quiz-visibility/${this.currentQuiz}`;
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -9601,11 +9629,20 @@ export class Admin2Dashboard {
                 })
             });
 
-            if (!response.success) {
-                throw new Error(response.message || 'Failed to update visibility');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to update visibility');
             }
 
             console.log(`[Quiz Visibility] Successfully updated visibility for ${username}`);
+            
+            // Update status count
+            this.updateVisibilityStatus();
 
         } catch (error) {
             console.error(`[Quiz Visibility] Error updating visibility for ${username}:`, error);
@@ -9624,13 +9661,13 @@ export class Admin2Dashboard {
     }
 
     async bulkUpdateVisibility(isVisible) {
-        if (!this.currentQuiz || !this.allUsers) {
+        if (!this.currentQuiz || !this.currentQuizUsers) {
             this.showError('Please select a quiz first');
             return;
         }
 
         const action = isVisible ? 'show' : 'hide';
-        const userCount = this.allUsers.length;
+        const userCount = this.currentQuizUsers.length;
         
         if (!confirm(`Are you sure you want to ${action} the quiz "${this.formatQuizName(this.currentQuiz)}" for all ${userCount} users?`)) {
             return;
@@ -9640,20 +9677,23 @@ export class Admin2Dashboard {
 
         try {
             // Show loading state
-            const userList = document.getElementById('user-visibility-list');
-            const originalContent = userList.innerHTML;
-            userList.innerHTML = '<div class="loading-message">Updating visibility for all users...</div>';
+            const statusElement = document.getElementById('visibility-status');
+            if (statusElement) {
+                statusElement.textContent = `Updating visibility for all users...`;
+            }
 
             // Prepare bulk update data
-            const userUpdates = this.allUsers.map(user => ({
+            const userUpdates = this.currentQuizUsers.map(user => ({
                 username: user.username,
                 isVisible: isVisible
             }));
 
             // Make bulk update API call
-            const response = await this.apiService.makeRequest('/admin/quiz-visibility/bulk-update', {
+            const url = `${this.apiService.getBaseUrl()}/admin/quiz-visibility/bulk-update`;
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -9662,11 +9702,17 @@ export class Admin2Dashboard {
                 })
             });
 
-            if (!response.success) {
-                throw new Error(response.message || 'Bulk update failed');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const results = response.results;
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Bulk update failed');
+            }
+
+            const results = data.results;
             console.log('[Quiz Visibility] Bulk update results:', results);
 
             // Show success message
@@ -9677,32 +9723,39 @@ export class Admin2Dashboard {
             this.showSuccess(message);
 
             // Reload users to show updated state
-            await this.loadUsersForQuiz(this.currentQuiz);
+            await this.loadUsersForQuizVisibility(this.currentQuiz);
 
         } catch (error) {
             console.error(`[Quiz Visibility] Error in bulk ${action}:`, error);
-            
-            // Restore original content on error
-            if (userList && originalContent) {
-                userList.innerHTML = originalContent;
-            }
-            
             this.showError(`Bulk ${action} failed: ${error.message}`);
         }
     }
 
-    filterQuizList(searchTerm) {
-        const quizItems = document.querySelectorAll('#quiz-list .quiz-item');
+    updateVisibilityStatus() {
+        if (!this.currentQuizUsers) return;
+        
+        const statusElement = document.getElementById('visibility-status');
+        if (statusElement) {
+            // Count current visible state from DOM
+            const visibleSwitches = document.querySelectorAll('.visibility-switch.active').length;
+            const totalUsers = this.currentQuizUsers.length;
+            const hiddenCount = totalUsers - visibleSwitches;
+            statusElement.textContent = `${totalUsers} users: ${visibleSwitches} visible, ${hiddenCount} hidden`;
+        }
+    }
+
+    filterQuizVisibilityList(searchTerm) {
+        const checkboxItems = document.querySelectorAll('#quiz-visibility-list .checkbox-item');
         const term = searchTerm.toLowerCase();
 
-        quizItems.forEach(item => {
-            const quizName = item.querySelector('.quiz-name').textContent.toLowerCase();
-            const matches = quizName.includes(term);
-            item.style.display = matches ? 'flex' : 'none';
+        checkboxItems.forEach(item => {
+            const label = item.querySelector('label').textContent.toLowerCase();
+            const matches = label.includes(term);
+            item.style.display = matches ? 'block' : 'none';
         });
     }
 
-    filterUserList(searchTerm) {
+    filterUserVisibilityList(searchTerm) {
         const userItems = document.querySelectorAll('#user-visibility-list .user-visibility-item');
         const term = searchTerm.toLowerCase();
 
