@@ -9406,68 +9406,46 @@ export class Admin2Dashboard {
             console.log('[Quiz Visibility] User search listener added');
         }
 
-        // Bulk control buttons - Add listeners that work immediately
-        this.setupBulkControlListeners();
+        // Use event delegation like Custom Export (working pattern)
+        this.setupQuizVisibilityEventDelegation();
     }
 
-    setupBulkControlListeners() {
-        console.log('[Quiz Visibility] Setting up bulk control listeners...');
+    setupQuizVisibilityEventDelegation() {
+        console.log('[Quiz Visibility] Setting up event delegation...');
         
-        // Use setTimeout to ensure DOM is ready and then set up listeners
-        setTimeout(() => {
-            const selectAllBtn = document.getElementById('select-all-users');
-            const deselectAllBtn = document.getElementById('deselect-all-users');
-            const showSelectedBtn = document.getElementById('show-selected-users');
-            const hideSelectedBtn = document.getElementById('hide-selected-users');
-            
-            console.log('[Quiz Visibility] Button elements found:', {
-                selectAll: !!selectAllBtn,
-                deselectAll: !!deselectAllBtn,
-                showSelected: !!showSelectedBtn,
-                hideSelected: !!hideSelectedBtn
-            });
+        // Get the quiz visibility container
+        const quizVisibilityContainer = document.getElementById('quiz-visibility-section');
+        if (!quizVisibilityContainer) {
+            console.error('[Quiz Visibility] Container not found');
+            return;
+        }
 
-            // Use exact same pattern as working Deselect All button
-            if (selectAllBtn && !selectAllBtn._listenerAdded) {
-                selectAllBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log('[Quiz Visibility] Select All clicked');
-                    this.selectAllUsers(true);
-                });
-                selectAllBtn._listenerAdded = true;
-                console.log('[Quiz Visibility] Select All listener added');
+        // Copy exact pattern from working Custom Export
+        this.quizVisibilityHandler = (e) => {
+            if (e.target.id === 'select-all-users') {
+                console.log('[Quiz Visibility] Select All Users clicked');
+                const checkboxes = document.querySelectorAll('#user-visibility-list input[type="checkbox"]');
+                console.log(`[Quiz Visibility] Found ${checkboxes.length} user checkboxes`);
+                checkboxes.forEach(cb => cb.checked = true);
+                this.updateSelectedCount();
+            } else if (e.target.id === 'deselect-all-users') {
+                console.log('[Quiz Visibility] Deselect All Users clicked');
+                const checkboxes = document.querySelectorAll('#user-visibility-list input[type="checkbox"]');
+                console.log(`[Quiz Visibility] Found ${checkboxes.length} user checkboxes`);
+                checkboxes.forEach(cb => cb.checked = false);
+                this.updateSelectedCount();
+            } else if (e.target.id === 'show-selected-users') {
+                console.log('[Quiz Visibility] Show Selected clicked');
+                this.bulkUpdateSelectedVisibility(true);
+            } else if (e.target.id === 'hide-selected-users') {
+                console.log('[Quiz Visibility] Hide Selected clicked');
+                this.bulkUpdateSelectedVisibility(false);
             }
-
-            if (deselectAllBtn && !deselectAllBtn._listenerAdded) {
-                deselectAllBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log('[Quiz Visibility] Deselect All clicked');
-                    this.selectAllUsers(false);
-                });
-                deselectAllBtn._listenerAdded = true;
-                console.log('[Quiz Visibility] Deselect All listener added');
-            }
-
-            if (showSelectedBtn && !showSelectedBtn._listenerAdded) {
-                showSelectedBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log('[Quiz Visibility] Show Selected clicked');
-                    this.bulkUpdateSelectedVisibility(true);
-                });
-                showSelectedBtn._listenerAdded = true;
-                console.log('[Quiz Visibility] Show Selected listener added');
-            }
-
-            if (hideSelectedBtn && !hideSelectedBtn._listenerAdded) {
-                hideSelectedBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log('[Quiz Visibility] Hide Selected clicked');
-                    this.bulkUpdateSelectedVisibility(false);
-                });
-                hideSelectedBtn._listenerAdded = true;
-                console.log('[Quiz Visibility] Hide Selected listener added');
-            }
-        }, 100);
+        };
+        
+        // Add the delegated event listener to the container
+        quizVisibilityContainer.addEventListener('click', this.quizVisibilityHandler);
+        console.log('[Quiz Visibility] Event delegation set up successfully');
     }
 
     async loadQuizVisibilityList() {
@@ -9531,9 +9509,6 @@ export class Admin2Dashboard {
         if (bulkControls) {
             bulkControls.style.display = 'flex';
             console.log('[Quiz Visibility] Bulk controls shown');
-            
-            // Re-setup bulk control listeners since they're now visible
-            this.setupBulkControlListeners();
         }
 
         // Use existing users data instead of making API call
@@ -9619,16 +9594,6 @@ export class Admin2Dashboard {
         }
     }
 
-    selectAllUsers(select) {
-        const checkboxes = document.querySelectorAll('#user-visibility-list input[type="checkbox"]');
-        console.log(`[Quiz Visibility] Found ${checkboxes.length} checkboxes to ${select ? 'select' : 'deselect'}`);
-        
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = select;
-        });
-        
-        this.updateSelectedCount();
-    }
 
     async bulkUpdateSelectedVisibility(isVisible) {
         if (!this.currentQuiz) {
