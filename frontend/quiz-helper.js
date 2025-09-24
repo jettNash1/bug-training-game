@@ -1044,18 +1044,28 @@ export class BaseQuiz {
         if (descriptionElement) descriptionElement.textContent = scenario.description;
         if (optionsContainer) {
             optionsContainer.innerHTML = '';
-            scenario.options.forEach((option, index) => {
+
+            // Use the enhanced shuffle method
+            const shuffledOptions = this.shuffleScenarioOptions(scenario);
+
+            shuffledOptions.forEach((option, idx) => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'option';
                 optionDiv.innerHTML = `
                     <input type="radio" 
                         name="option" 
-                        value="${index}" 
-                        id="option${index}"
+                        value="${option.originalIndex}" 
+                        id="option${idx}"
                         tabindex="0"
-                        aria-label="${option.text}">
-                    <label for="option${index}">${option.text}</label>
+                        aria-label="${option.text}"
+                        role="radio">
+                    <label for="option${idx}">${option.text}</label>
                 `;
+                
+                // Enhance option interactivity using the BaseQuiz helper method
+                const radioInput = optionDiv.querySelector('input[type="radio"]');
+                this.enhanceOptionInteractivity(optionDiv, radioInput, option.text);
+                
                 optionsContainer.appendChild(optionDiv);
             });
         }
@@ -1698,6 +1708,50 @@ export class BaseQuiz {
         return scenario.options[originalIndex];
     }
     
+    /**
+     * Shuffles scenario options using enhanced Fisher-Yates algorithm with crypto randomness
+     * This ensures uniform distribution of correct answers across all positions
+     * @param {Object} scenario - The scenario object containing options to shuffle
+     * @returns {Array} - Array of shuffled options with originalIndex preserved
+     */
+    shuffleScenarioOptions(scenario) {
+        if (!scenario || !scenario.options || !Array.isArray(scenario.options)) {
+            console.error('[BaseQuiz] Invalid scenario or options provided to shuffleScenarioOptions');
+            return [];
+        }
+
+        // Create a copy of options with their original indices
+        const shuffledOptions = scenario.options.map((option, index) => ({
+            ...option,
+            originalIndex: index
+        }));
+        
+        // Enhanced shuffle algorithm using Fisher-Yates with better randomization
+        // This ensures more uniform distribution of answers across all quizzes
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            // Use crypto.getRandomValues for better randomness if available
+            let randomValue;
+            if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+                const array = new Uint32Array(1);
+                window.crypto.getRandomValues(array);
+                randomValue = array[0] / (0xffffffff + 1);
+            } else {
+                randomValue = Math.random();
+            }
+            
+            const j = Math.floor(randomValue * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+        }
+        
+        // Log the shuffle result for debugging (can be removed in production)
+        const correctAnswerIndex = shuffledOptions.findIndex(option => 
+            option.experience === Math.max(...scenario.options.map(o => o.experience))
+        );
+        console.log(`[BaseQuiz] Question ${this.player.questionHistory.length + 1}: Correct answer shuffled to position ${correctAnswerIndex + 1} of ${shuffledOptions.length}`);
+
+        return shuffledOptions;
+    }
+
     /**
      * Enhances option interactivity for better click handling and rapid selection
      * Call this method after creating option elements to improve user experience

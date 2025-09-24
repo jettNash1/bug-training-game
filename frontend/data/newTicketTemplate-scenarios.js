@@ -36,14 +36,14 @@ export const newTicketTemplateScenarios = {
                 description: 'When should you use an acronym within a ticket?',
                 options: [
                     {
-                        text: 'Never, tickets need to be understandable by all team members, not just those who may be familiar with jargon',
-                        outcome: 'Business users may view the ticket but may not be familiar with acronyms, so we need to use language anyone can understand.',
-                        experience: 15, 
-                    },
-                    {
                         text: 'Only when the acronym is commonly used within the industry',
                         outcome: 'While this may be true, it is not always necessary to use an acronym, as it can be confusing for business users.',
                         experience: -5
+                    },
+                    {
+                        text: 'Never, tickets need to be understandable by all team members, not just those who may be familiar with jargon',
+                        outcome: 'Business users may view the ticket but may not be familiar with acronyms, so we need to use language anyone can understand.',
+                        experience: 15, 
                     },
                     {
                         text: 'Always, as it saves time writing the full term',
@@ -64,11 +64,6 @@ export const newTicketTemplateScenarios = {
                 description: 'What should be included within the \'Environments observed on\' section?',
                 options: [
                     {
-                        text: 'The Primary environment that the issue was observed on',
-                        outcome: 'This should include device, operating system and browser/application version details',
-                        experience: 15, 
-                    },
-                    {
                         text: 'All environments that the issue was observed on',
                         outcome: 'Additional environments should be included in the \'Also observed on\' section',
                         experience: -5
@@ -77,6 +72,11 @@ export const newTicketTemplateScenarios = {
                         text: 'Environments that the issue was not observed on',
                         outcome: 'There are inumerable environments that the issue was not observed on',
                         experience: -10
+                    },
+                    {
+                        text: 'The Primary environment that the issue was observed on',
+                        outcome: 'This should include device, operating system and browser/application version details',
+                        experience: 15, 
                     },
                     {
                         text: 'Only the browser/application version details',
@@ -92,11 +92,6 @@ export const newTicketTemplateScenarios = {
                 description: 'When should you include devices in the \'Also observed on\' section?',
                 options: [
                     {
-                        text: 'When the defect affects a wide range of devices or the developers may require additional context',
-                        outcome: 'This is a valid reason to include additional environments in the \'Also observed on\' section',
-                        experience: 15, 
-                    },
-                    {
                         text: 'Only when the issue is more severe on other devices',
                         outcome: 'Severity is detailed elsewhere in the ticket and ideally the most severe would be the primary environment',
                         experience: -5
@@ -110,6 +105,11 @@ export const newTicketTemplateScenarios = {
                         text: 'Only when specifically requested by developers',
                         outcome: 'While developer requests are important, you should proactively include relevant environments to provide complete information',
                         experience: 0
+                    },
+                    {
+                        text: 'When the defect affects a wide range of devices or the developers may require additional context',
+                        outcome: 'This is a valid reason to include additional environments in the \'Also observed on\' section',
+                        experience: 15, 
                     }
                 ]
             },
@@ -180,14 +180,14 @@ export const newTicketTemplateScenarios = {
                 description: 'How should you determine the most relevant reproduction rate to add to your ticket?',
                 options: [
                     {
-                        text: 'Test multiple times and determine the most applicable reproduction statement from the options provided within the ticket template',
-                        outcome: 'This provides an accurate understanding of the reproduction rate and follows the Zoonou approach to writing tickets.',
-                        experience: 20, 
-                    },
-                    {
                         text: 'Test one time on one environment to ensure accurate reproduction rate',
                         outcome: 'To ensure accurate reproduction rates, tests should be carried out on multiple times.',
                         experience: -15
+                    },
+                    {
+                        text: 'Test multiple times and determine the most applicable reproduction statement from the options provided within the ticket template',
+                        outcome: 'This provides an accurate understanding of the reproduction rate and follows the Zoonou approach to writing tickets.',
+                        experience: 20, 
                     },
                     {
                         text: 'Pick the option that seems the best fit for the issue',
@@ -236,11 +236,6 @@ export const newTicketTemplateScenarios = {
                 description: 'You have taken a screenshot for evidence, how can you adjust it to be more useful to the client?',
                 options: [
                     {
-                        text: 'Use a tool to annotate the image to ensure the defect is clearly visible',
-                        outcome: 'This ensures the defect is clearly visible and provides the client with the best chance of understanding the defect.',
-                        experience: 20, 
-                    },
-                    {
                         text: 'Use a tool to crop the image to ensure the defect is clearly visible',
                         outcome: 'Cropping the image may remove important context that the client may need to understand the defect.',
                         experience: -15
@@ -254,6 +249,11 @@ export const newTicketTemplateScenarios = {
                         text: 'Use a tool to adjust the saturation of the image to ensure the defect is clearly visible',
                         outcome: 'Adjusting the saturation may not be necessary and could be detrimental to the image.',
                         experience: -5
+                    },
+                    {
+                        text: 'Use a tool to annotate the image to ensure the defect is clearly visible',
+                        outcome: 'This ensures the defect is clearly visible and provides the client with the best chance of understanding the defect.',
+                        experience: 20, 
                     }
                 ]
             },

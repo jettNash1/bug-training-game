@@ -364,19 +364,8 @@ export class NewTicketTemplateQuiz extends BaseQuiz {
         // Check if the quiz is already completed
         if (this.shouldEndGame()) {
             this.endGame(false);
-                    return;
+            return;
         }
-        
-        // Get the current scenario based on progress
-        const currentScenarios = this.getCurrentScenarios();
-        const scenarioIndex = this.player.questionHistory.length % 5; // Use modulo to cycle through 5 scenarios per level
-        const scenario = currentScenarios[scenarioIndex]; 
-        
-        console.log(`[NewTicketTemplateQuiz] Displaying scenario #${this.player.currentScenario + 1}:`, {
-            title: scenario.title,
-            level: this.getCurrentLevel(),
-            index: scenarioIndex
-        });
         
         // Show level transition message when level changes
         const currentLevel = this.getCurrentLevel();
@@ -408,15 +397,6 @@ export class NewTicketTemplateQuiz extends BaseQuiz {
             }
         }
 
-        // Update UI for scenario
-        const titleElement = document.getElementById('scenario-title');
-        const descriptionElement = document.getElementById('scenario-description');
-        
-        if (titleElement && descriptionElement) {
-            titleElement.textContent = scenario.title;
-            descriptionElement.textContent = scenario.description;
-        }
-
         // Update question progress
         const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
@@ -436,24 +416,35 @@ export class NewTicketTemplateQuiz extends BaseQuiz {
             progressFill.style.width = `${progressPercentage}%`;
         }
         
-        // Display options with shuffling
+        // Get the current scenario based on progress
+        const currentScenarios = this.getCurrentScenarios();
+        const scenarioIndex = this.player.questionHistory.length % 5; // Use modulo to cycle through 5 scenarios per level
+        const scenario = currentScenarios[scenarioIndex]; 
+        
+        console.log(`[NewTicketTemplateQuiz] Displaying scenario #${this.player.currentScenario + 1}:`, {
+            title: scenario.title,
+            level: this.getCurrentLevel(),
+            index: scenarioIndex
+        });
+
+        // Update UI for scenario
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        
+        if (titleElement && descriptionElement) {
+            titleElement.textContent = scenario.title;
+            descriptionElement.textContent = scenario.description;
+        }
+
+        // Display options with enhanced shuffling from BaseQuiz
         const optionsContainer = document.getElementById('options-container');
         if (optionsContainer) {
             optionsContainer.innerHTML = '';
 
-        // Create a copy of options with their original indices
-            const shuffledOptions = scenario.options.map((option, index) => ({
-            ...option,
-            originalIndex: index
-        }));
-            
-            // Shuffle the options
-        for (let i = shuffledOptions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-        }
-            
-                        shuffledOptions.forEach((option, idx) => {
+            // Use the enhanced shuffle method from BaseQuiz
+            const shuffledOptions = this.shuffleScenarioOptions(scenario);
+
+            shuffledOptions.forEach((option, idx) => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'option';
                 optionDiv.innerHTML = `

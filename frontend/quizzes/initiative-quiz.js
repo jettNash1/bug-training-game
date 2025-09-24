@@ -101,19 +101,6 @@ export class InitiativeQuiz extends BaseQuiz {
         });
     }
     
-    // Get the scenarios for the current level
-    getCurrentScenarios() {
-        const questionCount = this.player.questionHistory.length;
-        
-        if (questionCount < 5) {
-            return this.basicScenarios;
-        } else if (questionCount < 10) {
-            return this.intermediateScenarios;
-        } else {
-            return this.advancedScenarios;
-        }
-    }
-    
     // Get the current level based on question index
     getCurrentLevel() {
         const questionCount = this.player.questionHistory.length;
@@ -436,22 +423,13 @@ export class InitiativeQuiz extends BaseQuiz {
             progressFill.style.width = `${progressPercentage}%`;
         }
         
-        // Display options with shuffling
+        // Display options with enhanced shuffling from BaseQuiz
         const optionsContainer = document.getElementById('options-container');
         if (optionsContainer) {
             optionsContainer.innerHTML = '';
 
-        // Create a copy of options with their original indices
-            const shuffledOptions = scenario.options.map((option, index) => ({
-            ...option,
-            originalIndex: index
-        }));
-            
-            // Shuffle the options
-        for (let i = shuffledOptions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-        }
+            // Use enhanced shuffling from BaseQuiz for better randomization
+            const shuffledOptions = this.shuffleScenarioOptions(scenario);
             
             shuffledOptions.forEach((option, idx) => {
                 const optionDiv = document.createElement('div');
