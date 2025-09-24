@@ -3033,37 +3033,37 @@
             color: #e74c3c;
         }
 
-        /* Quiz Visibility List - Make it use full available space */
-        #quiz-visibility-list.checkbox-list {
-            max-height: 400px;
-            min-height: 300px;
-        }
-
-        /* Ensure the quiz selection panel uses available space */
-        .quizzes-selection {
-            height: 100%;
+        /* Make quiz and user lists expand to fill their container space */
+        #quiz-visibility-section .quizzes-selection {
             display: flex;
             flex-direction: column;
+            height: 100%;
         }
 
-        .quizzes-selection .checkbox-list {
+        #quiz-visibility-section .users-selection {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        #quiz-visibility-section .quizzes-selection .checkbox-list,
+        #quiz-visibility-section .users-selection .checkbox-list {
             flex: 1;
             max-height: none;
-            min-height: 300px;
+            height: auto;
+            overflow-y: auto;
         }
 
-        /* Make the quiz visibility container use full height */
-        #quiz-visibility-section .custom-export-container {
-            height: calc(100vh - 250px);
-            min-height: 500px;
+        /* Ensure search boxes don't grow */
+        #quiz-visibility-section .quiz-filter,
+        #quiz-visibility-section .user-filter {
+            flex-shrink: 0;
         }
 
-        #quiz-visibility-section .selection-panel {
-            height: 100%;
-        }
-
-        #quiz-visibility-section .quizzes-selection {
-            height: 100%;
+        /* Ensure panel headers don't grow */
+        #quiz-visibility-section .panel-header,
+        #quiz-visibility-section h4 {
+            flex-shrink: 0;
         }
     </style>
 </body>
