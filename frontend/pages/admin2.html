@@ -3032,6 +3032,39 @@
         .visibility-status.hidden {
             color: #e74c3c;
         }
+
+        /* Quiz Visibility List - Make it use full available space */
+        #quiz-visibility-list.checkbox-list {
+            max-height: 400px;
+            min-height: 300px;
+        }
+
+        /* Ensure the quiz selection panel uses available space */
+        .quizzes-selection {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .quizzes-selection .checkbox-list {
+            flex: 1;
+            max-height: none;
+            min-height: 300px;
+        }
+
+        /* Make the quiz visibility container use full height */
+        #quiz-visibility-section .custom-export-container {
+            height: calc(100vh - 250px);
+            min-height: 500px;
+        }
+
+        #quiz-visibility-section .selection-panel {
+            height: 100%;
+        }
+
+        #quiz-visibility-section .quizzes-selection {
+            height: 100%;
+        }
     </style>
 </body>
 </html> 
