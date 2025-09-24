@@ -223,6 +223,12 @@
                                 <span>Account Modifications</span>
                             </button>
                         </li>
+                        <li class="menu-item" data-section="quiz-visibility-section">
+                            <button>
+                                <i class="fas fa-eye"></i>
+                                <span>Quiz Visibility</span>
+                            </button>
+                        </li>
                     </ul>
                 </nav>
             </aside>
@@ -835,6 +841,51 @@
                                 <div class="bulk-users-list" id="bulk-users-list">
                                     <!-- User list with checkboxes will be populated here -->
                                     <div class="loading-message">Loading users...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quiz Visibility Section -->
+                    <div id="quiz-visibility-section" class="content-section">
+                        <h2>Quiz Visibility Management</h2>
+                        <div class="quiz-visibility-panel">
+                            <p class="section-description">Manage which quizzes are visible to users. Select a quiz to modify its visibility across all users.</p>
+                            
+                            <div class="visibility-layout">
+                                <!-- Quiz Selection Panel -->
+                                <div class="quiz-selection-panel">
+                                    <h3>Select Quiz</h3>
+                                    <div class="quiz-filter">
+                                        <input type="text" id="quiz-search" placeholder="Search quizzes..." class="search-input">
+                                        <i class="fas fa-search search-icon"></i>
+                                    </div>
+                                    <div id="quiz-list" class="quiz-list">
+                                        <!-- Quiz items will be populated here -->
+                                    </div>
+                                </div>
+                                
+                                <!-- User Management Panel -->
+                                <div class="user-management-panel">
+                                    <div class="panel-header">
+                                        <h3 id="selected-quiz-title">Select a quiz to begin</h3>
+                                        <div class="bulk-controls" id="bulk-controls" style="display: none;">
+                                            <button id="show-all-users" class="action-button">Show to All</button>
+                                            <button id="hide-all-users" class="action-button">Hide from All</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="user-filter">
+                                        <input type="text" id="user-search" placeholder="Search users..." class="search-input">
+                                        <i class="fas fa-search search-icon"></i>
+                                    </div>
+                                    
+                                    <div id="user-visibility-list" class="user-visibility-list">
+                                        <div class="initial-message">
+                                            <i class="fas fa-eye"></i>
+                                            <p>Select a quiz from the left panel to manage user visibility</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2896,6 +2947,304 @@
             }
 
             .bulk-user-actions {
+                justify-content: center;
+            }
+        }
+
+        /* Quiz Visibility Styles */
+        .quiz-visibility-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .visibility-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            height: 600px;
+        }
+
+        .quiz-selection-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .quiz-selection-panel h3 {
+            margin: 0 0 1rem 0;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        .quiz-filter {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .quiz-filter .search-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .quiz-filter .search-icon {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            pointer-events: none;
+        }
+
+        .quiz-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .quiz-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .quiz-item:hover {
+            background: #f0f7ff;
+            border-color: #3498db;
+        }
+
+        .quiz-item.selected {
+            background: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+
+        .quiz-item .quiz-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .quiz-item.selected .quiz-icon {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .quiz-item .quiz-name {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .user-management-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        .bulk-controls {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .bulk-controls .action-button {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .user-filter {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .user-filter .search-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .user-filter .search-icon {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            pointer-events: none;
+        }
+
+        .user-visibility-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .user-visibility-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .user-visibility-item:hover {
+            background: #f9f9f9;
+            border-color: #ccc;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-username {
+            font-weight: 500;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+
+        .user-type {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .visibility-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .visibility-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .visibility-switch.active {
+            background: #27ae60;
+        }
+
+        .visibility-switch::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+        }
+
+        .visibility-switch.active::before {
+            transform: translateX(24px);
+        }
+
+        .visibility-label {
+            font-size: 0.85rem;
+            color: #666;
+            min-width: 50px;
+        }
+
+        .initial-message {
+            text-align: center;
+            color: #666;
+            padding: 3rem 1rem;
+        }
+
+        .initial-message i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #ccc;
+        }
+
+        .initial-message p {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .visibility-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .quiz-selection-panel {
+                max-height: 300px;
+            }
+            
+            .user-management-panel {
+                min-height: 400px;
+            }
+            
+            .panel-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+            
+            .bulk-controls {
                 justify-content: center;
             }
         }

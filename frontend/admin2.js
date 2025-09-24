@@ -1093,6 +1093,10 @@ export class Admin2Dashboard {
                 // Initialize account modifications section
                 this.setupAccountModificationsSection();
                 break;
+            case 'quiz-visibility-section':
+                // Initialize quiz visibility interface
+                setTimeout(() => this.initializeQuizVisibility(), 300);
+                break;
             case 'export-section':
                 // Initialize custom export when export section is activated
                 setTimeout(() => this.initializeCustomExport(), 300);
@@ -9361,6 +9365,353 @@ export class Admin2Dashboard {
                 this.showError(`Scheduled reset error: ${error.message}`);
             }
         }
+    }
+
+    // Quiz Visibility Management Methods
+    async initializeQuizVisibility() {
+        console.log('[Quiz Visibility] Initializing quiz visibility interface...');
+        
+        try {
+            // Load quiz list
+            await this.loadQuizList();
+            
+            // Set up event listeners
+            this.setupQuizVisibilityEventListeners();
+            
+            console.log('[Quiz Visibility] Interface initialized successfully');
+        } catch (error) {
+            console.error('[Quiz Visibility] Error initializing interface:', error);
+            this.showError('Failed to initialize quiz visibility interface');
+        }
+    }
+
+    setupQuizVisibilityEventListeners() {
+        // Quiz search functionality
+        const quizSearch = document.getElementById('quiz-search');
+        if (quizSearch) {
+            quizSearch.addEventListener('input', (e) => {
+                this.filterQuizList(e.target.value);
+            });
+        }
+
+        // User search functionality  
+        const userSearch = document.getElementById('user-search');
+        if (userSearch) {
+            userSearch.addEventListener('input', (e) => {
+                this.filterUserList(e.target.value);
+            });
+        }
+
+        // Bulk control buttons
+        const showAllBtn = document.getElementById('show-all-users');
+        if (showAllBtn) {
+            showAllBtn.addEventListener('click', () => {
+                this.bulkUpdateVisibility(true);
+            });
+        }
+
+        const hideAllBtn = document.getElementById('hide-all-users');
+        if (hideAllBtn) {
+            hideAllBtn.addEventListener('click', () => {
+                this.bulkUpdateVisibility(false);
+            });
+        }
+    }
+
+    async loadQuizList() {
+        console.log('[Quiz Visibility] Loading quiz list...');
+        
+        const quizList = document.getElementById('quiz-list');
+        if (!quizList) {
+            console.error('[Quiz Visibility] Quiz list container not found');
+            return;
+        }
+
+        // Get all available quizzes from quiz list configuration
+        const allQuizzes = [
+            'communication', 'initiative', 'time-management', 'tester-mindset',
+            'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+            'issue-verification', 'build-verification', 'issue-tracking-tools',
+            'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+            'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
+            'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
+            'sanity-smoke', 'functional-interview', 'ticket-template'
+        ];
+
+        // Create quiz items
+        quizList.innerHTML = allQuizzes.map(quiz => {
+            const formattedName = this.formatQuizName(quiz);
+            const firstLetter = formattedName.charAt(0).toUpperCase();
+            
+            return `
+                <div class="quiz-item" data-quiz="${quiz}">
+                    <div class="quiz-icon">${firstLetter}</div>
+                    <div class="quiz-name">${formattedName}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click event listeners to quiz items
+        quizList.querySelectorAll('.quiz-item').forEach(item => {
+            item.addEventListener('click', () => {
+                this.selectQuiz(item.dataset.quiz);
+            });
+        });
+
+        console.log(`[Quiz Visibility] Loaded ${allQuizzes.length} quizzes`);
+    }
+
+    async selectQuiz(quizName) {
+        console.log(`[Quiz Visibility] Selecting quiz: ${quizName}`);
+        
+        // Update UI to show selected quiz
+        document.querySelectorAll('.quiz-item').forEach(item => {
+            item.classList.toggle('selected', item.dataset.quiz === quizName);
+        });
+
+        // Update header
+        const titleElement = document.getElementById('selected-quiz-title');
+        if (titleElement) {
+            titleElement.textContent = `Managing: ${this.formatQuizName(quizName)}`;
+        }
+
+        // Show bulk controls
+        const bulkControls = document.getElementById('bulk-controls');
+        if (bulkControls) {
+            bulkControls.style.display = 'flex';
+        }
+
+        // Load users for this quiz
+        await this.loadUsersForQuiz(quizName);
+    }
+
+    async loadUsersForQuiz(quizName) {
+        console.log(`[Quiz Visibility] Loading users for quiz: ${quizName}`);
+        
+        const userList = document.getElementById('user-visibility-list');
+        if (!userList) {
+            console.error('[Quiz Visibility] User list container not found');
+            return;
+        }
+
+        try {
+            // Show loading state
+            userList.innerHTML = '<div class="loading-message">Loading users...</div>';
+
+            // Fetch users with visibility data for this quiz
+            const response = await this.apiService.makeRequest(`/admin/quiz-visibility/${quizName}/users`, {
+                method: 'GET'
+            });
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to load users');
+            }
+
+            const users = response.data.users;
+            console.log(`[Quiz Visibility] Loaded ${users.length} users for quiz ${quizName}`);
+
+            // Store current quiz and users for filtering
+            this.currentQuiz = quizName;
+            this.allUsers = users;
+
+            // Display users
+            this.displayUsers(users);
+
+        } catch (error) {
+            console.error(`[Quiz Visibility] Error loading users for quiz ${quizName}:`, error);
+            userList.innerHTML = `
+                <div class="initial-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Error loading users: ${error.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    displayUsers(users) {
+        const userList = document.getElementById('user-visibility-list');
+        if (!userList || !users) return;
+
+        if (users.length === 0) {
+            userList.innerHTML = `
+                <div class="initial-message">
+                    <i class="fas fa-users"></i>
+                    <p>No users found</p>
+                </div>
+            `;
+            return;
+        }
+
+        userList.innerHTML = users.map(user => {
+            const initials = user.username.substring(0, 2).toUpperCase();
+            
+            return `
+                <div class="user-visibility-item" data-username="${user.username}">
+                    <div class="user-info">
+                        <div class="user-avatar">${initials}</div>
+                        <div class="user-details">
+                            <div class="user-username">${user.username}</div>
+                            <div class="user-type">${user.userType}</div>
+                        </div>
+                    </div>
+                    <div class="visibility-toggle">
+                        <span class="visibility-label">${user.isVisible ? 'Visible' : 'Hidden'}</span>
+                        <div class="visibility-switch ${user.isVisible ? 'active' : ''}" 
+                             data-username="${user.username}" 
+                             data-visible="${user.isVisible}">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click event listeners to visibility switches
+        userList.querySelectorAll('.visibility-switch').forEach(switchElement => {
+            switchElement.addEventListener('click', () => {
+                this.toggleUserVisibility(switchElement);
+            });
+        });
+    }
+
+    async toggleUserVisibility(switchElement) {
+        const username = switchElement.dataset.username;
+        const currentVisible = switchElement.dataset.visible === 'true';
+        const newVisible = !currentVisible;
+
+        console.log(`[Quiz Visibility] Toggling visibility for ${username}: ${currentVisible} → ${newVisible}`);
+
+        try {
+            // Update UI immediately for better UX
+            switchElement.classList.toggle('active', newVisible);
+            switchElement.dataset.visible = newVisible.toString();
+            
+            const label = switchElement.parentElement.querySelector('.visibility-label');
+            if (label) {
+                label.textContent = newVisible ? 'Visible' : 'Hidden';
+            }
+
+            // Make API call to update visibility
+            const response = await this.apiService.makeRequest(`/admin/users/${username}/quiz-visibility/${this.currentQuiz}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    isVisible: newVisible
+                })
+            });
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to update visibility');
+            }
+
+            console.log(`[Quiz Visibility] Successfully updated visibility for ${username}`);
+
+        } catch (error) {
+            console.error(`[Quiz Visibility] Error updating visibility for ${username}:`, error);
+            
+            // Revert UI changes on error
+            switchElement.classList.toggle('active', currentVisible);
+            switchElement.dataset.visible = currentVisible.toString();
+            
+            const label = switchElement.parentElement.querySelector('.visibility-label');
+            if (label) {
+                label.textContent = currentVisible ? 'Visible' : 'Hidden';
+            }
+
+            this.showError(`Failed to update visibility for ${username}: ${error.message}`);
+        }
+    }
+
+    async bulkUpdateVisibility(isVisible) {
+        if (!this.currentQuiz || !this.allUsers) {
+            this.showError('Please select a quiz first');
+            return;
+        }
+
+        const action = isVisible ? 'show' : 'hide';
+        const userCount = this.allUsers.length;
+        
+        if (!confirm(`Are you sure you want to ${action} the quiz "${this.formatQuizName(this.currentQuiz)}" for all ${userCount} users?`)) {
+            return;
+        }
+
+        console.log(`[Quiz Visibility] Bulk ${action} for quiz ${this.currentQuiz} (${userCount} users)`);
+
+        try {
+            // Show loading state
+            const userList = document.getElementById('user-visibility-list');
+            const originalContent = userList.innerHTML;
+            userList.innerHTML = '<div class="loading-message">Updating visibility for all users...</div>';
+
+            // Prepare bulk update data
+            const userUpdates = this.allUsers.map(user => ({
+                username: user.username,
+                isVisible: isVisible
+            }));
+
+            // Make bulk update API call
+            const response = await this.apiService.makeRequest('/admin/quiz-visibility/bulk-update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    quizName: this.currentQuiz,
+                    userUpdates: userUpdates
+                })
+            });
+
+            if (!response.success) {
+                throw new Error(response.message || 'Bulk update failed');
+            }
+
+            const results = response.results;
+            console.log('[Quiz Visibility] Bulk update results:', results);
+
+            // Show success message
+            let message = `Successfully updated visibility for ${results.successCount} users`;
+            if (results.errorCount > 0) {
+                message += ` (${results.errorCount} errors)`;
+            }
+            this.showSuccess(message);
+
+            // Reload users to show updated state
+            await this.loadUsersForQuiz(this.currentQuiz);
+
+        } catch (error) {
+            console.error(`[Quiz Visibility] Error in bulk ${action}:`, error);
+            
+            // Restore original content on error
+            if (userList && originalContent) {
+                userList.innerHTML = originalContent;
+            }
+            
+            this.showError(`Bulk ${action} failed: ${error.message}`);
+        }
+    }
+
+    filterQuizList(searchTerm) {
+        const quizItems = document.querySelectorAll('#quiz-list .quiz-item');
+        const term = searchTerm.toLowerCase();
+
+        quizItems.forEach(item => {
+            const quizName = item.querySelector('.quiz-name').textContent.toLowerCase();
+            const matches = quizName.includes(term);
+            item.style.display = matches ? 'flex' : 'none';
+        });
+    }
+
+    filterUserList(searchTerm) {
+        const userItems = document.querySelectorAll('#user-visibility-list .user-visibility-item');
+        const term = searchTerm.toLowerCase();
+
+        userItems.forEach(item => {
+            const username = item.querySelector('.user-username').textContent.toLowerCase();
+            const userType = item.querySelector('.user-type').textContent.toLowerCase();
+            const matches = username.includes(term) || userType.includes(term);
+            item.style.display = matches ? 'flex' : 'none';
+        });
     }
 }
 

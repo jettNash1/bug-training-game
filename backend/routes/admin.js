@@ -870,12 +870,15 @@ router.post('/create-standard-account', auth, async (req, res) => {
             'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
             'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
             'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
-            'sanity-smoke', 'functional-interview'
+            'sanity-smoke', 'functional-interview', 'ticket-template'
         ].map(quiz => quiz.toLowerCase());
 
-        // Validate hiddenQuizzes if provided
+        // Define quizzes that should be hidden by default for new users
+        const defaultHiddenQuizzes = ['ticket-template']; // Add new quizzes here by default
+        
+        // Validate hiddenQuizzes if provided, otherwise use defaults
         const normalizedHiddenQuizzes = hiddenQuizzes ? 
-            hiddenQuizzes.map(quiz => quiz.toLowerCase()) : [];
+            hiddenQuizzes.map(quiz => quiz.toLowerCase()) : defaultHiddenQuizzes;
 
         const invalidHiddenQuizzes = normalizedHiddenQuizzes.filter(quiz => !allQuizzes.includes(quiz));
         if (invalidHiddenQuizzes.length > 0) {
@@ -915,6 +918,154 @@ router.post('/create-standard-account', auth, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to create standard account',
+            error: error.message
+        });
+    }
+});
+
+// Bulk quiz visibility update endpoint
+router.post('/quiz-visibility/bulk-update', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { quizName, userUpdates } = req.body;
+
+        console.log('[Bulk Visibility] Request received:', {
+            quizName,
+            userUpdatesCount: userUpdates?.length || 0
+        });
+
+        if (!quizName || !Array.isArray(userUpdates)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Quiz name and user updates array are required'
+            });
+        }
+
+        const normalizedQuizName = quizName.toLowerCase();
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+
+        // Process each user update
+        for (const update of userUpdates) {
+            try {
+                const { username, isVisible } = update;
+                
+                if (!username || typeof isVisible !== 'boolean') {
+                    errors.push(`Invalid update format for user: ${username}`);
+                    errorCount++;
+                    continue;
+                }
+
+                // Find the user
+                const user = await User.findOne({ username });
+                if (!user) {
+                    errors.push(`User not found: ${username}`);
+                    errorCount++;
+                    continue;
+                }
+
+                // Initialize hiddenQuizzes array if it doesn't exist
+                if (!user.hiddenQuizzes) {
+                    user.hiddenQuizzes = [];
+                }
+
+                const quizIndex = user.hiddenQuizzes.indexOf(normalizedQuizName);
+
+                if (!isVisible && quizIndex === -1) {
+                    // Add to hidden quizzes if not visible and not already hidden
+                    user.hiddenQuizzes.push(normalizedQuizName);
+                } else if (isVisible && quizIndex !== -1) {
+                    // Remove from hidden quizzes if visible and currently hidden
+                    user.hiddenQuizzes.splice(quizIndex, 1);
+                }
+
+                await user.save();
+                successCount++;
+
+            } catch (userError) {
+                console.error(`[Bulk Visibility] Error updating user ${update.username}:`, userError);
+                errors.push(`Error updating ${update.username}: ${userError.message}`);
+                errorCount++;
+            }
+        }
+
+        console.log('[Bulk Visibility] Update completed:', {
+            quizName: normalizedQuizName,
+            successCount,
+            errorCount,
+            totalRequests: userUpdates.length
+        });
+
+        res.json({
+            success: true,
+            message: `Bulk visibility update completed for ${quizName}`,
+            results: {
+                successCount,
+                errorCount,
+                totalRequests: userUpdates.length,
+                errors: errors.length > 0 ? errors : undefined
+            }
+        });
+
+    } catch (error) {
+        console.error('[Bulk Visibility] Error in bulk update:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to perform bulk visibility update',
+            error: error.message
+        });
+    }
+});
+
+// Get all users with quiz visibility status endpoint
+router.get('/quiz-visibility/:quizName/users', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { quizName } = req.params;
+        const normalizedQuizName = quizName.toLowerCase();
+
+        console.log(`[Get Quiz Visibility] Fetching users for quiz: ${quizName} → ${normalizedQuizName}`);
+
+        // Get all users
+        const users = await User.find({}, 'username userType hiddenQuizzes').lean();
+
+        // Transform users to include visibility status for the specified quiz
+        const usersWithVisibility = users.map(user => ({
+            username: user.username,
+            userType: user.userType || 'standard',
+            isVisible: !user.hiddenQuizzes?.includes(normalizedQuizName)
+        }));
+
+        console.log(`[Get Quiz Visibility] Found ${usersWithVisibility.length} users for quiz ${normalizedQuizName}`);
+
+        res.json({
+            success: true,
+            data: {
+                quizName: normalizedQuizName,
+                users: usersWithVisibility
+            }
+        });
+
+    } catch (error) {
+        console.error('[Get Quiz Visibility] Error fetching users:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch quiz visibility data',
             error: error.message
         });
     }
