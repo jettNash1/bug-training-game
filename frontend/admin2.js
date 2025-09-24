@@ -9568,7 +9568,7 @@ export class Admin2Dashboard {
             
             return `
                 <div class="checkbox-item">
-                    <input type="checkbox" value="${user.username}" id="user-${user.username}" class="user-checkbox">
+                    <input type="checkbox" value="${user.username}" id="user-${user.username}">
                     <label for="user-${user.username}">
                         ${user.username} 
                         <span class="visibility-status ${isVisible ? 'visible' : 'hidden'}">
@@ -9583,7 +9583,7 @@ export class Admin2Dashboard {
         this.updateVisibilityStatusCount(quizName);
 
         // Add event listeners for checkbox changes
-        userList.querySelectorAll('.user-checkbox').forEach(checkbox => {
+        userList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
             checkbox.addEventListener('change', () => {
                 this.updateSelectedCount();
             });
@@ -9602,8 +9602,10 @@ export class Admin2Dashboard {
     }
 
     updateSelectedCount() {
-        const selectedCheckboxes = document.querySelectorAll('#user-visibility-list .user-checkbox:checked');
+        const selectedCheckboxes = document.querySelectorAll('#user-visibility-list input[type="checkbox"]:checked');
         const statusElement = document.getElementById('visibility-status');
+        
+        console.log(`[Quiz Visibility] Selected count: ${selectedCheckboxes.length}`);
         
         if (statusElement && this.currentQuiz) {
             const baseStatus = statusElement.textContent.split(' |')[0]; // Get the main count
@@ -9618,7 +9620,8 @@ export class Admin2Dashboard {
     }
 
     selectAllUsers(select) {
-        const checkboxes = document.querySelectorAll('#user-visibility-list .user-checkbox');
+        const checkboxes = document.querySelectorAll('#user-visibility-list input[type="checkbox"]');
+        console.log(`[Quiz Visibility] Found ${checkboxes.length} checkboxes to ${select ? 'select' : 'deselect'}`);
         checkboxes.forEach(checkbox => {
             checkbox.checked = select;
         });
@@ -9631,7 +9634,7 @@ export class Admin2Dashboard {
             return;
         }
 
-        const selectedCheckboxes = document.querySelectorAll('#user-visibility-list .user-checkbox:checked');
+        const selectedCheckboxes = document.querySelectorAll('#user-visibility-list input[type="checkbox"]:checked');
         
         if (selectedCheckboxes.length === 0) {
             this.showError('Please select at least one user');
@@ -9661,7 +9664,7 @@ export class Admin2Dashboard {
             }));
 
             // Make bulk update API call
-            const url = `${this.apiService.getBaseUrl()}/admin/quiz-visibility/bulk-update`;
+            const url = `${this.apiService.baseUrl}/admin/quiz-visibility/bulk-update`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
