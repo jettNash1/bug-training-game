@@ -9386,12 +9386,15 @@ export class Admin2Dashboard {
     }
 
     setupQuizVisibilityEventListeners() {
+        console.log('[Quiz Visibility] Setting up event listeners...');
+        
         // Quiz search functionality
         const quizSearch = document.getElementById('quiz-search');
         if (quizSearch) {
             quizSearch.addEventListener('input', (e) => {
                 this.filterQuizVisibilityList(e.target.value);
             });
+            console.log('[Quiz Visibility] Quiz search listener added');
         }
 
         // User search functionality  
@@ -9400,36 +9403,71 @@ export class Admin2Dashboard {
             userSearch.addEventListener('input', (e) => {
                 this.filterUserVisibilityList(e.target.value);
             });
+            console.log('[Quiz Visibility] User search listener added');
         }
 
-        // Bulk control buttons
-        const selectAllBtn = document.getElementById('select-all-users');
-        if (selectAllBtn) {
-            selectAllBtn.addEventListener('click', () => {
-                this.selectAllUsers(true);
-            });
-        }
+        // Bulk control buttons - Add listeners that work immediately
+        this.setupBulkControlListeners();
+    }
 
-        const deselectAllBtn = document.getElementById('deselect-all-users');
-        if (deselectAllBtn) {
-            deselectAllBtn.addEventListener('click', () => {
-                this.selectAllUsers(false);
+    setupBulkControlListeners() {
+        console.log('[Quiz Visibility] Setting up bulk control listeners...');
+        
+        // Use setTimeout to ensure DOM is ready and then set up listeners
+        setTimeout(() => {
+            const selectAllBtn = document.getElementById('select-all-users');
+            const deselectAllBtn = document.getElementById('deselect-all-users');
+            const showSelectedBtn = document.getElementById('show-selected-users');
+            const hideSelectedBtn = document.getElementById('hide-selected-users');
+            
+            console.log('[Quiz Visibility] Button elements found:', {
+                selectAll: !!selectAllBtn,
+                deselectAll: !!deselectAllBtn,
+                showSelected: !!showSelectedBtn,
+                hideSelected: !!hideSelectedBtn
             });
-        }
 
-        const showSelectedBtn = document.getElementById('show-selected-users');
-        if (showSelectedBtn) {
-            showSelectedBtn.addEventListener('click', () => {
-                this.bulkUpdateSelectedVisibility(true);
-            });
-        }
+            // Remove existing listeners to prevent duplicates
+            if (selectAllBtn && !selectAllBtn._listenerAdded) {
+                selectAllBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('[Quiz Visibility] Select All clicked');
+                    this.selectAllUsers(true);
+                });
+                selectAllBtn._listenerAdded = true;
+                console.log('[Quiz Visibility] Select All listener added');
+            }
 
-        const hideSelectedBtn = document.getElementById('hide-selected-users');
-        if (hideSelectedBtn) {
-            hideSelectedBtn.addEventListener('click', () => {
-                this.bulkUpdateSelectedVisibility(false);
-            });
-        }
+            if (deselectAllBtn && !deselectAllBtn._listenerAdded) {
+                deselectAllBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('[Quiz Visibility] Deselect All clicked');
+                    this.selectAllUsers(false);
+                });
+                deselectAllBtn._listenerAdded = true;
+                console.log('[Quiz Visibility] Deselect All listener added');
+            }
+
+            if (showSelectedBtn && !showSelectedBtn._listenerAdded) {
+                showSelectedBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('[Quiz Visibility] Show Selected clicked');
+                    this.bulkUpdateSelectedVisibility(true);
+                });
+                showSelectedBtn._listenerAdded = true;
+                console.log('[Quiz Visibility] Show Selected listener added');
+            }
+
+            if (hideSelectedBtn && !hideSelectedBtn._listenerAdded) {
+                hideSelectedBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('[Quiz Visibility] Hide Selected clicked');
+                    this.bulkUpdateSelectedVisibility(false);
+                });
+                hideSelectedBtn._listenerAdded = true;
+                console.log('[Quiz Visibility] Hide Selected listener added');
+            }
+        }, 100);
     }
 
     async loadQuizVisibilityList() {
@@ -9492,6 +9530,10 @@ export class Admin2Dashboard {
         const bulkControls = document.getElementById('bulk-controls');
         if (bulkControls) {
             bulkControls.style.display = 'flex';
+            console.log('[Quiz Visibility] Bulk controls shown');
+            
+            // Re-setup bulk control listeners since they're now visible
+            this.setupBulkControlListeners();
         }
 
         // Use existing users data instead of making API call
