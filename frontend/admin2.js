@@ -9427,8 +9427,25 @@ export class Admin2Dashboard {
                 hideSelected: !!hideSelectedBtn
             });
 
+            console.log('[Quiz Visibility] Select All button details:', {
+                element: selectAllBtn,
+                id: selectAllBtn?.id,
+                className: selectAllBtn?.className,
+                disabled: selectAllBtn?.disabled,
+                listenerAdded: selectAllBtn?._listenerAdded
+            });
+
             // Remove existing listeners to prevent duplicates
-            if (selectAllBtn && !selectAllBtn._listenerAdded) {
+            if (selectAllBtn) {
+                // Force remove any existing listeners by cloning the element
+                if (selectAllBtn._listenerAdded) {
+                    console.log('[Quiz Visibility] Removing existing listener from Select All button');
+                    const newBtn = selectAllBtn.cloneNode(true);
+                    selectAllBtn.parentNode.replaceChild(newBtn, selectAllBtn);
+                    selectAllBtn = newBtn;
+                }
+                
+                console.log('[Quiz Visibility] Adding new listener to Select All button');
                 selectAllBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     console.log('[Quiz Visibility] Select All button clicked');
@@ -9437,7 +9454,21 @@ export class Admin2Dashboard {
                     this.selectAllUsers(true);
                 });
                 selectAllBtn._listenerAdded = true;
-                console.log('[Quiz Visibility] Select All listener added');
+                console.log('[Quiz Visibility] Select All listener added successfully');
+                
+                // Test the button directly
+                console.log('[Quiz Visibility] Testing Select All button click simulation...');
+                setTimeout(() => {
+                    try {
+                        selectAllBtn.click();
+                        console.log('[Quiz Visibility] Select All button click simulation completed');
+                    } catch (error) {
+                        console.error('[Quiz Visibility] Select All button click simulation failed:', error);
+                    }
+                }, 2000);
+                
+            } else {
+                console.error('[Quiz Visibility] Select All button not found!');
             }
 
             if (deselectAllBtn && !deselectAllBtn._listenerAdded) {
