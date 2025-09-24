@@ -484,6 +484,34 @@ export const newTicketTemplateScenarios = {
                         experience: -5
                     }
                 ]
+            },
+            {
+                id: 19,
+                level: 'Advanced',
+                title: '', 
+                description: 'Which one of the following issue summaries resemble the correct Zoonou approach to writing tickets?',
+                options: [
+                    {
+                        text: 'It has been observed that the app crashes immediately after selecting a photo to upload as a profile picture \n It is expected that the app does not crash',
+                        outcome: 'Using phrases like "It has been observed" and "It is expected" makes tickets unnecessarily verbose. The issue should be stated directly and clearly.',
+                        experience: -5,
+                    },
+                    {
+                        text: 'The app crashes immediately after selecting a photo to upload as a profile picture \n It is expected that the app does not crash',
+                        outcome: 'While more concise, including "It is expected" statements is redundant. The expected behavior should be clear from the issue description.',
+                        experience: -15
+                    },
+                    {
+                        text: 'When uploading a photo to set as a profile picture, the application crashes immediately after the image is selected. \n It is expected that the app does not crash',
+                        outcome: 'The issue description is clear but adding "It is expected" statements is unnecessary and makes the ticket longer than needed.',
+                        experience: -10
+                    },
+                    {
+                        text: 'When uploading a photo to set as a profile picture, the application crashes immediately after the image is selected.',
+                        outcome: 'This is the correct format - clear, concise, and describes the exact steps and behavior without unnecessary phrases like "It has been observed" or "It is expected".',
+                        experience: 25
+                    }
+                ]
             }
         ]
 }
