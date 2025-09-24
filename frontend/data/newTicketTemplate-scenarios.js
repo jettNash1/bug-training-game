@@ -121,26 +121,54 @@ export const newTicketTemplateScenarios = {
                 options: [
                     {
                         text: 'Believed to be iOS Tablet',
-                        outcome: 'Correct! This is the most relevant option and would be the best fit for the \'Believed to be\' section',
+                        outcome: 'This is the most relevant option and would be the best fit for the \'Believed to be\' section',
                         experience: 15, 
                     },
                     {
                         text: 'Believed to be iOS Mobile',
-                        outcome: 'Incorrect. The bug only occurs on tablet environments, so it cannot be iOS Mobile specific',
+                        outcome: 'The bug only occurs on tablet environments, so it cannot be iOS Mobile specific',
                         experience: -5
                     },
                     {
                         text: 'Believed to be Global Tablet',
-                        outcome: 'Incorrect. The bug only occurs on iOS Tablet environments, so it cannot be global',
+                        outcome: 'The bug only occurs on iOS Tablet environments, so it cannot be global',
                         experience: -10
                     },
                     {
                         text: 'Believed to be iOS and Tablet',
-                        outcome: 'Incorrect, whilst it does accurately describe the issue, it is not an option within the ticket template',
+                        outcome: 'Whilst it does accurately describe the issue, it is not an option within the ticket template',
                         experience: 0
                     }
                 ]
-            }
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Ticket Raising',
+                description: 'What should you do before raising a ticket?',
+                options: [
+                    {
+                        text: 'You should check if there are specific client requests for raising issues',
+                        outcome: 'Correct! consider if there are any specific requests from the client on how they would like issues to be raised to the tracker. You can generally find this information out by looking at the Operational Project Details document.',
+                        experience: 15,
+                    },
+                    {
+                        text: 'You should wait for another tester to confirm the issue',
+                        outcome: 'While issues are posted within the channel to increase team awareness, tickets must be raised as they are observed and shouldn\'t be delayed.',
+                        experience: -10
+                    },
+                    {
+                        text: 'You should discuss with the development team how to fix the issue',
+                        outcome: 'Testers are responsible for reporting issues, not determining how they should be fixed.',
+                        experience: -5
+                    },
+                    {
+                        text: 'You should attempt to fix the issue yourself first',
+                        outcome: 'This would be outside the scope of a tester\'s responsibilities.',
+                        experience: 0
+                    }
+                ]
+            },
         ],
 
         // Intermediate Scenarios (IDs 6-10, 125 XP total)
@@ -281,6 +309,34 @@ export const newTicketTemplateScenarios = {
                     {
                         text: 'By how difficult the issue is to fix',
                         outcome: 'Incorrect. The complexity of fixing an issue does not determine its severity. Severity is based on impact to users and business.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Intermediate',
+                title: 'Supporting Material',
+                description: 'What is the most appropriate supporting material to include for an issue with a low reproduction rate?',
+                options: [
+                    {
+                        text: 'A brief textual description should be included only.',
+                        outcome: 'Evidence should be included for defects with low reproducibility rates as it allows the developer to clearly see what the defect is.',
+                        experience: -10
+                    },
+                    {
+                        text: 'A step-by-step guide should be included without visual evidence',
+                        outcome: 'While steps to reproduce are important, for issues that are difficult to reproduce visual evidence is crucial.', 
+                        experience: -15
+                    },
+                    {
+                        text: 'A video or annotated screenshot showing the issue occurring should be included',
+                        outcome: 'Correct! adding evidence can assist with identifying the root cause of the defect. For defects with low replicability rates, it allows the developer to clearly see what the defect is.',
+                        experience: 20,
+                    },
+                    {
+                        text: 'A detailed technical analysis of the code causing the issue should be included',
+                        outcome: 'Testers typically don\'t provide code analysis in tickets. Tickets should use clear and non-technical language and be focused on the observed behaviour rather than technical diagnoses.',
                         experience: -5
                     }
                 ]
