@@ -859,7 +859,6 @@
                                         <h4>Select Quiz</h4>
                                         <div class="quiz-filter">
                                             <input type="text" id="quiz-search" placeholder="Search quizzes..." class="search-input">
-                                            <i class="fas fa-search search-icon"></i>
                                         </div>
                                         <div id="quiz-visibility-list" class="checkbox-list">
                                             <!-- Quiz items will be populated here -->
@@ -871,14 +870,14 @@
                                         <div class="panel-header">
                                             <h4 id="selected-quiz-title">Select a quiz to begin</h4>
                                             <div class="bulk-controls" id="bulk-controls" style="display: none;">
-                                                <button id="show-all-users" class="control-button">Show to All</button>
-                                                <button id="hide-all-users" class="control-button">Hide from All</button>
+                                                <button id="select-all-users" class="control-button">Select All</button>
+                                                <button id="deselect-all-users" class="control-button">Deselect All</button>
+
                                             </div>
                                         </div>
                                         
                                         <div class="user-filter">
                                             <input type="text" id="user-search" placeholder="Search users..." class="search-input">
-                                            <i class="fas fa-search search-icon"></i>
                                         </div>
                                         
                                         <div id="user-visibility-list" class="checkbox-list">
@@ -2980,15 +2979,6 @@
             font-size: 0.9rem;
         }
 
-        .quiz-filter .search-icon {
-            position: absolute;
-            right: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #666;
-            pointer-events: none;
-        }
-
         .user-filter {
             position: relative;
             margin-bottom: 1rem;
@@ -3000,15 +2990,6 @@
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 0.9rem;
-        }
-
-        .user-filter .search-icon {
-            position: absolute;
-            right: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #666;
-            pointer-events: none;
         }
 
         .panel-header {
@@ -3031,98 +3012,24 @@
             gap: 0.75rem;
         }
 
-        .visibility-toggle {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .visibility-switch {
-            position: relative;
-            width: 48px;
-            height: 24px;
-            background: #ccc;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        .visibility-switch.active {
-            background: #27ae60;
-        }
-
-        .visibility-switch::before {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.2s ease;
-        }
-
-        .visibility-switch.active::before {
-            transform: translateX(24px);
-        }
-
-        .visibility-label {
-            font-size: 0.85rem;
-            color: #666;
-            min-width: 50px;
-        }
-
-        .user-visibility-item {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.2s ease;
-        }
-
-        .user-visibility-item:hover {
-            background: #f9f9f9;
-            border-color: #ccc;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #3498db;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 500;
-            font-size: 0.85rem;
-        }
-
-        .user-details {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .user-username {
-            font-weight: 500;
-            color: #2c3e50;
-            font-size: 0.9rem;
-        }
 
         .user-type {
             font-size: 0.8rem;
             color: #666;
+        }
+
+        .visibility-status {
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+
+        .visibility-status.visible {
+            color: #27ae60;
+        }
+
+        .visibility-status.hidden {
+            color: #e74c3c;
         }
     </style>
 </body>
