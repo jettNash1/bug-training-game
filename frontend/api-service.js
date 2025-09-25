@@ -2857,37 +2857,20 @@ export class APIService {
         const username = localStorage.getItem('username');
         const normalizedQuizName = this.normalizeQuizName(quizName);
         
-        // ENHANCED RESET DETECTION: Check multiple sources for reset flags
-        const resetFlags = [
-            window.CACHE_INVALIDATED,
-            window.RESET_IN_PROGRESS,
-            localStorage.getItem(`cache_invalidated_${username}_${normalizedQuizName}`),
-            localStorage.getItem(`force_reset_${username}_${normalizedQuizName}`),
-            localStorage.getItem(`reset_timestamp_${username}`)
-        ];
-        
-        const hasResetFlag = resetFlags.some(flag => flag && flag !== 'null' && flag !== 'undefined');
-        
-        if (hasResetFlag) {
-            console.warn(`[API] RESET MODE: Preventing quiz progress save for ${quizName} - cache invalidated`);
-            return { success: false, message: 'Cache invalidated - please reload page' };
-        }
+        // NOTE: Reset flags should not prevent progress saves to server
+        // Reset flags only affect reading cached data, not writing new progress
+        // Progress should always be saved to maintain user's current state
         
         try {
-            const normalizedQuizName = this.normalizeQuizName(quizName);
-            const username = localStorage.getItem('username');
             
             if (!username) {
                 console.warn('[API] No username found for saving quiz progress');
                 return { success: false, message: 'No username found' };
             }
 
-            // Check server for cache invalidation first
-            const cacheInvalidated = await this.checkCacheInvalidation(username, normalizedQuizName);
-            if (cacheInvalidated) {
-                console.warn(`[API] Cache invalidated for ${normalizedQuizName} - preventing save`);
-                return { success: false, message: 'Cache invalidated - please reload page' };
-            }
+        // NOTE: Cache invalidation should not block progress saves
+        // Progress should always be saved to server regardless of cache state
+        // Cache invalidation only affects reading cached data, not writing new progress
 
             // Store progress with normalized quiz name
             const progressData = {
