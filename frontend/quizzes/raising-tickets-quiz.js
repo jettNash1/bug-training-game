@@ -18,7 +18,9 @@ export class RaisingTicketsQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing raising tickets best practices and try again!' }
             ],
-            quizName: 'raising-tickets'
+            quizName: 'raising-tickets',
+            quizTitle: 'Raising Tickets & Issue Management',
+            quizDescription: 'Master best practices for raising and managing tickets in issue tracking systems. Learn to write clear, actionable bug reports and effectively communicate issues to development teams.'
         };
         
         // Call the parent constructor with our config

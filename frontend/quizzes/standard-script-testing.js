@@ -18,7 +18,9 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing standard script testing best practices and try again!' }
             ],
-            quizName: 'standard-script-testing'
+            quizName: 'standard-script-testing',
+            quizTitle: 'Standard Script Testing',
+            quizDescription: 'Master standard script testing techniques and learn to write comprehensive test scripts. Develop skills in following established test scripts and documenting results accurately.'
         };
         
         // Call the parent constructor with our config

@@ -18,7 +18,9 @@ export class CommunicationQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing communication best practices and try again!' }
             ],
-            quizName: 'communication'
+            quizName: 'communication',
+            quizTitle: 'Communication in Testing',
+            quizDescription: 'Develop effective communication skills in testing scenarios and learn best practices for collaborating with team members, developers, and stakeholders. Master the art of clear, concise, and impactful communication in QA environments.'
         };
         
         // Call the parent constructor with our config

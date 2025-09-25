@@ -18,7 +18,9 @@ export class FullyScriptedQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing fully scripted testing best practices and try again!' }
             ],
-            quizName: 'fully-scripted'
+            quizName: 'fully-scripted',
+            quizTitle: 'Fully Scripted Testing',
+            quizDescription: 'Master fully scripted testing scenarios and learn detailed test execution methodologies. Develop skills in following comprehensive test scripts and documenting results accurately.'
         };
         
         // Call the parent constructor with our config

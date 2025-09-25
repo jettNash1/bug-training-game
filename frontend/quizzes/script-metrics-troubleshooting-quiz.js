@@ -18,7 +18,9 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing script metrics troubleshooting best practices and try again!' }
             ],
-            quizName: 'script-metrics-troubleshooting'
+            quizName: 'script-metrics-troubleshooting',
+            quizTitle: 'Script Metrics & Troubleshooting',
+            quizDescription: 'Learn to analyze script metrics and troubleshoot automation issues effectively. Master performance analysis, debugging techniques, and optimization strategies for test automation scripts.'
         };
         
         // Call the parent constructor with our config

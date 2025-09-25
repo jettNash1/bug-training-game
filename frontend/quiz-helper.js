@@ -529,11 +529,14 @@ export class BaseQuiz {
                        'currentScenario:', this.player.currentScenario,
                        'questionHistory.length:', this.player.questionHistory.length);
             
-            // Clear UI state
-            this.clearUIState();
-            
-            // Display the current scenario
-            await this.displayScenario();
+            // Check if we should show the introduction page
+            if (this.player.currentScenario === 0 && this.player.questionHistory.length === 0) {
+                // Show introduction page for fresh quiz start
+                this.showIntroPage();
+            } else {
+                // Continue with existing progress
+                await this.startActualQuiz();
+            }
             
             // Hide loading overlay once everything is ready
             this.hideLoadingOverlay();
@@ -543,6 +546,193 @@ export class BaseQuiz {
             // Hide loading overlay even on error
             this.hideLoadingOverlay();
         }
+    }
+
+    /**
+     * Shows the quiz introduction page with title, description, and start button
+     */
+    showIntroPage() {
+        console.log('[Quiz] Showing introduction page');
+        
+        // Clear UI state
+        this.clearUIState();
+        
+        // Get quiz title and description from config
+        const quizTitle = this.config.quizTitle || this.formatQuizName(this.quizName);
+        const quizDescription = this.config.quizDescription || this.getDefaultDescription();
+        
+        // Hide all other screens
+        this.gameScreen.classList.add('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        const endScreen = document.getElementById('end-screen');
+        if (endScreen) endScreen.classList.add('hidden');
+        
+        // Create or get intro screen
+        let introScreen = document.getElementById('intro-screen');
+        if (!introScreen) {
+            introScreen = document.createElement('div');
+            introScreen.id = 'intro-screen';
+            introScreen.className = 'quiz-card intro-screen';
+            
+            // Insert after quiz header but before game screen
+            const quizContainer = document.querySelector('.quiz-container');
+            const quizHeader = document.querySelector('.quiz-header');
+            quizContainer.insertBefore(introScreen, quizHeader.nextSibling);
+        }
+        
+        // Populate intro screen content
+        introScreen.innerHTML = `
+            <div class="intro-content">
+                <div class="intro-header">
+                    <div class="quiz-icon-large">
+                        <img src="../assets/badges/${this.quizName}.svg" 
+                             alt="${quizTitle} icon" 
+                             onerror="this.src='../assets/badges/default.svg'">
+                    </div>
+                    <h1 class="intro-title">${quizTitle}</h1>
+                </div>
+                <div class="intro-description">
+                    <p>${quizDescription}</p>
+                </div>
+                <div class="intro-details">
+                    <div class="detail-item">
+                        <span class="detail-icon">📝</span>
+                        <span>Total Questions: ${this.totalQuestions}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">🎯</span>
+                        <span>Pass Percentage: ${this.passPercentage}%</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">⏱️</span>
+                        <span>${this.timerDisabled ? 'No time limit' : `${this.timePerQuestion} seconds per question`}</span>
+                    </div>
+                </div>
+                <div class="intro-actions">
+                    <button id="start-quiz-btn" class="start-quiz-button" tabindex="0" aria-label="Start the ${quizTitle} quiz">
+                        Start Quiz
+                    </button>
+                    <a href="../index.html" class="cancel-link" tabindex="0" aria-label="Go back to quiz selection">
+                        ← Back to Hub
+                    </a>
+                </div>
+            </div>
+        `;
+        
+        // Show intro screen
+        introScreen.classList.remove('hidden');
+        
+        // Add event listener for start button
+        const startButton = document.getElementById('start-quiz-btn');
+        if (startButton) {
+            startButton.addEventListener('click', () => this.handleStartQuizClick());
+            startButton.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.handleStartQuizClick();
+                }
+            });
+        }
+        
+        // Focus on the start button for accessibility
+        if (startButton) {
+            setTimeout(() => startButton.focus(), 100);
+        }
+    }
+    
+    /**
+     * Handles the start quiz button click
+     */
+    async handleStartQuizClick() {
+        console.log('[Quiz] Start quiz button clicked');
+        
+        // Hide intro screen
+        const introScreen = document.getElementById('intro-screen');
+        if (introScreen) {
+            introScreen.classList.add('hidden');
+        }
+        
+        // Start the actual quiz
+        await this.startActualQuiz();
+    }
+    
+    /**
+     * Starts the actual quiz (the original startGame functionality)
+     */
+    async startActualQuiz() {
+        console.log('[Quiz] Starting actual quiz...');
+        
+        try {
+            // Clear UI state
+            this.clearUIState();
+            
+            // Display the current scenario
+            await this.displayScenario();
+        } catch (error) {
+            console.error('[Quiz] Error in startActualQuiz:', error);
+            this.showError('Failed to start the quiz. Please refresh the page and try again.');
+        }
+    }
+    
+    /**
+     * Formats quiz name for display (capitalizes and removes dashes)
+     */
+    formatQuizName(name) {
+        if (!name) return 'Quiz';
+        
+        // Special cases for specific quiz names
+        const specialCases = {
+            'cms-testing': 'CMS Testing (CRUD)',
+            'non-functional': 'Non-Functional Testing',
+            'content-copy': 'Content Copy Testing',
+            'email-testing': 'Email Testing',
+            'automation-interview': 'Automation Interview Preparation',
+            'functional-interview': 'Functional Interview Preparation'
+        };
+        
+        if (specialCases[name.toLowerCase()]) {
+            return specialCases[name.toLowerCase()];
+        }
+        
+        return name.split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+    
+    /**
+     * Gets default description for quiz based on quiz name
+     */
+    getDefaultDescription() {
+        const descriptions = {
+            'communication': 'Develop effective communication skills in testing scenarios and learn best practices for collaborating with team members.',
+            'initiative': 'Learn to take initiative in testing scenarios and develop proactive problem-solving skills.',
+            'time-management': 'Optimize your testing workflow and learn efficient time management techniques.',
+            'tester-mindset': 'Develop critical thinking skills and cultivate the proper mindset for effective testing.',
+            'risk-analysis': 'Learn to analyze and identify risks in testing scenarios and project environments.',
+            'risk-management': 'Master techniques for managing and mitigating risks in testing scenarios.',
+            'non-functional': 'Test non-functional requirements including performance, security, and usability.',
+            'test-support': 'Learn to support testing activities and collaborate effectively with development teams.',
+            'issue-verification': 'Master the skills needed to verify and validate issues in testing scenarios.',
+            'build-verification': 'Learn best practices for verifying builds and conducting build validation testing.',
+            'issue-tracking-tools': 'Master the use of issue tracking tools and learn effective ticket management.',
+            'reports': 'Learn to create comprehensive and analyze test reports effectively for stakeholder communication.',
+            'raising-tickets': 'Master best practices for raising and managing tickets in issue tracking systems.',
+            'cms-testing': 'Learn comprehensive CMS testing techniques including CRUD operations and content management.',
+            'email-testing': 'Master email functionality testing including templates, delivery, and integration testing.',
+            'content-copy': 'Learn effective content copying and validation techniques for testing scenarios.',
+            'locale-testing': 'Master localization testing techniques and learn to test applications across different locales.',
+            'script-metrics-troubleshooting': 'Learn to analyze script metrics and troubleshoot automation issues effectively.',
+            'standard-script-testing': 'Master standard script testing techniques and best practices.',
+            'test-types-tricks': 'Learn various test types and discover useful testing tricks and techniques.',
+            'automation-interview': 'Prepare for automation testing interviews with comprehensive questions and scenarios.',
+            'fully-scripted': 'Master fully scripted testing scenarios and learn detailed test execution.',
+            'exploratory': 'Learn exploratory testing techniques and develop skills for testing without predefined scripts.',
+            'sanity-smoke': 'Master sanity and smoke testing techniques for efficient build validation.',
+            'functional-interview': 'Prepare for functional testing interviews with comprehensive scenarios and questions.',
+            'ticket-template': 'Learn best practices for using ticket templates and managing issue documentation.'
+        };
+        
+        return descriptions[this.quizName] || 'Master essential testing skills and improve your QA expertise through practical scenarios.';
     }
 
     /**

@@ -18,7 +18,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing testing mindset best practices and try again!' }
             ],
-            quizName: 'tester-mindset'
+            quizName: 'tester-mindset',
+            quizTitle: 'Tester Mindset & Critical Thinking',
+            quizDescription: 'Develop critical thinking skills and cultivate the proper mindset for effective testing. Learn to think like a tester, ask the right questions, and approach problems with curiosity and analytical rigor.'
         };
         
         // Call the parent constructor with our config

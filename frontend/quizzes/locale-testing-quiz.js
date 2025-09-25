@@ -18,7 +18,9 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing locale testing best practices and try again!' }
             ],
-            quizName: 'locale-testing'
+            quizName: 'locale-testing',
+            quizTitle: 'Localization Testing',
+            quizDescription: 'Master localization testing techniques and learn to test applications across different locales, languages, and cultures. Ensure your applications work correctly for global audiences.'
         };
         
         // Call the parent constructor with our config

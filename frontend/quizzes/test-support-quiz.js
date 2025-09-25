@@ -18,7 +18,9 @@ export class TestSupportQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing test support best practices and try again!' }
             ],
-            quizName: 'test-support'
+            quizName: 'test-support',
+            quizTitle: 'Test Support & Collaboration',
+            quizDescription: 'Learn to support testing activities and collaborate effectively with development teams. Master the skills needed to provide excellent test support and facilitate smooth testing processes.'
         };
         
         // Call the parent constructor with our config

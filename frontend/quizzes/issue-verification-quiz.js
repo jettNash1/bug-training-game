@@ -18,7 +18,9 @@ export class IssueVerificationQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing issue verification best practices and try again!' }
             ],
-            quizName: 'issue-verification'
+            quizName: 'issue-verification',
+            quizTitle: 'Issue Verification & Validation',
+            quizDescription: 'Master the skills needed to verify and validate issues in testing scenarios. Learn to reproduce bugs, validate fixes, and ensure quality standards are met throughout the development lifecycle.'
         };
         
         // Call the parent constructor with our config

@@ -18,7 +18,9 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing risk analysis best practices and try again!' }
             ],
-            quizName: 'risk-analysis'
+            quizName: 'risk-analysis',
+            quizTitle: 'Risk Analysis in Testing',
+            quizDescription: 'Learn to analyze and identify risks in testing scenarios and project environments. Master risk assessment techniques, impact analysis, and mitigation strategies to ensure comprehensive test coverage and project success.'
         };
         
         // Call the parent constructor with our config

@@ -18,7 +18,9 @@ export class ExploratoryQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing exploratory testing best practices and try again!' }
             ],
-            quizName: 'exploratory'
+            quizName: 'exploratory',
+            quizTitle: 'Exploratory Testing',
+            quizDescription: 'Learn exploratory testing techniques and develop skills for testing without predefined scripts. Master the art of investigative testing, creative thinking, and discovering unexpected issues.'
         };
         
         // Call the parent constructor with our config

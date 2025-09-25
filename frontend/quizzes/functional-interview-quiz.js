@@ -18,7 +18,9 @@ export class FunctionalInterviewQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing functional interview best practices and try again!' }
             ],
-            quizName: 'functional-interview'
+            quizName: 'functional-interview',
+            quizTitle: 'Functional Testing Interview Preparation',
+            quizDescription: 'Prepare for functional testing interviews with comprehensive scenarios and questions. Master functional testing concepts, methodologies, and common interview topics to excel in your next QA role.'
         };
         
         // Call the parent constructor with our config

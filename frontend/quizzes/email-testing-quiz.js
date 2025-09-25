@@ -18,7 +18,9 @@ export class EmailTestingQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing email testing best practices and try again!' }
             ],
-            quizName: 'email-testing'
+            quizName: 'email-testing',
+            quizTitle: 'Email Testing & Validation',
+            quizDescription: 'Master email functionality testing including templates, delivery, integration testing, and email client compatibility. Learn to test email workflows, automation, and ensure reliable email communication.'
         };
         
         // Call the parent constructor with our config

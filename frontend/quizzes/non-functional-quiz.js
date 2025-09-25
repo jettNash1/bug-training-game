@@ -18,7 +18,9 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing non-functional testing best practices and try again!' }
             ],
-            quizName: 'non-functional'
+            quizName: 'non-functional',
+            quizTitle: 'Non-Functional Testing',
+            quizDescription: 'Master non-functional testing requirements including performance, security, usability, and reliability. Learn to identify and test quality attributes that ensure your application meets user expectations beyond basic functionality.'
         };
         
         // Call the parent constructor with our config

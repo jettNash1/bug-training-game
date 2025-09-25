@@ -18,7 +18,9 @@ export class SanitySmokeQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing sanity smoke testing best practices and try again!' }
             ],
-            quizName: 'sanity-smoke'
+            quizName: 'sanity-smoke',
+            quizTitle: 'Sanity & Smoke Testing',
+            quizDescription: 'Master sanity and smoke testing techniques for efficient build validation. Learn to quickly identify critical issues and ensure basic functionality works before deeper testing begins.'
         };
         
         // Call the parent constructor with our config

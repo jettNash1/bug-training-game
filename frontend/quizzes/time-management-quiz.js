@@ -18,7 +18,9 @@ export class TimeManagementQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing time management best practices and try again!' }
             ],
-            quizName: 'time-management'
+            quizName: 'time-management',
+            quizTitle: 'Time Management in Testing',
+            quizDescription: 'Optimize your testing workflow and learn efficient time management techniques. Master prioritization, estimation, and planning skills to maximize your testing effectiveness while meeting deadlines and quality standards.'
         };
         
         // Call the parent constructor with our config

@@ -18,7 +18,9 @@ export class ReportsQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing reports best practices and try again!' }
             ],
-            quizName: 'reports'
+            quizName: 'reports',
+            quizTitle: 'Test Reporting & Documentation',
+            quizDescription: 'Learn to create comprehensive test reports and analyze testing data effectively for stakeholder communication. Master the art of presenting testing insights, metrics, and recommendations clearly and professionally.'
         };
         
         // Call the parent constructor with our config

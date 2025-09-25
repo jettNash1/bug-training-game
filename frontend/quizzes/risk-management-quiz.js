@@ -18,7 +18,9 @@ export class RiskManagementQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing risk management best practices and try again!' }
             ],
-            quizName: 'risk-management'
+            quizName: 'risk-management',
+            quizTitle: 'Risk Management in Testing',
+            quizDescription: 'Master techniques for managing and mitigating risks in testing scenarios. Learn to develop contingency plans, implement risk controls, and communicate risk status effectively to stakeholders.'
         };
         
         // Call the parent constructor with our config

@@ -18,7 +18,9 @@ export class InitiativeQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing initiative best practices and try again!' }
             ],
-            quizName: 'initiative'
+            quizName: 'initiative',
+            quizTitle: 'Initiative in Testing',
+            quizDescription: 'Learn to take initiative in testing scenarios and develop proactive problem-solving skills. This quiz will test your ability to identify opportunities for improvement and take ownership of testing outcomes.'
         };
         
         // Call the parent constructor with our config

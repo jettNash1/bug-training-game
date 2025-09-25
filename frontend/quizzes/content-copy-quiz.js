@@ -18,7 +18,9 @@ export class ContentCopyQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing content copy best practices and try again!' }
             ],
-            quizName: 'content-copy'
+            quizName: 'content-copy',
+            quizTitle: 'Content Copy Testing',
+            quizDescription: 'Learn effective content copying and validation techniques for testing scenarios. Master content verification, duplication detection, and ensure data integrity across different platforms and systems.'
         };
         
         // Call the parent constructor with our config

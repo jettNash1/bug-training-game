@@ -18,7 +18,9 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing build verification best practices and try again!' }
             ],
-            quizName: 'build-verification'
+            quizName: 'build-verification',
+            quizTitle: 'Build Verification Testing',
+            quizDescription: 'Learn best practices for verifying builds and conducting build validation testing. Master the techniques needed to ensure builds are stable and ready for further testing phases.'
         };
         
         // Call the parent constructor with our config

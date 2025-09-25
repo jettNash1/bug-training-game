@@ -18,7 +18,9 @@ export class NewTicketTemplateQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing new ticket template best practices and try again!' }
             ],
-            quizName: 'ticket-template'
+            quizName: 'ticket-template',
+            quizTitle: 'Ticket Templates & Documentation',
+            quizDescription: 'Learn best practices for using ticket templates and managing issue documentation. Master the art of creating clear, comprehensive, and actionable ticket templates for efficient issue tracking.'
         };
         
         // Call the parent constructor with our config

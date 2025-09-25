@@ -18,7 +18,9 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing test types and tricks best practices and try again!' }
             ],
-            quizName: 'test-types-tricks'
+            quizName: 'test-types-tricks',
+            quizTitle: 'Test Types & Testing Tricks',
+            quizDescription: 'Learn various test types and discover useful testing tricks and techniques. Expand your testing toolkit with creative approaches and advanced testing methodologies.'
         };
         
         // Call the parent constructor with our config

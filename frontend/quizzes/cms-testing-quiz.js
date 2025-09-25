@@ -18,7 +18,9 @@ export class CMSTestingQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing CMS testing best practices and try again!' }
             ],
-            quizName: 'cms-testing'
+            quizName: 'cms-testing',
+            quizTitle: 'CMS Testing (CRUD Operations)',
+            quizDescription: 'Learn comprehensive CMS testing techniques including CRUD operations, content management workflows, user permissions, and data validation. Master the skills needed to test complex content management systems effectively.'
         };
         
         // Call the parent constructor with our config 

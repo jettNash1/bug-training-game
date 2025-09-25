@@ -18,7 +18,9 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing issue tracking tools best practices and try again!' }
             ],
-            quizName: 'issue-tracking-tools'
+            quizName: 'issue-tracking-tools',
+            quizTitle: 'Issue Tracking Tools & Systems',
+            quizDescription: 'Master the use of issue tracking tools and learn effective ticket management workflows. Become proficient with popular tools like Jira, Azure DevOps, and other tracking systems.'
         };
         
         // Call the parent constructor with our config
