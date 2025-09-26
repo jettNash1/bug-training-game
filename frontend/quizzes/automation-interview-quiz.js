@@ -20,7 +20,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             ],
             quizName: 'automation-interview',
             quizTitle: 'Automation Testing Interview Preparation',
-            quizDescription: 'Prepare for automation testing interviews with comprehensive questions and scenarios. This quiz covers automation frameworks, tools, best practices, and common interview questions to help you excel in your next automation testing role.'
+            quizDescription: 'Review your understanding of automation testing. This quiz covers automation frameworks, tools, and best practices to help you excel in your next automation testing role.'
         };
         
         // Call the parent constructor with our config

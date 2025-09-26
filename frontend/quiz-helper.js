@@ -749,11 +749,11 @@ export class BaseQuiz {
             'script-metrics-troubleshooting': 'Learn to analyze script metrics and troubleshoot automation issues effectively.',
             'standard-script-testing': 'Master standard script testing techniques and best practices.',
             'test-types-tricks': 'Learn various test types and discover useful testing tricks and techniques.',
-            'automation-interview': 'Prepare for automation testing',
+            'automation-interview': 'Review your understanding of automation testing',
             'fully-scripted': 'Master fully scripted testing scenarios and learn detailed test execution.',
             'exploratory': 'Learn exploratory testing techniques and develop skills for testing without predefined scripts.',
             'sanity-smoke': 'Master sanity and smoke testing techniques for efficient build validation.',
-            'functional-interview': 'Prepare for functional testing interviews with comprehensive scenarios and questions.',
+            'functional-interview': 'Review your understanding of functional testing',
             'ticket-template': 'Learn best practices for using ticket templates and managing issue documentation.'
         };
         
