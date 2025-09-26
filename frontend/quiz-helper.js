@@ -496,6 +496,32 @@ export class BaseQuiz {
         document.getElementById('finish-button')?.addEventListener('click', () => this.finishQuiz());
     }
 
+    /**
+     * Check if we should show intro page, then proceed with quiz start
+     * This method can be called by individual quiz implementations
+     */
+    async checkForIntroAndStart(playerData = null) {
+        console.log('[BaseQuiz] Checking if intro page should be shown...');
+        
+        // Use provided player data or current player state
+        const currentScenario = playerData?.currentScenario ?? this.player.currentScenario ?? 0;
+        const questionHistory = playerData?.questionHistory ?? this.player.questionHistory ?? [];
+        
+        console.log('[BaseQuiz] Intro check - currentScenario:', currentScenario, 'questionHistory.length:', questionHistory.length);
+        
+        // Check if we should show the introduction page
+        if (currentScenario === 0 && questionHistory.length === 0) {
+            console.log('[BaseQuiz] Showing introduction page for fresh quiz start');
+            this.showIntroPage();
+        } else {
+            console.log('[BaseQuiz] Skipping intro page - continuing with existing progress');
+            // Individual quizzes should handle their own quiz continuation logic
+            return false; // Indicates intro was not shown
+        }
+        
+        return true; // Indicates intro was shown
+    }
+
     async startGame() {
         console.log('[Quiz] Starting game, initializing settings...');
         
@@ -530,10 +556,9 @@ export class BaseQuiz {
                        'questionHistory.length:', this.player.questionHistory.length);
             
             // Check if we should show the introduction page
-            if (this.player.currentScenario === 0 && this.player.questionHistory.length === 0) {
-                // Show introduction page for fresh quiz start
-                this.showIntroPage();
-            } else {
+            const introShown = await this.checkForIntroAndStart();
+            
+            if (!introShown) {
                 // Continue with existing progress
                 await this.startActualQuiz();
             }
