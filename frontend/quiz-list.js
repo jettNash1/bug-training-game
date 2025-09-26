@@ -220,11 +220,11 @@ export class QuizList {
             'script-metrics-troubleshooting': 'Analyze script metrics and troubleshoot issues',
             'standard-script-testing': 'Test standard script',
             'test-types-tricks': 'Learn test types and tricks',
-            'automation-interview': 'Prepare for automation interviews',
+            'automation-interview': 'Review your understanding of automation testing',
             'fully-scripted': 'Test fully scripted scenarios',
             'exploratory': 'Explore and test without predefined scripts',
             'sanity-smoke': 'Learn sanity and smoke testing',
-            'functional-interview': 'Prepare for functional interviews',
+            'functional-interview': 'Review your understanding of functional testing',
             'ticket-template': 'Learn best practices for raising and managing tickets'
         };
         return descriptions[quizName] || 'Master essential testing skills';
