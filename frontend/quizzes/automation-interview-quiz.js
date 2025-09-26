@@ -208,6 +208,14 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 console.log('[AutomationInterviewQuiz] Set currentScenario to match question history:', this.player.currentScenario);
             }
             
+            // Check if we should show the introduction page
+            const introShown = await this.checkForIntroAndStart();
+            if (introShown) {
+                this.hideLoadingOverlay();
+                this.isLoading = false;
+                return; // Introduction page is shown, quiz will start when user clicks start
+            }
+            
             // Check if the quiz is already completed
             if (this.shouldEndGame()) {
                 this.endGame(false);
