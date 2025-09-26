@@ -34,7 +34,7 @@ export const QUIZ_CATEGORIES = {
         'email-testing',
         'content-copy',
     ],
-    'Interview Preparation': [
+    'Interviews': [
         'automation-interview',
         'functional-interview'
     ]

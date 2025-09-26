@@ -2954,7 +2954,7 @@ export class Admin2Dashboard {
         
         // Fallback logic for quizzes not in QUIZ_CATEGORIES
         if (quizName === 'automation-interview') {
-            return 'Interview Preparation';
+            return 'Interviews';
         }
         
         const lowerName = quizName.toLowerCase();
@@ -2980,7 +2980,7 @@ export class Admin2Dashboard {
         }
         
         if (['interview'].includes(lowerName)) {
-            return 'Interview Preparation';
+            return 'Interviews';
         }
         
         return 'Other Quizzes';
@@ -7439,7 +7439,7 @@ export class Admin2Dashboard {
             'content-copy': 'content-copy.svg',
             'reports': 'reports.svg',
             
-            // Interview Preparation
+            // Interviews
             'automation-interview': 'automation.svg',
             'functional-interview': 'functional-interview.svg'
         };
@@ -9123,7 +9123,7 @@ export class Admin2Dashboard {
             'tester-mindset': 'Tester Mindset & Approach',
             'communication': 'Communication & Collaboration',
             'initiative': 'Initiative & Proactivity',
-            'automation-interview': 'Automation Interview Preparation',
+            'automation-interview': 'Automation Interview',
             'functional-interview': 'Functional Testing Interview'
         };
 

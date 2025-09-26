@@ -711,8 +711,8 @@ export class BaseQuiz {
             'non-functional': 'Non-Functional Testing',
             'content-copy': 'Content Copy Testing',
             'email-testing': 'Email Testing',
-            'automation-interview': 'Automation Interview Preparation',
-            'functional-interview': 'Functional Interview Preparation'
+            'automation-interview': 'Automation Interview',
+            'functional-interview': 'Functional Interview'
         };
         
         if (specialCases[name.toLowerCase()]) {

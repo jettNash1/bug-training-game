@@ -37,7 +37,7 @@ export class BadgeService {
             'content-copy': 'content-copy.svg',
             'reports': 'reports.svg',
             
-            // Interview Preparation
+            // Interviews
             'automation-interview': 'automation.svg',
             'functional-interview': 'functional-interview.svg'
         };

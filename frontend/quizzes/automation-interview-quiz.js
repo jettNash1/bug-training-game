@@ -19,7 +19,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 { threshold: 0, message: '📚 Consider reviewing automation interview best practices and try again!' }
             ],
             quizName: 'automation-interview',
-            quizTitle: 'Automation Testing Interview Preparation',
+            quizTitle: 'Automation Testing Interview',
             quizDescription: 'Review your understanding of automation testing. This quiz covers automation frameworks, tools, and best practices to help you excel in your next automation testing role.'
         };
         
