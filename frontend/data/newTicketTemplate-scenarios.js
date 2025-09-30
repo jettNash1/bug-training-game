@@ -4,55 +4,55 @@ export const newTicketTemplateScenarios = {
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Phrasing',
-                description: 'What phrases should you avoid when writing a ticket?',
+                title: 'Raising Tickets',
+                description: 'After identifying an issue, how soon should you raise it?',
                 options: [
                     {
-                        text: '\'It has been observed\' or \'It is expected\'',
-                        outcome: 'Correct - These phrases are direct but often overused and add additional noise to the ticket.',
+                        text: 'Immediately after identifying and investigating the issue',
+                        outcome: 'Correct - Immediate reporting ensures accuracy and ensures the developer has additional time to investigate and fix the issue.',
                         experience: 15, 
                     },
                     {
-                        text: '\'As per the user manual\' or \'As per the documentation\'',
-                        outcome: 'These phrases are more specific and add valuable context to the ticket.',
-                        experience: -5
-                    },
-                    {
-                        text: '\'As per the specification\' or \'As per the requirements\'',
-                        outcome: 'These phrases directly reference requirements and add clarity to the ticket.',
+                        text: 'Raise it in parallel with daily reports for familiarity when writing the report',
+                        outcome: 'While familiarisation with issues whilst writing the report is important, raising all tickets at the end of the day would put a large burden on both tester and developer.',
                         experience: -10
                     },
                     {
-                        text: '\'Whilst viewing the website\' or \'Whilst using the application\'',
-                        outcome: 'These are common ways of identifying the environment but are not always necessary as you could be specific regarding the location of the issue.',
+                        text: 'Batch multiple issues together to make sure testing coverage is not affected',
+                        outcome: 'Issues should be reported as soon as they are discovered as this gives the client visibility of project status. Whilst this can be useful for cosmetic/copy defects, it\'s best to raise a ticket first, then amend the initial ticket with newly spotted instances of the defect.',
                         experience: 0
+                    },
+                    {
+                        text: 'During stand up meetings to get the opinion of everyone involved in the project',
+                        outcome: 'Whilst it is important to discuss major defects, these should be raised in advance and discussed during the meeting as opposed to raised during a meeting.',
+                        experience: -5
                     }
                 ]
             },
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Acronyms',
-                description: 'When should you use an acronym within a ticket?',
+                title: 'Well Written Ticket Characteristics',
+                description: 'Which of the following is a characteristic of a well written ticket?',
                 options: [
                     {
-                        text: 'When the acronym is commonly used within prior client communication',
-                        outcome: 'While this may be true, it is not always necessary to use an acronym, as it can be confusing for business users.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Never, tickets need to be understandable by all team members, not just those who may be familiar with jargon',
-                        outcome: 'Correct - Business users may view the ticket but may not be familiar with acronyms, so we need to use language anyone can understand.',
+                        text: 'Tickets should be specific, concise, relevant, factual, understandable and timely.',
+                        outcome: 'Correct - These are all characteristics of a well written ticket.',
                         experience: 15, 
                     },
                     {
-                        text: 'Always, as client and developers will be familiar with those used within their products',
-                        outcome: 'Tickets will be accessible to a number of stakeholders and not all may be familiar with acronyms. Having to rewrite a ticket if it cannot be understood by the intended audience.',
+                        text: 'Tickets should be detailed with extensive background information and include all possible scenarios.',
+                        outcome: 'While details are important, tickets should be concise and focused on the specific issue. Too much information can make tickets harder to understand.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Tickets should use a technical approach and acronyms to demonstrate expertise.',
+                        outcome: 'Tickets should be written in clear, understandable language that all stakeholders can comprehend, avoiding unnecessary technical terms.',
                         experience: -10
                     },
                     {
-                        text: 'For file types like \'API.txt\' or \'image.png\'',
-                        outcome: 'Whilst true, file types are standardised as acronyms so we don\'t need to write the full term',
+                        text: 'Tickets can be written informally to promote familiarity with the client.',
+                        outcome: 'Tickets should maintain a professional and factual tone as Zoonou is independent of the client and informal writing could impact the client\'s perception of Zoonou.',
                         experience: 0
                     }
                 ]
@@ -60,27 +60,27 @@ export const newTicketTemplateScenarios = {
             {
                 id: 3,
                 level: 'Basic',
-                title: 'Environments',
-                description: 'What should be included within the \'Environments observed on\' section?',
+                title: 'Ticket Purpose',
+                description: 'Within Zoonou, tickets should what?',
                 options: [
                     {
-                        text: 'All environments that the issue was observed on',
-                        outcome: 'Additional environments should be included in the \'Also observed on\' section',
-                        experience: -5
-                    },
-                    {
-                        text: 'Primary and additional environments that the issue was observed on',
-                        outcome: 'There are inumerable environments that the issue was not observed on and this would take too much time to consider',
-                        experience: -10
-                    },
-                    {
-                        text: 'The Primary environment that the issue was observed on',
-                        outcome: 'Correct - This should include device, operating system and browser/application version details',
+                        text: 'Be consistent, with the whole team following the same approach',
+                        outcome: 'Correct - A consistent approach helps maintain professional standards, improves client communication, and streamlines the bug fixing process.',
                         experience: 15, 
                     },
                     {
-                        text: 'Only the browser/application version details',
-                        outcome: 'Ideally you should state the device, operating system and browser/application version details',
+                        text: 'Reflect individual project manager preferences to meet specific client needs',
+                        outcome: 'While client needs are important, inconsistent ticket formats across projects can harm our professional image and make tracking issues more difficult.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Prioritize speed of ticket creation over standardization',
+                        outcome: 'While efficiency matters, sacrificing standardization can lead to confusion, longer resolution times, and reduced client satisfaction.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Adapt to match each client\'s internal ticketing style',
+                        outcome: 'As an independent testing company, we need to maintain our own professional standards while ensuring our format works effectively for all clients. Whilst a client can request we use their format, in situations where they do not, we must adhere to our own standards.',
                         experience: 0
                     }
                 ]
@@ -88,61 +88,61 @@ export const newTicketTemplateScenarios = {
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Additional Environments',
-                description: 'When should you include devices in the \'Also observed on\' section?',
+                title: 'Non-Standard Scenarios', 
+                description: 'In what situation should you not use the Zoonou ticket template?',
                 options: [
                     {
-                        text: 'When the issue is more severe than on the primary environment',
-                        outcome: 'Severity is detailed elsewhere in the ticket and ideally the most severe would be the primary environment',
+                        text: 'When a client requests we use their internal ticketing system',
+                        outcome: 'Correct - Whilst a client can request we use their internal ticketing system, in situations where they do not, we must adhere to our own standard for tickets.',
+                        experience: 15,
+                    },
+                    {
+                        text: 'When working on a project with a tight deadline',
+                        outcome: 'Time pressure is not a valid reason to deviate from our standard ticket template. The template helps maintain consistency and clarity regardless of project timelines.',
                         experience: -5
                     },
                     {
-                        text: 'One primary environment is generally enough to demonstrate the issue',
-                        outcome: 'Additional environments can help developers understand the scope of the issue and aid in debugging',
+                        text: 'When reporting a minor or low priority issue',
+                        outcome: 'All issues, regardless of severity or priority, should follow our standard template to ensure consistent documentation and tracking.',
                         experience: -10
                     },
                     {
-                        text: 'When specifically requested by developers or the client',
-                        outcome: 'While developer requests are important, you should proactively include supported environments to provide complete information',
+                        text: 'When working with a regular client who you have regular and good verbal communication with',
+                        outcome: 'Zoonou\'s standard template should be used regardless of a common understanding with the client as new people and stakeholders can always become part of the project who are not involved in meetings.',
                         experience: 0
-                    },
-                    {
-                        text: 'When the defect affects a wide range of devices or the developers may require additional context',
-                        outcome: 'Correct - This is a valid reason to include additional environments in the \'Also observed on\' section',
-                        experience: 15, 
                     }
                 ]
             },
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Believed to be',
-                description: 'Assuming an issue has only been observed on iOS Tablet environments, which of the following would best fit the \'Believed to be\' section of a ticket?',
+                title: 'Zoonou Approach', 
+                description: 'Which one of the following issue summaries resemble the correct Zoonou approach to writing tickets?',
                 options: [
                     {
-                        text: 'Believed to be iOS Tablet',
-                        outcome: 'Correct - This is the most relevant option and would be the best fit for the \'Believed to be\' section',
-                        experience: 15, 
+                        text: 'It has been observed that the app crashes immediately after selecting a photo to upload as a profile picture \n It is expected that the app does not crash',
+                        outcome: 'Using phrases like "It has been observed" and "It is expected" makes tickets unnecessarily verbose. The issue should be stated directly and clearly.',
+                        experience: 0,
                     },
                     {
-                        text: 'Believed to be iOS Related',
-                        outcome: 'iOS related would refer to MacOS or iPhone as well and not just tablet environments',
+                        text: 'The app crashes immediately after selecting a photo to upload as a profile picture \n It is expected that the app does not crash',
+                        outcome: 'While this is concise, including "It is expected" statements is redundant. The expected behavior should be clear from the issue description.',
                         experience: -5
                     },
                     {
-                        text: 'Believed to be Global Tablet',
-                        outcome: 'The bug only occurs on iOS Tablet environments, so it cannot be global',
+                        text: 'When uploading a photo to set as a profile picture, the application crashes immediately after the image is selected. \n It is expected that the app does not crash',
+                        outcome: 'The issue description is clear but adding "It is expected" statements is unnecessary and makes the ticket longer than needed.',
                         experience: -10
                     },
                     {
-                        text: 'Believed to be iOS and Tablet',
-                        outcome: 'Whilst it does accurately describe the issue, it is not an option within the ticket template',
-                        experience: 0
+                        text: 'When uploading a photo to set as a profile picture, the application crashes immediately after the image is selected.',
+                        outcome: 'This is the correct format - clear, concise, and describes the exact steps and behavior without unnecessary phrases like "It has been observed" or "It is expected".',
+                        experience: 15
                     }
                 ]
             },
             {
-                id: 17,
+                id: 16,
                 level: 'Basic',
                 title: 'Ticket Raising',
                 description: 'What should you do before raising a ticket?',
@@ -314,7 +314,7 @@ export const newTicketTemplateScenarios = {
                 ]
             },
             {
-                id: 18,
+                id: 17,
                 level: 'Intermediate',
                 title: 'Supporting Material',
                 description: 'What is the most appropriate supporting material to include for an issue with a low reproduction rate?',
@@ -342,7 +342,7 @@ export const newTicketTemplateScenarios = {
                 ]
             },
             {
-                id: 20,
+                id: 18,
                 level: 'Intermediate',
                 title: 'Supporting Material',
                 description: 'Aside from Video and Screenshots, what else can be used as supporting material?',
@@ -376,55 +376,55 @@ export const newTicketTemplateScenarios = {
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Raising Tickets',
-                description: 'After identifying an issue, how soon should you raise it?',
+                title: 'Phrasing',
+                description: 'What phrases should you avoid when writing a ticket?',
                 options: [
                     {
-                        text: 'Immediately after identifying and investigating the issue',
-                        outcome: 'Correct - Immediate reporting ensures accuracy and ensures the developer has additional time to investigate and fix the issue.',
+                        text: '\'It has been observed\' or \'It is expected\'',
+                        outcome: 'Correct - These phrases are direct but often overused and add additional noise to the ticket.',
                         experience: 25, 
                     },
                     {
-                        text: 'Raise it in parallel with daily reports for familiarity when writing the report',
-                        outcome: 'While familiarisation with issues whilst writing the report is important, raising all tickets at the end of the day would put a large burden on both tester and developer.',
+                        text: '\'As per the user manual\' or \'As per the documentation\'',
+                        outcome: 'These phrases are more specific and add valuable context to the ticket.',
                         experience: -10
                     },
                     {
-                        text: 'Batch multiple issues together to make sure testing coverage is not affected',
-                        outcome: 'Issues should be reported as soon as they are discovered as this gives the client visibility of project status. Whilst this can be useful for cosmetic/copy defects, it\'s best to raise a ticket first, then amend the initial ticket with newly spotted instances of the defect.',
-                        experience: -5
+                        text: '\'As per the specification\' or \'As per the requirements\'',
+                        outcome: 'These phrases directly reference requirements and add clarity to the ticket.',
+                        experience: -15
                     },
                     {
-                        text: 'During stand up meetings to get the opinion of everyone involved in the project',
-                        outcome: 'Whilst it is important to discuss major defects, these should be raised in advance and discussed during the meeting as opposed to raised during a meeting.',
-                        experience: -15
+                        text: '\'Whilst viewing the website\' or \'Whilst using the application\'',
+                        outcome: 'These are common ways of identifying the environment but are not always necessary as you could be specific regarding the location of the issue.',
+                        experience: -5
                     }
                 ]
             },
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Well Written Ticket Characteristics',
-                description: 'Which of the following is a characteristic of a well written ticket?',
+                title: 'Acronyms',
+                description: 'When should you use an acronym within a ticket?',
                 options: [
                     {
-                        text: 'Tickets should be specific, concise, relevant, factual, understandable and timely.',
-                        outcome: 'Correct - These are all characteristics of a well written ticket.',
-                        experience: 25, 
-                    },
-                    {
-                        text: 'Tickets should be detailed with extensive background information and include all possible scenarios.',
-                        outcome: 'While details are important, tickets should be concise and focused on the specific issue. Too much information can make tickets harder to understand.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Tickets should use a technical approach and acronyms to demonstrate expertise.',
-                        outcome: 'Tickets should be written in clear, understandable language that all stakeholders can comprehend, avoiding unnecessary technical terms.',
+                        text: 'When the acronym is commonly used within prior client communication',
+                        outcome: 'While this may be true, it is not always necessary to use an acronym, as it can be confusing for business users.',
                         experience: -10
                     },
                     {
-                        text: 'Tickets can be written informally to promote familiarity with the client.',
-                        outcome: 'Tickets should maintain a professional and factual tone as Zoonou is independent of the client and informal writing could impact the client\'s perception of Zoonou.',
+                        text: 'Never, tickets need to be understandable by all team members, not just those who may be familiar with jargon',
+                        outcome: 'Correct - Business users may view the ticket but may not be familiar with acronyms, so we need to use language anyone can understand.',
+                        experience: 25, 
+                    },
+                    {
+                        text: 'Always, as client and developers will be familiar with those used within their products',
+                        outcome: 'Tickets will be accessible to a number of stakeholders and not all may be familiar with acronyms. Having to rewrite a ticket if it cannot be understood by the intended audience.',
+                        experience: -15
+                    },
+                    {
+                        text: 'For file types like \'API.txt\' or \'image.png\'',
+                        outcome: 'Whilst true, file types are standardised as acronyms so we don\'t need to write the full term',
                         experience: -5
                     }
                 ]
@@ -432,27 +432,27 @@ export const newTicketTemplateScenarios = {
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Ticket Purpose',
-                description: 'Within Zoonou, tickets should what?',
+                title: 'Environments',
+                description: 'What should be included within the \'Environments observed on\' section?',
                 options: [
                     {
-                        text: 'Be consistent, with the whole team following the same approach',
-                        outcome: 'Correct - A consistent approach helps maintain professional standards, improves client communication, and streamlines the bug fixing process.',
-                        experience: 25, 
-                    },
-                    {
-                        text: 'Reflect individual project manager preferences to meet specific client needs',
-                        outcome: 'While client needs are important, inconsistent ticket formats across projects can harm our professional image and make tracking issues more difficult.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Prioritize speed of ticket creation over standardization',
-                        outcome: 'While efficiency matters, sacrificing standardization can lead to confusion, longer resolution times, and reduced client satisfaction.',
+                        text: 'All environments that the issue was observed on',
+                        outcome: 'Additional environments should be included in the \'Also observed on\' section',
                         experience: -10
                     },
                     {
-                        text: 'Adapt to match each client\'s internal ticketing style',
-                        outcome: 'As an independent testing company, we need to maintain our own professional standards while ensuring our format works effectively for all clients. Whilst a client can request we use their format, in situations where they do not, we must adhere to our own standards.',
+                        text: 'Primary and additional environments that the issue was observed on',
+                        outcome: 'There are inumerable environments that the issue was not observed on and this would take too much time to consider',
+                        experience: -15
+                    },
+                    {
+                        text: 'The Primary environment that the issue was observed on',
+                        outcome: 'Correct - This should include device, operating system and browser/application version details',
+                        experience: 25, 
+                    },
+                    {
+                        text: 'Only the browser/application version details',
+                        outcome: 'Ideally you should state the device, operating system and browser/application version details',
                         experience: -5
                     }
                 ]
@@ -460,56 +460,56 @@ export const newTicketTemplateScenarios = {
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Non-Standard Scenarios', 
-                description: 'In what situation should you not use the Zoonou ticket template?',
+                title: 'Additional Environments',
+                description: 'When should you include devices in the \'Also observed on\' section?',
                 options: [
                     {
-                        text: 'When a client requests we use their internal ticketing system',
-                        outcome: 'Correct - Whilst a client can request we use their internal ticketing system, in situations where they do not, we must adhere to our own standard for tickets.',
-                        experience: 25,
-                    },
-                    {
-                        text: 'When working on a project with a tight deadline',
-                        outcome: 'Time pressure is not a valid reason to deviate from our standard ticket template. The template helps maintain consistency and clarity regardless of project timelines.',
-                        experience: -15
-                    },
-                    {
-                        text: 'When reporting a minor or low priority issue',
-                        outcome: 'All issues, regardless of severity or priority, should follow our standard template to ensure consistent documentation and tracking.',
+                        text: 'When the issue is more severe than on the primary environment',
+                        outcome: 'Severity is detailed elsewhere in the ticket and ideally the most severe would be the primary environment',
                         experience: -10
                     },
                     {
-                        text: 'When working with a regular client who you have regular and good verbal communication with',
-                        outcome: 'Zoonou\'s standard template should be used regardless of a common understanding with the client as new people and stakeholders can always become part of the project who are not involved in meetings.',
+                        text: 'One primary environment is generally enough to demonstrate the issue',
+                        outcome: 'Additional environments can help developers understand the scope of the issue and aid in debugging',
+                        experience: -15
+                    },
+                    {
+                        text: 'When specifically requested by developers or the client',
+                        outcome: 'While developer requests are important, you should proactively include supported environments to provide complete information',
                         experience: -5
+                    },
+                    {
+                        text: 'When the defect affects a wide range of devices or the developers may require additional context',
+                        outcome: 'Correct - This is a valid reason to include additional environments in the \'Also observed on\' section',
+                        experience: 25, 
                     }
                 ]
             },
             {
                 id: 15,
                 level: 'Advanced',
-                title: '', 
-                description: 'Which one of the following issue summaries resemble the correct Zoonou approach to writing tickets?',
+                title: 'Believed to be',
+                description: 'Assuming an issue has only been observed on iOS Tablet environments, which of the following would best fit the \'Believed to be\' section of a ticket?',
                 options: [
                     {
-                        text: 'It has been observed that the app crashes immediately after selecting a photo to upload as a profile picture \n It is expected that the app does not crash',
-                        outcome: 'Using phrases like "It has been observed" and "It is expected" makes tickets unnecessarily verbose. The issue should be stated directly and clearly.',
-                        experience: -5,
+                        text: 'Believed to be iOS Tablet',
+                        outcome: 'Correct - This is the most relevant option and would be the best fit for the \'Believed to be\' section',
+                        experience: 25, 
                     },
                     {
-                        text: 'The app crashes immediately after selecting a photo to upload as a profile picture \n It is expected that the app does not crash',
-                        outcome: 'While this is concise, including "It is expected" statements is redundant. The expected behavior should be clear from the issue description.',
-                        experience: -15
-                    },
-                    {
-                        text: 'When uploading a photo to set as a profile picture, the application crashes immediately after the image is selected. \n It is expected that the app does not crash',
-                        outcome: 'The issue description is clear but adding "It is expected" statements is unnecessary and makes the ticket longer than needed.',
+                        text: 'Believed to be iOS Related',
+                        outcome: 'iOS related would refer to MacOS or iPhone as well and not just tablet environments',
                         experience: -10
                     },
                     {
-                        text: 'When uploading a photo to set as a profile picture, the application crashes immediately after the image is selected.',
-                        outcome: 'This is the correct format - clear, concise, and describes the exact steps and behavior without unnecessary phrases like "It has been observed" or "It is expected".',
-                        experience: 25
+                        text: 'Believed to be Global Tablet',
+                        outcome: 'The bug only occurs on iOS Tablet environments, so it cannot be global',
+                        experience: -15
+                    },
+                    {
+                        text: 'Believed to be iOS and Tablet',
+                        outcome: 'Whilst it does accurately describe the issue, it is not an option within the ticket template',
+                        experience: -5
                     }
                 ]
             }
