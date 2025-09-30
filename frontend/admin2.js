@@ -945,22 +945,22 @@ export class Admin2Dashboard {
         const exportSimpleBtn = document.getElementById('exportSimpleCSV');
 
         if (exportDetailedBtn) {
-            exportDetailedBtn.addEventListener('click', () => {
-                this.exportUserData('detailed');
+            exportDetailedBtn.addEventListener('click', async () => {
+                await this.exportUserData('detailed');
             });
         }
 
         if (exportSimpleBtn) {
-            exportSimpleBtn.addEventListener('click', () => {
-                this.exportUserData('simple');
+            exportSimpleBtn.addEventListener('click', async () => {
+                await this.exportUserData('simple');
             });
         }
 
         // Custom export functionality
         const exportCustomBtn = document.getElementById('exportCustomCSV');
         if (exportCustomBtn) {
-            exportCustomBtn.addEventListener('click', () => {
-                this.exportCustomData();
+            exportCustomBtn.addEventListener('click', async () => {
+                await this.exportCustomData();
             });
         }
 
@@ -999,14 +999,14 @@ export class Admin2Dashboard {
         }
         
         if (exportCategoryBtn) {
-            exportCategoryBtn.addEventListener('click', () => {
-                this.exportCategoryData();
+            exportCategoryBtn.addEventListener('click', async () => {
+                await this.exportCategoryData();
             });
         }
         
         if (exportCategorySimplifiedBtn) {
-            exportCategorySimplifiedBtn.addEventListener('click', () => {
-                this.exportCategoryDataSimplified();
+            exportCategorySimplifiedBtn.addEventListener('click', async () => {
+                await this.exportCategoryDataSimplified();
             });
         }
 
@@ -7475,11 +7475,11 @@ export class Admin2Dashboard {
     }
 
     // Fix for export functions
-    exportUserData(type) {
+    async exportUserData(type) {
         if (type === 'simple') {
-            this.exportSimpleCSV();
+            await this.exportSimpleCSV();
         } else {
-            this.exportUserDataToCSV();
+            await this.exportUserDataToCSV();
         }
     }
 
@@ -7494,6 +7494,13 @@ export class Admin2Dashboard {
         }
 
         try {
+            // Ensure we have the latest user data
+            if (!this.users || this.users.length === 0) {
+                await this.loadUsers();
+            }
+            
+            // Ensure we have complete progress data
+            await this.loadAllUserProgress();
             // Check if SheetJS is available
             if (typeof XLSX === 'undefined') {
                 // Load SheetJS dynamically
@@ -7577,10 +7584,17 @@ export class Admin2Dashboard {
             this.showError('Please select at least one category to export');
             return;
         }
-        
-        console.log(`Starting simplified export with ${this.users.length} users:`, this.users.map(u => u.username));
 
         try {
+            // Ensure we have the latest user data
+            if (!this.users || this.users.length === 0) {
+                await this.loadUsers();
+            }
+            
+            // Ensure we have complete progress data
+            await this.loadAllUserProgress();
+            
+            console.log(`Starting simplified export with ${this.users.length} users:`, this.users.map(u => u.username));
             // Check if SheetJS is available
             if (typeof XLSX === 'undefined') {
                 // Load SheetJS dynamically
@@ -8251,8 +8265,16 @@ export class Admin2Dashboard {
         return data;
     }
 
-    exportUserDataToCSV() {
+    async exportUserDataToCSV() {
         try {
+            // Ensure we have the latest user data
+            if (!this.users || this.users.length === 0) {
+                await this.loadUsers();
+            }
+            
+            // Ensure we have complete progress data
+            await this.loadAllUserProgress();
+            
             // Create CSV header row
             let csvContent = "Username,";
             
@@ -8356,8 +8378,16 @@ export class Admin2Dashboard {
         }
     }
 
-    exportSimpleCSV() {
+    async exportSimpleCSV() {
         try {
+            // Ensure we have the latest user data
+            if (!this.users || this.users.length === 0) {
+                await this.loadUsers();
+            }
+            
+            // Ensure we have complete progress data
+            await this.loadAllUserProgress();
+            
             // Create CSV header row
             let csvContent = "Name,Quiz,Questions,Score%,Status\n";
             
@@ -8598,6 +8628,14 @@ export class Admin2Dashboard {
                 return;
             }
 
+            // Ensure we have the latest user data
+            if (!this.users || this.users.length === 0) {
+                await this.loadUsers();
+            }
+            
+            // Ensure we have complete progress data
+            await this.loadAllUserProgress();
+
             console.log('Exporting custom data:', { 
                 users: selectedUsernames.length, 
                 quizzes: selectedQuizzes.length 
@@ -8625,17 +8663,18 @@ export class Admin2Dashboard {
                     
                     // Try to get score from quizResults first
                     const result = user.quizResults?.find(r => r.quizName?.toLowerCase() === quizId.toLowerCase());
+                    const progress = user.quizProgress?.[quizId.toLowerCase()];
+                    
                     if (result?.score !== undefined) {
                         score = result.score;
                     } else {
                         // Calculate from question history first (most accurate)
-                            const questionHistory = result?.questionHistory || progress?.questionHistory;
-                            if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                                const correctAnswers = questionHistory.filter(q => q.isCorrect).length;
-                                score = Math.round((correctAnswers / questionHistory.length) * 100);
+                        const questionHistory = result?.questionHistory || progress?.questionHistory;
+                        if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
+                            const correctAnswers = questionHistory.filter(q => q.isCorrect).length;
+                            score = Math.round((correctAnswers / questionHistory.length) * 100);
                         } else {
                             // Fallback: calculate from experience if quiz is completed
-                            const progress = user.quizProgress?.[quizId.toLowerCase()];
                             if (progress?.experience !== undefined) {
                                 score = Math.round(((progress.experience + 150) / 450) * 100);
                             }

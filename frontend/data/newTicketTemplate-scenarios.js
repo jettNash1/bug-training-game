@@ -4,12 +4,12 @@ export const newTicketTemplateScenarios = {
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Semantic Satiation',
+                title: 'Phrasing',
                 description: 'What phrases should you avoid when writing a ticket?',
                 options: [
                     {
                         text: '\'It has been observed\' or \'It is expected\'',
-                        outcome: 'These phrases are direct but often overused and add additional noise to the ticket.',
+                        outcome: 'Correct - These phrases are direct but often overused and add additional noise to the ticket.',
                         experience: 15, 
                     },
                     {
@@ -36,18 +36,18 @@ export const newTicketTemplateScenarios = {
                 description: 'When should you use an acronym within a ticket?',
                 options: [
                     {
-                        text: 'Only when the acronym is commonly used within the industry',
+                        text: 'When the acronym is commonly used within prior client communication',
                         outcome: 'While this may be true, it is not always necessary to use an acronym, as it can be confusing for business users.',
                         experience: -5
                     },
                     {
                         text: 'Never, tickets need to be understandable by all team members, not just those who may be familiar with jargon',
-                        outcome: 'Business users may view the ticket but may not be familiar with acronyms, so we need to use language anyone can understand.',
+                        outcome: 'Correct - Business users may view the ticket but may not be familiar with acronyms, so we need to use language anyone can understand.',
                         experience: 15, 
                     },
                     {
-                        text: 'Always, as it saves time writing the full term',
-                        outcome: 'More time may be lost having to rewrite the ticket if it cannot be understood by the intended audience',
+                        text: 'Always, as client and developers will be familiar with those used within their products',
+                        outcome: 'Tickets will be accessible to a number of stakeholders and not all may be familiar with acronyms. Having to rewrite a ticket if it cannot be understood by the intended audience.',
                         experience: -10
                     },
                     {
@@ -69,13 +69,13 @@ export const newTicketTemplateScenarios = {
                         experience: -5
                     },
                     {
-                        text: 'Environments that the issue was not observed on',
-                        outcome: 'There are inumerable environments that the issue was not observed on',
+                        text: 'Primary and additional environments that the issue was observed on',
+                        outcome: 'There are inumerable environments that the issue was not observed on and this would take too much time to consider',
                         experience: -10
                     },
                     {
                         text: 'The Primary environment that the issue was observed on',
-                        outcome: 'This should include device, operating system and browser/application version details',
+                        outcome: 'Correct - This should include device, operating system and browser/application version details',
                         experience: 15, 
                     },
                     {
@@ -92,23 +92,23 @@ export const newTicketTemplateScenarios = {
                 description: 'When should you include devices in the \'Also observed on\' section?',
                 options: [
                     {
-                        text: 'Only when the issue is more severe on other devices',
+                        text: 'When the issue is more severe than on the primary environment',
                         outcome: 'Severity is detailed elsewhere in the ticket and ideally the most severe would be the primary environment',
                         experience: -5
                     },
                     {
-                        text: 'Never, one environment is enough to demonstrate the issue',
+                        text: 'One primary environment is generally enough to demonstrate the issue',
                         outcome: 'Additional environments can help developers understand the scope of the issue and aid in debugging',
                         experience: -10
                     },
                     {
-                        text: 'Only when specifically requested by developers',
-                        outcome: 'While developer requests are important, you should proactively include relevant environments to provide complete information',
+                        text: 'When specifically requested by developers or the client',
+                        outcome: 'While developer requests are important, you should proactively include supported environments to provide complete information',
                         experience: 0
                     },
                     {
                         text: 'When the defect affects a wide range of devices or the developers may require additional context',
-                        outcome: 'This is a valid reason to include additional environments in the \'Also observed on\' section',
+                        outcome: 'Correct - This is a valid reason to include additional environments in the \'Also observed on\' section',
                         experience: 15, 
                     }
                 ]
@@ -121,12 +121,12 @@ export const newTicketTemplateScenarios = {
                 options: [
                     {
                         text: 'Believed to be iOS Tablet',
-                        outcome: 'This is the most relevant option and would be the best fit for the \'Believed to be\' section',
+                        outcome: 'Correct - This is the most relevant option and would be the best fit for the \'Believed to be\' section',
                         experience: 15, 
                     },
                     {
-                        text: 'Believed to be iOS Mobile',
-                        outcome: 'The bug only occurs on tablet environments, so it cannot be iOS Mobile specific',
+                        text: 'Believed to be iOS Related',
+                        outcome: 'iOS related would refer to MacOS or iPhone as well and not just tablet environments',
                         experience: -5
                     },
                     {
@@ -149,11 +149,11 @@ export const newTicketTemplateScenarios = {
                 options: [
                     {
                         text: 'You should check if there are specific client requests for raising issues',
-                        outcome: 'Consider if there are any specific requests from the client on how they would like issues to be raised to the tracker. You can generally find this information out by looking at the Operational Project Details document.',
+                        outcome: 'Correct - Consider if there are any specific requests from the client on how they would like issues to be raised to the tracker. You can generally find this information out by looking at the Operational Project Details document.',
                         experience: 15,
                     },
                     {
-                        text: 'You should wait for another tester to confirm the issue',
+                        text: 'You should request confirmation of the issue from another tester’',
                         outcome: 'While issues are posted within the channel to increase team awareness, tickets must be raised as they are observed and shouldn\'t be delayed.',
                         experience: -10
                     },
@@ -163,8 +163,8 @@ export const newTicketTemplateScenarios = {
                         experience: -5
                     },
                     {
-                        text: 'You should attempt to fix the issue yourself first',
-                        outcome: 'This would be outside the scope of a tester\'s responsibilities.',
+                        text: 'You should contact the client to confirm if it is a known issue',
+                        outcome: 'Whilst true in some instances, this could pose a risk to test coverage with time spent on contacting the client for every issue.',
                         experience: 0
                     }
                 ]
@@ -186,12 +186,12 @@ export const newTicketTemplateScenarios = {
                     },
                     {
                         text: 'Test multiple times and determine the most applicable reproduction statement from the options provided within the ticket template',
-                        outcome: 'This provides an accurate understanding of the reproduction rate and follows the Zoonou approach to writing tickets.',
+                        outcome: 'Correct - This provides an accurate understanding of the reproduction rate and follows the Zoonou approach to writing tickets.',
                         experience: 20, 
                     },
                     {
-                        text: 'Pick the option that seems the best fit for the issue',
-                        outcome: 'This is not a valid approach to determining the reproduction rate.',
+                        text: 'Test the primary environment only and determine the reproduction rate from multiple outcomes’',
+                        outcome: 'While the primary environment the issue was found is important, it is essential that other commonly used environments are verified as well.',
                         experience: -10
                     },
                     {
@@ -209,22 +209,22 @@ export const newTicketTemplateScenarios = {
                 options: [
                     {
                         text: 'As many times as necessary to show the defect and that it can be consistently reproduced',
-                        outcome: 'This is the recommended approach to recording video evidence as it provides the developer with the best chance of reproducing the defect.',
+                        outcome: 'Correct - This is the recommended approach to recording video evidence as it provides the developer with the best chance of reproducing the defect.',
                         experience: 20, 
                     },
                     {
-                        text: 'Once',
+                        text: 'Once, as this proves the issue has occurred',
                         outcome: 'Whilst simple defects can be displayed one time, it is recommended to show the defect multiple times to ensure the developer has full understanding of the defect.',
                         experience: -15
                     },
                     {
-                        text: 'Three times',
-                        outcome: 'Whilst three times is a good number, it is recommended to show the defect as many times as necessary to ensure the developer has full understanding of the defect. This could be more or less depending on the complexity of the defect.',
+                        text: 'Multiple times to demonstrate that the issue can be reproduced',
+                        outcome: 'It is recommended to show the defect as many times as necessary to ensure the developer has full understanding of the defect. This could be achieved with one demonstration depending on the complexity of the defect.',
                         experience: -10
                     },
                     {
                         text: 'Once on each supported environment',
-                        outcome: 'If the defect is not reproducible on other environments, then it is not necessary to show the defect on other environments.',
+                        outcome: 'If the defect is exactly the same on other environments, then it is not necessary to show the defect on those environments, as long as the reproduction rate and other environments sections have been detailed in the ticket.',
                         experience: -5
                     }
                 ]
@@ -252,7 +252,7 @@ export const newTicketTemplateScenarios = {
                     },
                     {
                         text: 'Use a tool to annotate the image to ensure the defect is clearly visible',
-                        outcome: 'This ensures the defect is clearly visible and provides the client with the best chance of understanding the defect.',
+                        outcome: 'Correct - This ensures the defect is clearly visible and provides the client with the best chance of understanding the defect.',
                         experience: 20, 
                     }
                 ]
@@ -265,7 +265,7 @@ export const newTicketTemplateScenarios = {
                 options: [
                     {
                         text: 'iPhone 13 Pro - iOS 26.0 - Safari 26.0',
-                        outcome: 'This is the correct layout for environment version for a mobile application.',
+                        outcome: 'Correct - This is the correct layout for environment version for a mobile application.',
                         experience: 20, 
                     },
                     {
@@ -274,13 +274,13 @@ export const newTicketTemplateScenarios = {
                         experience: -15
                     },
                     {
-                        text: 'iOS 26.0',
-                        outcome: 'This is missing browser and device information that may be relevant to the client.',
+                        text: 'iPhone - iOS 26.0',
+                        outcome: 'This is missing browser and device model information that may be relevant to the client.',
                         experience: -10
                     },
                     {
-                        text: 'Safari 26.0',
-                        outcome: 'This is missing device and operating system information that may be relevant to the client.',
+                        text: 'iPhone - iOS 26.0 - Safari 26.0',
+                        outcome: 'This is missing device model that may be relevant to the client.',
                         experience: -5
                     }
                 ]
@@ -293,21 +293,21 @@ export const newTicketTemplateScenarios = {
                 options: [
                     {
                         text: 'By the impact on functionality, user experience and business requirements',
-                        outcome: 'If an issue has a high impact, then the severity should be adjusted accordingly.',
+                        outcome: 'Correct - If an issue has a high impact, then the severity should be adjusted accordingly.',
                         experience: 20, 
                     },
                     {
                         text: 'By how quickly the issue needs to be fixed',
-                        outcome: 'The urgency of fixing an issue relates to priority, not severity. Severity is about impact.',
+                        outcome: 'The urgency of fixing an issue relates to priority, not severity. Severity is about impact and generally its is the clients responsibility to determine priority.',
                         experience: -15
                     },
                     {
-                        text: 'By how many users report the issue',
+                        text: 'By how many users have reported the issue in post production',
                         outcome: 'The number of users affected can influence priority, but severity is determined by the impact of the issue itself.',
                         experience: -10
                     },
                     {
-                        text: 'By how difficult the issue is to fix',
+                        text: 'By how difficult the issue is to fix according to feedback from the development team',
                         outcome: 'The complexity of fixing an issue does not determine its severity. Severity is based on impact to users and business.',
                         experience: -5
                     }
@@ -320,18 +320,18 @@ export const newTicketTemplateScenarios = {
                 description: 'What is the most appropriate supporting material to include for an issue with a low reproduction rate?',
                 options: [
                     {
-                        text: 'A brief textual description should be included only.',
+                        text: 'A brief textual description should be included for development team consideration.',
                         outcome: 'Evidence should be included for defects with low reproducibility rates as it allows the developer to clearly see what the defect is.',
                         experience: -10
                     },
                     {
-                        text: 'A step-by-step guide should be included without visual evidence',
-                        outcome: 'While steps to reproduce are important, for issues that are difficult to reproduce visual evidence is crucial.', 
+                        text: 'A step-by-step guide should be included for development team consideration',
+                        outcome: 'While steps to reproduce are important, for issues that are difficult to reproduce visual evidence is also crucial.', 
                         experience: -15
                     },
                     {
-                        text: 'A video or annotated screenshot showing the issue occurring should be included',
-                        outcome: 'Adding evidence can assist with identifying the root cause of the defect. For defects with low replicability rates, it allows the developer to clearly see what the defect is.',
+                        text: 'A video or annotated screenshot showing the issue occurring should be included to accompany steps to reproduce',
+                        outcome: 'Correct - Adding evidence can assist with identifying the root cause of the defect. For defects with low replicability rates, it allows the developer to clearly see what the defect is.',
                         experience: 20,
                     },
                     {
@@ -349,11 +349,11 @@ export const newTicketTemplateScenarios = {
                 options: [
                     {
                         text: 'References to documentation, log files from the browser console, relevant error codes and other related materials',
-                        outcome: 'Supporting material should not simply be limited to video and screenshots, other materials can be used to help the developer understand the issue.',
+                        outcome: 'Correct - Supporting material should not simply be limited to video and screenshots, other materials can be used to help the developer understand the issue.',
                         experience: 20
                     },
                     {
-                        text: 'Only written descriptions of the issue are needed',
+                        text: 'Written descriptions of the issues should be sufficient if they are concisely written.',
                         outcome: 'Written descriptions alone are often insufficient - supporting evidence helps developers understand and reproduce issues more effectively.',
                         experience: -15
                     },
@@ -380,13 +380,13 @@ export const newTicketTemplateScenarios = {
                 description: 'After identifying an issue, how soon should you raise it?',
                 options: [
                     {
-                        text: 'Immediately after identifying the issue',
-                        outcome: 'Immediate reporting ensures accuracy and ensures the developer has additional time to investigate and fix the issue.',
+                        text: 'Immediately after identifying and investigating the issue',
+                        outcome: 'Correct - Immediate reporting ensures accuracy and ensures the developer has additional time to investigate and fix the issue.',
                         experience: 25, 
                     },
                     {
                         text: 'Raise it in parallel with daily reports for familiarity when writing the report',
-                        outcome: 'While it is important to be familiar with the report, raising all tickets at the end of the day would put a large burden on both tester and developer.',
+                        outcome: 'While familiarisation with issues whilst writing the report is important, raising all tickets at the end of the day would put a large burden on both tester and developer.',
                         experience: -10
                     },
                     {
@@ -409,7 +409,7 @@ export const newTicketTemplateScenarios = {
                 options: [
                     {
                         text: 'Tickets should be specific, concise, relevant, factual, understandable and timely.',
-                        outcome: 'These are all characteristics of a well written ticket.',
+                        outcome: 'Correct - These are all characteristics of a well written ticket.',
                         experience: 25, 
                     },
                     {
@@ -418,12 +418,12 @@ export const newTicketTemplateScenarios = {
                         experience: -15
                     },
                     {
-                        text: 'Tickets should use technical jargon and acronyms to demonstrate expertise.',
+                        text: 'Tickets should use a technical approach and acronyms to demonstrate expertise.',
                         outcome: 'Tickets should be written in clear, understandable language that all stakeholders can comprehend, avoiding unnecessary technical terms.',
                         experience: -10
                     },
                     {
-                        text: 'Tickets can be written informally since they are internal documents.',
+                        text: 'Tickets can be written informally to promote familiarity with the client.',
                         outcome: 'Tickets should maintain a professional and factual tone as Zoonou is independent of the client and informal writing could impact the client\'s perception of Zoonou.',
                         experience: -5
                     }
@@ -432,40 +432,12 @@ export const newTicketTemplateScenarios = {
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Ticket Style',
-                description: 'In what style should tickets be written?',
-                options: [
-                    {
-                        text: 'Tickets should be clear, concise, jargon-free and provide factual information.',
-                        outcome: 'Clear and factual writing ensures tickets can be understood by all stakeholders and helps developers efficiently address issues.',
-                        experience: 25, 
-                    },
-                    {
-                        text: 'Tickets should be written in a technical style with detailed background information.',
-                        outcome: 'While technical details are important, overwhelming tickets with technical jargon and excessive background information can make them harder to understand and act upon.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Tickets should be written in an informal style with personal opinions and subjective assessments.',
-                        outcome: 'Tickets need to maintain professionalism and objectivity. Personal opinions and subjective assessments can lead to confusion and misinterpretation.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Tickets should use creative writing to make them more engaging and memorable.',
-                        outcome: 'Bug reports need to be straightforward and factual. Creative writing can obscure the actual issue and waste time.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 14,
-                level: 'Advanced',
                 title: 'Ticket Purpose',
                 description: 'Within Zoonou, tickets should what?',
                 options: [
                     {
                         text: 'Be consistent, with the whole team following the same approach',
-                        outcome: 'A consistent approach helps maintain professional standards, improves client communication, and streamlines the bug fixing process.',
+                        outcome: 'Correct - A consistent approach helps maintain professional standards, improves client communication, and streamlines the bug fixing process.',
                         experience: 25, 
                     },
                     {
@@ -486,14 +458,14 @@ export const newTicketTemplateScenarios = {
                 ]
             },
             {
-                id: 15,
+                id: 14,
                 level: 'Advanced',
                 title: 'Non-Standard Scenarios', 
                 description: 'In what situation should you not use the Zoonou ticket template?',
                 options: [
                     {
                         text: 'When a client requests we use their internal ticketing system',
-                        outcome: 'Whilst a client can request we use their internal ticketing system, in situations where they do not, we must adhere to our own standard for tickets.',
+                        outcome: 'Correct - Whilst a client can request we use their internal ticketing system, in situations where they do not, we must adhere to our own standard for tickets.',
                         experience: 25,
                     },
                     {
@@ -507,14 +479,14 @@ export const newTicketTemplateScenarios = {
                         experience: -10
                     },
                     {
-                        text: 'When working with a new client for the first time',
-                        outcome: 'Using our standard template with new clients helps establish professional expectations and demonstrates our systematic approach to issue tracking.',
+                        text: 'When working with a regular client who you have regular and good verbal communication with',
+                        outcome: 'Zoonou\'s standard template should be used regardless of a common understanding with the client as new people and stakeholders can always become part of the project who are not involved in meetings.',
                         experience: -5
                     }
                 ]
             },
             {
-                id: 19,
+                id: 15,
                 level: 'Advanced',
                 title: '', 
                 description: 'Which one of the following issue summaries resemble the correct Zoonou approach to writing tickets?',
@@ -526,7 +498,7 @@ export const newTicketTemplateScenarios = {
                     },
                     {
                         text: 'The app crashes immediately after selecting a photo to upload as a profile picture \n It is expected that the app does not crash',
-                        outcome: 'While more concise, including "It is expected" statements is redundant. The expected behavior should be clear from the issue description.',
+                        outcome: 'While this is concise, including "It is expected" statements is redundant. The expected behavior should be clear from the issue description.',
                         experience: -15
                     },
                     {

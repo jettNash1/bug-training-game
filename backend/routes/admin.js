@@ -235,6 +235,118 @@ router.get('/users', auth, async (req, res) => {
     }
 });
 
+// Get individual user progress
+router.get('/users/:username/progress', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username } = req.params;
+        console.log(`Fetching progress for user: ${username}`);
+
+        // Find the specific user
+        const user = await User.findOne({ username }, {
+            username: 1,
+            lastLogin: 1,
+            quizResults: 1,
+            quizProgress: 1,
+            userType: 1,
+            allowedQuizzes: 1,
+            hiddenQuizzes: 1,
+            email: 1,
+            _id: 0
+        }).lean();
+
+        if (!user) {
+            console.log(`User ${username} not found`);
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Process the user data similar to the /users endpoint
+        const userData = { ...user };
+        userData.quizResults = userData.quizResults || [];
+
+        // Update each quiz result with its corresponding progress data
+        userData.quizResults = userData.quizResults.map(result => {
+            if (!result || !result.quizName) {
+                console.warn('Invalid quiz result:', result);
+                return null;
+            }
+
+            try {
+                const quizNameLower = String(result.quizName).toLowerCase();
+                const progress = userData.quizProgress?.[quizNameLower];
+                
+                // Calculate questions answered and experience
+                let questionsAnswered = 0;
+                let experience = 0;
+
+                // First try to get data from progress (new format)
+                if (progress) {
+                    questionsAnswered = progress.questionsAnswered || 
+                        (Array.isArray(progress.questionHistory) ? progress.questionHistory.length : 0);
+                    experience = progress.experience || 0;
+                }
+
+                // If no progress data, try to get from result (old format)
+                if (!questionsAnswered && result.score) {
+                    // For old data, if there's a score, calculate questions based on it
+                    questionsAnswered = Math.ceil((result.score / 100) * 15); // 15 is total questions
+                    experience = Math.ceil((result.score / 100) * 300); // 300 is max XP
+                }
+
+                return {
+                    ...result,
+                    questionsAnswered,
+                    experience
+                };
+            } catch (error) {
+                console.error('Error processing quiz result:', error);
+                return null;
+            }
+        }).filter(Boolean); // Remove null entries
+
+        // Process quiz progress
+        if (userData.quizProgress) {
+            const processedProgress = {};
+            Object.entries(userData.quizProgress).forEach(([key, value]) => {
+                try {
+                    const quizNameLower = String(key).toLowerCase();
+                    processedProgress[quizNameLower] = {
+                        questionsAnswered: Number(value.questionsAnswered) || 0,
+                        experience: Number(value.experience) || 0,
+                        lastUpdated: value.lastUpdated || null,
+                        questionHistory: value.questionHistory || []
+                    };
+                } catch (error) {
+                    console.error('Error processing quiz progress:', error);
+                }
+            });
+            userData.quizProgress = processedProgress;
+        }
+
+        res.json({
+            success: true,
+            data: userData
+        });
+    } catch (error) {
+        console.error('Error fetching user progress:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch user progress',
+            error: error.message 
+        });
+    }
+});
+
 router.get('/stats', auth, async (req, res) => {
     try {
         // Verify admin status
