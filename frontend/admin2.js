@@ -7499,23 +7499,23 @@ export class Admin2Dashboard {
             
             // Ensure we have the latest user data
             if (!this.users || this.users.length === 0) {
-                this.updateExportProgress(10, 'Loading user data...');
+                this.updateExportProgress(0, 'Loading user data...');
                 await this.loadUsers();
             }
             
             // Ensure we have complete progress data
-            this.updateExportProgress(20, 'Loading user progress...');
+            this.updateExportProgress(0, 'Loading user progress...');
             await this.loadAllUserProgress();
             
             // Check if SheetJS is available
-            this.updateExportProgress(30, 'Loading Excel library...');
+            this.updateExportProgress(0, 'Loading Excel library...');
             if (typeof XLSX === 'undefined') {
                 // Load SheetJS dynamically
                 await this.loadSheetJS();
             }
 
             // Update progress for workbook creation
-            this.updateExportProgress(40, 'Creating Excel workbook...');
+            this.updateExportProgress(0, 'Creating Excel workbook...');
             
             // Create workbook
             const workbook = XLSX.utils.book_new();
@@ -7528,7 +7528,7 @@ export class Admin2Dashboard {
             });
 
             // Create a combined overview sheet with all selected categories
-            this.updateExportProgress(50, 'Creating overview sheets...');
+            this.updateExportProgress(0, 'Creating overview sheets...');
             const combinedOverviewData = this.createCombinedOverviewData(selectedCategories);
             const combinedOverviewSheet = XLSX.utils.aoa_to_sheet(combinedOverviewData);
             const combinedOverviewSheetName = this.createValidSheetName('Combined_Overview');
@@ -7548,11 +7548,10 @@ export class Admin2Dashboard {
             }
             
             // Create individual sheets for each quiz from all selected categories
-            this.updateExportProgress(60, 'Creating individual quiz sheets...');
+            this.updateExportProgress(0, 'Creating individual quiz sheets...');
             for (let i = 0; i < allQuizzes.length; i++) {
                 const quizName = allQuizzes[i];
-                const progress = 60 + Math.round((i / allQuizzes.length) * 30);
-                this.updateExportProgress(progress, `Creating sheet ${i + 1} of ${allQuizzes.length}: ${quizName}...`);
+                this.updateExportProgress(0, `Creating sheet ${i + 1} of ${allQuizzes.length}: ${quizName}...`);
                 
                 const quizData = this.createIndividualQuizData(quizName);
                 const quizSheet = XLSX.utils.aoa_to_sheet(quizData);
@@ -7571,7 +7570,7 @@ export class Admin2Dashboard {
             }
             
             // Update progress for file generation
-            this.updateExportProgress(95, 'Generating Excel file...');
+            this.updateExportProgress(0, 'Generating Excel file...');
             
             // Generate and download the file
             const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
@@ -7613,25 +7612,25 @@ export class Admin2Dashboard {
             
             // Ensure we have the latest user data
             if (!this.users || this.users.length === 0) {
-                this.updateExportProgress(10, 'Loading user data...');
+                this.updateExportProgress(0, 'Loading user data...');
                 await this.loadUsers();
             }
             
             // Ensure we have complete progress data
-            this.updateExportProgress(20, 'Loading user progress...');
+            this.updateExportProgress(0, 'Loading user progress...');
             await this.loadAllUserProgress();
             
             console.log(`Starting simplified export with ${this.users.length} users:`, this.users.map(u => u.username));
             
             // Check if SheetJS is available
-            this.updateExportProgress(30, 'Loading Excel library...');
+            this.updateExportProgress(0, 'Loading Excel library...');
             if (typeof XLSX === 'undefined') {
                 // Load SheetJS dynamically
                 await this.loadSheetJS();
             }
 
             // Update progress for workbook creation
-            this.updateExportProgress(40, 'Creating Excel workbook...');
+            this.updateExportProgress(0, 'Creating Excel workbook...');
             
             // Create workbook
             const workbook = XLSX.utils.book_new();
@@ -7644,7 +7643,7 @@ export class Admin2Dashboard {
             });
 
             // Create a combined simplified overview sheet
-            this.updateExportProgress(50, 'Creating overview sheets...');
+            this.updateExportProgress(0, 'Creating overview sheets...');
             const combinedSimplifiedData = this.createSimplifiedOverviewData(selectedCategories);
             const combinedSimplifiedSheet = XLSX.utils.aoa_to_sheet(combinedSimplifiedData);
             console.log('Applying conditional formatting to combined simplified sheet...');
@@ -7668,11 +7667,10 @@ export class Admin2Dashboard {
             }
             
             // Create individual simplified sheets for each quiz
-            this.updateExportProgress(60, 'Creating individual quiz sheets...');
+            this.updateExportProgress(0, 'Creating individual quiz sheets...');
             for (let i = 0; i < allQuizzes.length; i++) {
                 const quizName = allQuizzes[i];
-                const progress = 60 + Math.round((i / allQuizzes.length) * 30);
-                this.updateExportProgress(progress, `Creating sheet ${i + 1} of ${allQuizzes.length}: ${quizName}...`);
+                this.updateExportProgress(0, `Creating sheet ${i + 1} of ${allQuizzes.length}: ${quizName}...`);
                 
                 const quizSimplifiedData = this.createSimplifiedQuizData(quizName);
                 const quizSimplifiedSheet = XLSX.utils.aoa_to_sheet(quizSimplifiedData);
@@ -7700,7 +7698,7 @@ export class Admin2Dashboard {
             }
             
             // Update progress for file generation
-            this.updateExportProgress(95, 'Generating Excel file...');
+            this.updateExportProgress(0, 'Generating Excel file...');
             
             // Generate and download the file
             const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
@@ -8316,16 +8314,16 @@ export class Admin2Dashboard {
             
             // Ensure we have the latest user data
             if (!this.users || this.users.length === 0) {
-                this.updateExportProgress(10, 'Loading user data...');
+                this.updateExportProgress(0, 'Loading user data...');
                 await this.loadUsers();
             }
             
             // Ensure we have complete progress data
-            this.updateExportProgress(30, 'Loading user progress...');
+            this.updateExportProgress(0, 'Loading user progress...');
             await this.loadAllUserProgress();
             
             // Update progress for data processing
-            this.updateExportProgress(60, 'Processing user data...');
+            this.updateExportProgress(0, 'Processing user data...');
             
             // Create CSV header row
             let csvContent = "Username,";
@@ -8341,11 +8339,6 @@ export class Admin2Dashboard {
             // Add data for each user
             const totalUsers = this.users.length;
             this.users.forEach((user, index) => {
-                // Update progress during processing
-                if (index % 10 === 0 || index === totalUsers - 1) {
-                    const progress = 60 + Math.round((index / totalUsers) * 30);
-                    this.updateExportProgress(progress, `Processing user ${index + 1} of ${totalUsers}...`);
-                }
                 
                 // Add username
                 csvContent += `${user.username},`;
@@ -8420,7 +8413,7 @@ export class Admin2Dashboard {
             });
             
             // Update progress for file generation
-            this.updateExportProgress(95, 'Generating CSV file...');
+            this.updateExportProgress(0, 'Generating CSV file...');
             
             // Create a download link for the CSV file
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -8450,12 +8443,12 @@ export class Admin2Dashboard {
             
             // Ensure we have the latest user data
             if (!this.users || this.users.length === 0) {
-                this.updateExportProgress(10, 'Loading user data...');
+                this.updateExportProgress(0, 'Loading user data...');
                 await this.loadUsers();
             }
             
             // Ensure we have complete progress data
-            this.updateExportProgress(30, 'Loading user progress...');
+            this.updateExportProgress(0, 'Loading user progress...');
             await this.loadAllUserProgress();
             
             // Update progress for data processing
@@ -8466,14 +8459,7 @@ export class Admin2Dashboard {
             
             // Add data for each user and their quizzes
             const totalUsers = this.users.length;
-            let processedUsers = 0;
             this.users.forEach(user => {
-                // Update progress during processing
-                if (processedUsers % 10 === 0 || processedUsers === totalUsers - 1) {
-                    const progress = 60 + Math.round((processedUsers / totalUsers) * 30);
-                    this.updateExportProgress(progress, `Processing user ${processedUsers + 1} of ${totalUsers}...`);
-                }
-                processedUsers++;
                 
                 // For each quiz, create a row
                 this.quizTypes.forEach(quizType => {
@@ -8520,7 +8506,7 @@ export class Admin2Dashboard {
             });
             
             // Update progress for file generation
-            this.updateExportProgress(95, 'Generating CSV file...');
+            this.updateExportProgress(0, 'Generating CSV file...');
             
             // Create a download link for the CSV file
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -8721,12 +8707,12 @@ export class Admin2Dashboard {
             
             // Ensure we have the latest user data
             if (!this.users || this.users.length === 0) {
-                this.updateExportProgress(10, 'Loading user data...');
+                this.updateExportProgress(0, 'Loading user data...');
                 await this.loadUsers();
             }
             
             // Ensure we have complete progress data
-            this.updateExportProgress(30, 'Loading user progress...');
+            this.updateExportProgress(0, 'Loading user progress...');
             await this.loadAllUserProgress();
 
             console.log('Exporting custom data:', { 
@@ -8738,7 +8724,7 @@ export class Admin2Dashboard {
             const selectedUsers = this.users.filter(user => selectedUsernames.includes(user.username));
 
             // Update progress for data processing
-            this.updateExportProgress(60, 'Processing selected users...');
+            this.updateExportProgress(0, 'Processing selected users...');
 
             // Create CSV header
             const headers = ['Username', 'Email', 'Last Active', ...selectedQuizzes.map(quiz => this.formatQuizName(quiz))];
@@ -8747,11 +8733,6 @@ export class Admin2Dashboard {
             const csvRows = [headers];
             
             selectedUsers.forEach((user, index) => {
-                // Update progress during processing
-                if (index % 5 === 0 || index === selectedUsers.length - 1) {
-                    const progress = 60 + Math.round((index / selectedUsers.length) * 30);
-                    this.updateExportProgress(progress, `Processing user ${index + 1} of ${selectedUsers.length}...`);
-                }
                 const row = [
                     user.username || '',
                     user.email || '',
@@ -8789,7 +8770,7 @@ export class Admin2Dashboard {
             });
 
             // Update progress for file generation
-            this.updateExportProgress(95, 'Generating CSV file...');
+            this.updateExportProgress(0, 'Generating CSV file...');
             
             // Convert to CSV string
             const csvContent = csvRows.map(row => 
@@ -8863,16 +8844,7 @@ export class Admin2Dashboard {
                     "></div>
                     <h3 style="margin: 0; color: #333;">Exporting Data</h3>
                 </div>
-                <div id="exportProgressText" style="color: #666; margin-bottom: 15px;">${message}</div>
-                <div style="background: #f0f0f0; border-radius: 5px; height: 8px; overflow: hidden;">
-                    <div id="exportProgressBar" style="
-                        background: #007bff;
-                        height: 100%;
-                        width: 0%;
-                        transition: width 0.3s ease;
-                    "></div>
-                </div>
-                <div id="exportProgressPercent" style="margin-top: 10px; color: #666; font-size: 14px;">0%</div>
+                <div id="exportProgressText" style="color: #666; font-size: 16px;">${message}</div>
             `;
             
             // Add CSS animation
@@ -8891,24 +8863,14 @@ export class Admin2Dashboard {
         
         // Update initial message
         const progressText = document.getElementById('exportProgressText');
-        const progressBar = document.getElementById('exportProgressBar');
-        const progressPercent = document.getElementById('exportProgressPercent');
-        
         if (progressText) progressText.textContent = message;
-        if (progressBar) progressBar.style.width = '0%';
-        if (progressPercent) progressPercent.textContent = '0%';
         
         loadingOverlay.style.display = 'flex';
     }
     
     updateExportProgress(percent, message) {
         const progressText = document.getElementById('exportProgressText');
-        const progressBar = document.getElementById('exportProgressBar');
-        const progressPercent = document.getElementById('exportProgressPercent');
-        
         if (progressText) progressText.textContent = message;
-        if (progressBar) progressBar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
-        if (progressPercent) progressPercent.textContent = `${Math.min(100, Math.max(0, percent))}%`;
     }
     
     hideExportLoading() {
