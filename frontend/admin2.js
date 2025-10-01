@@ -4304,9 +4304,11 @@ export class Admin2Dashboard {
 
     // Implement resetQuizProgress for individual quiz reset functionality
     async resetQuizProgress(username, quizType) {
+        console.log(`[Admin Interface] resetQuizProgress called with username: ${username}, quizType: ${quizType}`);
         try {
             // Use apiService instead of direct fetch
             const response = await this.apiService.resetQuizProgress(username, quizType);
+            console.log(`[Admin Interface] resetQuizProgress response:`, response);
 
             if (!response.success) {
                 throw new Error(response.message || 'Failed to reset quiz progress');

@@ -2204,9 +2204,12 @@ export class APIService {
     }
 
     async resetQuizProgress(username, quizName) {
-        return this.fetchWithAdminAuth(`admin/users/${username}/quiz-progress/${quizName}/reset`, {
+        console.log(`[API Service] resetQuizProgress called with username: ${username}, quizName: ${quizName}`);
+        const response = await this.fetchWithAdminAuth(`admin/users/${username}/quiz-progress/${quizName}/reset`, {
             method: 'POST'
         });
+        console.log(`[API Service] resetQuizProgress response:`, response);
+        return response;
     }
 
     async updateQuizVisibility(username, quizName, isVisible) {

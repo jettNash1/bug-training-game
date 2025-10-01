@@ -383,8 +383,14 @@ router.get('/stats', auth, async (req, res) => {
 
 // Reset a user's quiz progress
 router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, res) => {
+    console.log('=== QUIZ RESET ENDPOINT HIT ===');
+    console.log('Request params:', req.params);
+    console.log('Request body:', req.body);
+    console.log('User:', req.user);
+    
     try {
         if (!req.user.isAdmin) {
+            console.log('ERROR: Not an admin user');
             return res.status(403).json({
                 success: false,
                 message: 'Admin access required'
