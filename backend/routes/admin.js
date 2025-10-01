@@ -481,19 +481,45 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
             // FIRST: Capture previous score safely before any deletions
             let currentScore = null;
             let completedAt = null;
-            const existingResult = user.quizResults.find(r => r.quizName === quizName);
+            
+            // Check for existing quiz result using variations (case-insensitive)
+            const existingResult = user.quizResults?.find(r => {
+                if (!r || !r.quizName) return false;
+                return quizVariations.includes(r.quizName) || 
+                       r.quizName.toLowerCase() === quizName.toLowerCase();
+            });
+            
             if (existingResult) {
                 currentScore = existingResult.score;
                 completedAt = existingResult.completedAt;
+                console.log(`[Previous Score Capture] Found existing result for ${quizName}:`, { score: currentScore, completedAt });
                 user.addPreviousScore(quizName, currentScore, completedAt);
             } else {
+                // Fallback: Try to compute score from progress
                 const quizLower = String(quizName).toLowerCase();
-                const progress = (user.quizProgress && typeof user.quizProgress.get === 'function')
-                    ? user.quizProgress.get(quizLower)
-                    : user.quizProgress?.[quizLower];
+                let progress = null;
+                
+                // Handle both Map and Object formats for quizProgress
+                if (user.quizProgress && typeof user.quizProgress.get === 'function') {
+                    // It's a Map - try all variations
+                    for (const variant of quizVariations) {
+                        progress = user.quizProgress.get(variant);
+                        if (progress) break;
+                    }
+                } else if (user.quizProgress && typeof user.quizProgress === 'object') {
+                    // It's an object - try all variations
+                    for (const variant of quizVariations) {
+                        progress = user.quizProgress[variant];
+                        if (progress) break;
+                    }
+                }
+                
                 const fallback = computeScoreFromProgress(progress);
                 if (fallback.score !== null) {
+                    console.log(`[Previous Score Capture] Computed from progress for ${quizName}:`, { score: fallback.score, completedAt: fallback.completedAt });
                     user.addPreviousScore(quizName, fallback.score, fallback.completedAt);
+                } else {
+                    console.log(`[Previous Score Capture] No score found for ${quizName} - not storing previous score`);
                 }
             }
 
@@ -633,27 +659,68 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
             });
         }
 
+        // Generate all possible variations of the quiz name
+        const quizVariations = [
+            quizName.toLowerCase(),                                    // lowercase
+            quizName.toUpperCase(),                                    // uppercase
+            quizName.replace(/-/g, ''),                               // no hyphens
+            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),        // kebab-case
+            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
+            quizName.replace(/-/g, '_'),                              // snake_case
+            quizName.replace(/\s+/g, '-').toLowerCase(),              // spaces to hyphens
+            quizName.replace(/\s+/g, '').toLowerCase(),               // no spaces
+        ].flat();
+
         // Store current score before reset for tracking (with progress fallback)
         let currentScore = null;
         let completedAt = null;
-        const existingResult = user.quizResults.find(r => r.quizName === quizName);
+        
+        // Check for existing quiz result using variations (case-insensitive)
+        const existingResult = user.quizResults?.find(r => {
+            if (!r || !r.quizName) return false;
+            return quizVariations.includes(r.quizName) || 
+                   r.quizName.toLowerCase() === quizName.toLowerCase();
+        });
+        
         if (existingResult) {
             currentScore = existingResult.score;
             completedAt = existingResult.completedAt;
+            console.log(`[Previous Score Capture - Score Reset] Found existing result for ${quizName}:`, { score: currentScore, completedAt });
             user.addPreviousScore(quizName, currentScore, completedAt);
         } else {
+            // Fallback: Try to compute score from progress
             const quizLower = String(quizName).toLowerCase();
-            const progress = user.quizProgress?.[quizLower];
+            let progress = null;
+            
+            // Handle both Map and Object formats for quizProgress
+            if (user.quizProgress && typeof user.quizProgress.get === 'function') {
+                // It's a Map - try all variations
+                for (const variant of quizVariations) {
+                    progress = user.quizProgress.get(variant);
+                    if (progress) break;
+                }
+            } else if (user.quizProgress && typeof user.quizProgress === 'object') {
+                // It's an object - try all variations
+                for (const variant of quizVariations) {
+                    progress = user.quizProgress[variant];
+                    if (progress) break;
+                }
+            }
+            
             if (progress) {
                 const qh = Array.isArray(progress.questionHistory) ? progress.questionHistory : [];
                 if (qh.length > 0) {
                     const correct = qh.filter(q => q && q.isCorrect).length;
                     const pct = Math.round((correct / qh.length) * 100);
+                    console.log(`[Previous Score Capture - Score Reset] Computed from question history for ${quizName}:`, { score: pct });
                     user.addPreviousScore(quizName, pct, progress.lastUpdated || new Date());
                 } else if (typeof progress.experience === 'number' && (progress.questionsAnswered || 0) >= 15) {
                     const pct = Math.round(((progress.experience + 150) / 450) * 100);
+                    console.log(`[Previous Score Capture - Score Reset] Computed from experience for ${quizName}:`, { score: pct });
                     user.addPreviousScore(quizName, pct, progress.lastUpdated || new Date());
                 }
+            } else {
+                console.log(`[Previous Score Capture - Score Reset] No score found for ${quizName} - not storing previous score`);
             }
         }
 
@@ -2538,6 +2605,22 @@ router.post('/auto-reset/:quizName', auth, async (req, res) => {
         const users = await User.find({});
         let resetCount = 0;
 
+        // Helper to compute score from progress (fallback when no quizResults entry)
+        const computeScoreFromProgress = (progress) => {
+            if (!progress) return { score: null, completedAt: null };
+            const qh = Array.isArray(progress.questionHistory) ? progress.questionHistory : [];
+            if (qh.length > 0) {
+                const correct = qh.filter(q => q && q.isCorrect).length;
+                const pct = Math.round((correct / qh.length) * 100);
+                return { score: pct, completedAt: progress.lastUpdated || new Date() };
+            }
+            if (typeof progress.experience === 'number' && (progress.questionsAnswered || 0) >= 15) {
+                const pct = Math.round(((progress.experience + 150) / 450) * 100);
+                return { score: pct, completedAt: progress.lastUpdated || new Date() };
+            }
+            return { score: null, completedAt: progress.lastUpdated || null };
+        };
+
         for (const user of users) {
             try {
                 let userModified = false;
@@ -2547,7 +2630,49 @@ router.post('/auto-reset/:quizName', auth, async (req, res) => {
                     user.quizProgress = new Map();
                 }
 
-                // Delete all variations from quiz progress
+                // FIRST: Capture previous score safely before any deletions
+                let currentScore = null;
+                let completedAt = null;
+                
+                // Check for existing quiz result using variations (case-insensitive)
+                const existingResult = user.quizResults?.find(r => {
+                    if (!r || !r.quizName) return false;
+                    return quizVariations.includes(r.quizName) || 
+                           r.quizName.toLowerCase() === quizName.toLowerCase();
+                });
+                
+                if (existingResult) {
+                    currentScore = existingResult.score;
+                    completedAt = existingResult.completedAt;
+                    console.log(`[Batch Auto-Reset] Found existing result for ${user.username} - ${quizName}:`, { score: currentScore });
+                    user.addPreviousScore(quizName, currentScore, completedAt);
+                } else {
+                    // Fallback: Try to compute score from progress
+                    let progress = null;
+                    
+                    // Handle both Map and Object formats for quizProgress
+                    if (user.quizProgress && typeof user.quizProgress.get === 'function') {
+                        // It's a Map - try all variations
+                        for (const variant of quizVariations) {
+                            progress = user.quizProgress.get(variant);
+                            if (progress) break;
+                        }
+                    } else if (user.quizProgress && typeof user.quizProgress === 'object') {
+                        // It's an object - try all variations
+                        for (const variant of quizVariations) {
+                            progress = user.quizProgress[variant];
+                            if (progress) break;
+                        }
+                    }
+                    
+                    const fallback = computeScoreFromProgress(progress);
+                    if (fallback.score !== null) {
+                        console.log(`[Batch Auto-Reset] Computed from progress for ${user.username} - ${quizName}:`, { score: fallback.score });
+                        user.addPreviousScore(quizName, fallback.score, fallback.completedAt);
+                    }
+                }
+
+                // NOW delete all variations from quiz progress
                 quizVariations.forEach(variant => {
                     if (user.quizProgress.has(variant)) {
                         user.quizProgress.delete(variant);

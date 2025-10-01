@@ -74,6 +74,16 @@ userSchema.methods.addPreviousScore = function(quizName, score, completedAt) {
     list.push({ score, completedAt: completedAt || new Date(), resetAt: new Date() });
     if (list.length > 3) list.splice(0, list.length - 3);
     this.quizPreviousScores[key] = list;
+    
+    // Mark the field as modified for Mongoose to save it properly
+    this.markModified('quizPreviousScores');
+    
+    console.log(`[addPreviousScore] Added previous score for ${this.username} - ${quizName}:`, {
+        key,
+        score,
+        completedAt,
+        totalPreviousScores: list.length
+    });
 };
 
 // Hash password before saving
