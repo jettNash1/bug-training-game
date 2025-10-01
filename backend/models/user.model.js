@@ -60,6 +60,12 @@ const userSchema = new mongoose.Schema({
         // Plain object keyed by lowercased quiz id -> array of {score, completedAt, resetAt}
         type: Object,
         default: {}
+    },
+    // Track number of attempts per quiz (increments on reset)
+    quizAttempts: {
+        // Plain object keyed by lowercased quiz id -> number
+        type: Object,
+        default: {}
     }
 });
 
@@ -83,6 +89,24 @@ userSchema.methods.addPreviousScore = function(quizName, score, completedAt) {
         score,
         completedAt,
         totalPreviousScores: list.length
+    });
+};
+
+// Helper to increment quiz attempt counter
+userSchema.methods.incrementAttempt = function(quizName) {
+    if (!this.quizAttempts || typeof this.quizAttempts !== 'object') {
+        this.quizAttempts = {};
+    }
+    const key = String(quizName || '').toLowerCase();
+    const currentAttempts = this.quizAttempts[key] || 0;
+    this.quizAttempts[key] = currentAttempts + 1;
+    
+    // Mark the field as modified for Mongoose to save it properly
+    this.markModified('quizAttempts');
+    
+    console.log(`[incrementAttempt] Incremented attempt for ${this.username} - ${quizName}:`, {
+        key,
+        attemptNumber: this.quizAttempts[key]
     });
 };
 

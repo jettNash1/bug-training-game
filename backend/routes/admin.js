@@ -147,6 +147,7 @@ router.get('/users', auth, async (req, res) => {
             quizResults: 1,
             quizProgress: 1,
             quizPreviousScores: 1,
+            quizAttempts: 1,
             userType: 1,
             allowedQuizzes: 1,
             hiddenQuizzes: 1,
@@ -164,6 +165,15 @@ router.get('/users', auth, async (req, res) => {
                 normalized[String(k).toLowerCase()] = Array.isArray(v) ? v : [];
             }
             userData.quizPreviousScores = normalized;
+            
+            // Ensure quizAttempts is a plain object with lowercased keys
+            const qa = userData.quizAttempts && typeof userData.quizAttempts === 'object' ? userData.quizAttempts : {};
+            const normalizedAttempts = {};
+            for (const [k, v] of Object.entries(qa)) {
+                normalizedAttempts[String(k).toLowerCase()] = typeof v === 'number' ? v : 0;
+            }
+            userData.quizAttempts = normalizedAttempts;
+            
             userData.quizResults = userData.quizResults || [];
 
             // Update each quiz result with its corresponding progress data
@@ -523,6 +533,9 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
                 }
             }
 
+            // Increment attempt counter for this quiz
+            user.incrementAttempt(quizName);
+
             // NOW delete all variations from quiz progress
             let deletedVariations = [];
             quizVariations.forEach(variant => {
@@ -723,6 +736,9 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
                 console.log(`[Previous Score Capture - Score Reset] No score found for ${quizName} - not storing previous score`);
             }
         }
+
+        // Increment attempt counter for this quiz
+        user.incrementAttempt(quizName);
 
         // Remove quiz result if it exists
         if (user.quizResults) {
@@ -2671,6 +2687,9 @@ router.post('/auto-reset/:quizName', auth, async (req, res) => {
                         user.addPreviousScore(quizName, fallback.score, fallback.completedAt);
                     }
                 }
+
+                // Increment attempt counter for this quiz
+                user.incrementAttempt(quizName);
 
                 // NOW delete all variations from quiz progress
                 quizVariations.forEach(variant => {

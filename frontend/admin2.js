@@ -3573,6 +3573,9 @@ export class Admin2Dashboard {
                     }
                     const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
                     
+                    // Get attempt count for this quiz
+                    const attemptCount = user.quizAttempts?.[quizLower] || 0;
+                    
                     const status = questionsAnswered === 15 ? 'Completed' : 
                                 questionsAnswered > 0 ? 'In Progress' : 
                                 'Not Started';
@@ -3614,6 +3617,7 @@ export class Admin2Dashboard {
                         <div class="stat-row"><strong>Status:</strong> <span>${status}</span></div>
                         <div class="stat-row"><strong>Score:</strong> <span>${score}%</span></div>
                         <div class="stat-row"><strong>Questions:</strong> <span>${questionsAnswered}/15</span></div>
+                        <div class="stat-row"><strong>Attempts:</strong> <span>${attemptCount}</span></div>
                         <div class="stat-row"><strong>Last Active:</strong> <span>${this.formatDate(lastActive)}</span></div>
                             <div class="visibility-control">
                                 <strong>Visibility:</strong>
