@@ -8374,9 +8374,12 @@ export class Admin2Dashboard {
                     }
                     
                     // Get previous scores for this quiz
-                    let previousScores = '';
+                    let previousScores = 'N/A';
                     if (result && result.previousScores && result.previousScores.length > 0) {
                         previousScores = result.previousScores.map(ps => `${ps.score}%`).join('; ');
+                        console.log(`[Export] Found previous scores for ${user.username} - ${quizType}:`, previousScores);
+                    } else {
+                        console.log(`[Export] No previous scores for ${user.username} - ${quizType}, result:`, result);
                     }
                     
                     // Add quiz data to CSV
@@ -8498,7 +8501,7 @@ export class Admin2Dashboard {
                     }
                     
                     // Get previous scores for this quiz
-                    let previousScores = '';
+                    let previousScores = 'N/A';
                     if (result && result.previousScores && result.previousScores.length > 0) {
                         previousScores = result.previousScores.map(ps => `${ps.score}%`).join('; ');
                     }
@@ -8773,7 +8776,7 @@ export class Admin2Dashboard {
 
                 // Add previous scores for selected quizzes
                 selectedQuizzes.forEach(quizId => {
-                    let previousScores = '';
+                    let previousScores = 'N/A';
                     const result = user.quizResults?.find(r => r.quizName?.toLowerCase() === quizId.toLowerCase());
                     if (result && result.previousScores && result.previousScores.length > 0) {
                         previousScores = result.previousScores.map(ps => `${ps.score}%`).join('; ');
