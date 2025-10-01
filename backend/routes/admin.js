@@ -468,8 +468,11 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
                 console.log(`Current score before reset: ${currentScore}%`);
                 
                 // Add previous score before resetting
+                console.log(`[Backend Debug] Before adding previous score - quizName: ${quizName}, currentScore: ${currentScore}`);
                 user.addPreviousScore(quizName, currentScore, completedAt);
                 console.log(`Added previous score: ${currentScore}% for tracking`);
+                console.log(`[Backend Debug] quizPreviousScores after adding:`, user.quizPreviousScores);
+                console.log(`[Backend Debug] quizPreviousScores keys:`, user.quizPreviousScores ? Array.from(user.quizPreviousScores.keys()) : 'N/A');
             }
 
             // Remove quiz results for all variations

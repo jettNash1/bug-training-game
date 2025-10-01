@@ -127,28 +127,36 @@ userSchema.methods.toJSON = function() {
 
 // Method to add previous score when quiz is reset
 userSchema.methods.addPreviousScore = function(quizName, currentScore, completedAt) {
+    console.log(`[addPreviousScore] Called with quizName: ${quizName}, currentScore: ${currentScore}`);
+    
     // Initialize quizPreviousScores if it doesn't exist
     if (!this.quizPreviousScores) {
         this.quizPreviousScores = new Map();
+        console.log(`[addPreviousScore] Initialized quizPreviousScores Map`);
     }
     
     // Get existing previous scores for this quiz
     const existingScores = this.quizPreviousScores.get(quizName) || [];
+    console.log(`[addPreviousScore] Existing scores for ${quizName}:`, existingScores);
     
     // Add new previous score
-    existingScores.push({
+    const newScore = {
         score: currentScore,
         completedAt: completedAt || new Date(),
         resetAt: new Date()
-    });
+    };
+    existingScores.push(newScore);
+    console.log(`[addPreviousScore] Added new score:`, newScore);
     
     // Keep only the last 3 previous scores
     if (existingScores.length > 3) {
         existingScores.splice(0, existingScores.length - 3);
+        console.log(`[addPreviousScore] Trimmed to last 3 scores:`, existingScores);
     }
     
     // Store back in the map
     this.quizPreviousScores.set(quizName, existingScores);
+    console.log(`[addPreviousScore] Final quizPreviousScores for ${quizName}:`, this.quizPreviousScores.get(quizName));
 };
 
 // Method to get score comparison data
