@@ -112,6 +112,17 @@ userSchema.pre('save', async function(next) {
     next();
 });
 
+// Ensure quizPreviousScores is a Map after loading from database
+userSchema.post('init', function() {
+    if (this.quizPreviousScores && typeof this.quizPreviousScores === 'object' && !(this.quizPreviousScores instanceof Map)) {
+        const map = new Map();
+        for (const [key, value] of Object.entries(this.quizPreviousScores)) {
+            map.set(key, value);
+        }
+        this.quizPreviousScores = map;
+    }
+});
+
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
     return bcrypt.compare(candidatePassword, this.password);
@@ -129,10 +140,20 @@ userSchema.methods.toJSON = function() {
 userSchema.methods.addPreviousScore = function(quizName, currentScore, completedAt) {
     console.log(`[addPreviousScore] Called with quizName: ${quizName}, currentScore: ${currentScore}`);
     
-    // Initialize quizPreviousScores if it doesn't exist
-    if (!this.quizPreviousScores) {
+    // Initialize quizPreviousScores if it doesn't exist or if it's not a Map
+    if (!this.quizPreviousScores || !(this.quizPreviousScores instanceof Map)) {
         this.quizPreviousScores = new Map();
         console.log(`[addPreviousScore] Initialized quizPreviousScores Map`);
+    }
+    
+    // If it's an object (from MongoDB deserialization), convert it to a Map
+    if (this.quizPreviousScores && typeof this.quizPreviousScores === 'object' && !(this.quizPreviousScores instanceof Map)) {
+        const map = new Map();
+        for (const [key, value] of Object.entries(this.quizPreviousScores)) {
+            map.set(key, value);
+        }
+        this.quizPreviousScores = map;
+        console.log(`[addPreviousScore] Converted object to Map`);
     }
     
     // Get existing previous scores for this quiz

@@ -453,7 +453,17 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
                 user.quizProgress = new Map();
             }
 
-            // Delete all variations from quiz progress
+            // FIRST: Capture previous score safely before any deletions
+            let currentScore = null;
+            let completedAt = null;
+            const existingResult = user.quizResults.find(r => r.quizName === quizName);
+            if (existingResult) {
+                currentScore = existingResult.score;
+                completedAt = existingResult.completedAt;
+                user.addPreviousScore(quizName, currentScore, completedAt);
+            }
+
+            // NOW delete all variations from quiz progress
             let deletedVariations = [];
             quizVariations.forEach(variant => {
                 if (user.quizProgress.has(variant)) {
@@ -463,23 +473,6 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
                 }
             });
             console.log('User model - Deleted quiz progress for variations:', deletedVariations);
-
-            // Store current score before reset for tracking
-            let currentScore = null;
-            let completedAt = null;
-            const existingResult = user.quizResults.find(r => r.quizName === quizName);
-            if (existingResult) {
-                currentScore = existingResult.score;
-                completedAt = existingResult.completedAt;
-                console.log(`Current score before reset: ${currentScore}%`);
-                
-                // Add previous score before resetting
-                console.log(`[Backend Debug] Before adding previous score - quizName: ${quizName}, currentScore: ${currentScore}`);
-                user.addPreviousScore(quizName, currentScore, completedAt);
-                console.log(`Added previous score: ${currentScore}% for tracking`);
-                console.log(`[Backend Debug] quizPreviousScores after adding:`, user.quizPreviousScores);
-                console.log(`[Backend Debug] quizPreviousScores keys:`, user.quizPreviousScores ? Array.from(user.quizPreviousScores.keys()) : 'N/A');
-            }
 
             // Remove quiz results for all variations
             if (user.quizResults) {
@@ -618,6 +611,16 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
             // Add previous score before resetting
             user.addPreviousScore(quizName, currentScore, completedAt);
             console.log(`Added previous score: ${currentScore}% for tracking`);
+        }
+
+        // FIRST: Capture previous score safely before any deletions
+        let currentScore = null;
+        let completedAt = null;
+        const existingResult = user.quizResults.find(r => r.quizName === quizName);
+        if (existingResult) {
+            currentScore = existingResult.score;
+            completedAt = existingResult.completedAt;
+            user.addPreviousScore(quizName, currentScore, completedAt);
         }
 
         // Remove quiz result if it exists

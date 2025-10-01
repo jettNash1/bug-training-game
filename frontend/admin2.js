@@ -8385,6 +8385,7 @@ export class Admin2Dashboard {
                     console.log(`[Export Debug] user.quizPreviousScores type:`, typeof user.quizPreviousScores);
                     console.log(`[Export Debug] user.quizPreviousScores constructor:`, user.quizPreviousScores?.constructor?.name);
                     
+                    // Get previous scores for this quiz from the separate field
                     if (user.quizPreviousScores) {
                         let prevScores = null;
                         
@@ -8392,21 +8393,14 @@ export class Admin2Dashboard {
                         if (user.quizPreviousScores.get && typeof user.quizPreviousScores.get === 'function') {
                             // It's a Map
                             prevScores = user.quizPreviousScores.get(quizLower);
-                            console.log(`[Export Debug] Using Map.get() for ${quizLower}:`, prevScores);
                         } else if (typeof user.quizPreviousScores === 'object') {
                             // It's an object, try direct property access
                             prevScores = user.quizPreviousScores[quizLower];
-                            console.log(`[Export Debug] Using object property for ${quizLower}:`, prevScores);
                         }
                         
-                        if (prevScores && prevScores.length > 0) {
+                        if (prevScores && Array.isArray(prevScores) && prevScores.length > 0) {
                             previousScores = prevScores.map(ps => `${ps.score}%`).join('; ');
-                            console.log(`[Export] Found previous scores for ${user.username} - ${quizType}:`, previousScores);
-                        } else {
-                            console.log(`[Export] No previous scores found for ${quizLower}`);
                         }
-                    } else {
-                        console.log(`[Export] quizPreviousScores not available for ${user.username}`);
                     }
                     
                     // Add quiz data to CSV
@@ -8536,7 +8530,7 @@ export class Admin2Dashboard {
                         } else if (typeof user.quizPreviousScores === 'object') {
                             prevScores = user.quizPreviousScores[quizLower];
                         }
-                        if (prevScores && prevScores.length > 0) {
+                        if (prevScores && Array.isArray(prevScores) && prevScores.length > 0) {
                             previousScores = prevScores.map(ps => `${ps.score}%`).join('; ');
                         }
                     }
@@ -8819,7 +8813,7 @@ export class Admin2Dashboard {
                         } else if (typeof user.quizPreviousScores === 'object') {
                             prevScores = user.quizPreviousScores[quizId.toLowerCase()];
                         }
-                        if (prevScores && prevScores.length > 0) {
+                        if (prevScores && Array.isArray(prevScores) && prevScores.length > 0) {
                             previousScores = prevScores.map(ps => `${ps.score}%`).join('; ');
                         }
                     }
