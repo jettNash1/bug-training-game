@@ -456,6 +456,22 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
         let userResetCount = 0;
         let quizUserResetCount = 0;
         
+        // Helper to compute score from progress (fallback when no quizResults entry)
+        const computeScoreFromProgress = (progress) => {
+            if (!progress) return { score: null, completedAt: null };
+            const qh = Array.isArray(progress.questionHistory) ? progress.questionHistory : [];
+            if (qh.length > 0) {
+                const correct = qh.filter(q => q && q.isCorrect).length;
+                const pct = Math.round((correct / qh.length) * 100);
+                return { score: pct, completedAt: progress.lastUpdated || new Date() };
+            }
+            if (typeof progress.experience === 'number' && (progress.questionsAnswered || 0) >= 15) {
+                const pct = Math.round(((progress.experience + 150) / 450) * 100);
+                return { score: pct, completedAt: progress.lastUpdated || new Date() };
+            }
+            return { score: null, completedAt: progress.lastUpdated || null };
+        };
+
         // Reset in main User model
         if (user) {
             if (!user.quizProgress) {
@@ -470,6 +486,15 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
                 currentScore = existingResult.score;
                 completedAt = existingResult.completedAt;
                 user.addPreviousScore(quizName, currentScore, completedAt);
+            } else {
+                const quizLower = String(quizName).toLowerCase();
+                const progress = (user.quizProgress && typeof user.quizProgress.get === 'function')
+                    ? user.quizProgress.get(quizLower)
+                    : user.quizProgress?.[quizLower];
+                const fallback = computeScoreFromProgress(progress);
+                if (fallback.score !== null) {
+                    user.addPreviousScore(quizName, fallback.score, fallback.completedAt);
+                }
             }
 
             // NOW delete all variations from quiz progress
@@ -608,18 +633,28 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
             });
         }
 
-        // Store current score before reset for tracking
+        // Store current score before reset for tracking (with progress fallback)
         let currentScore = null;
         let completedAt = null;
         const existingResult = user.quizResults.find(r => r.quizName === quizName);
         if (existingResult) {
             currentScore = existingResult.score;
             completedAt = existingResult.completedAt;
-            console.log(`Current score before reset: ${currentScore}%`);
-            
-            // Add previous score before resetting
             user.addPreviousScore(quizName, currentScore, completedAt);
-            console.log(`Added previous score: ${currentScore}% for tracking`);
+        } else {
+            const quizLower = String(quizName).toLowerCase();
+            const progress = user.quizProgress?.[quizLower];
+            if (progress) {
+                const qh = Array.isArray(progress.questionHistory) ? progress.questionHistory : [];
+                if (qh.length > 0) {
+                    const correct = qh.filter(q => q && q.isCorrect).length;
+                    const pct = Math.round((correct / qh.length) * 100);
+                    user.addPreviousScore(quizName, pct, progress.lastUpdated || new Date());
+                } else if (typeof progress.experience === 'number' && (progress.questionsAnswered || 0) >= 15) {
+                    const pct = Math.round(((progress.experience + 150) / 450) * 100);
+                    user.addPreviousScore(quizName, pct, progress.lastUpdated || new Date());
+                }
+            }
         }
 
         // Remove quiz result if it exists
