@@ -4652,7 +4652,7 @@ export class Admin2Dashboard {
                             }
                         </style>
                         <div class="details-header">
-                            <h3 id="questions-details-title">Quiz Questions for ${username} - ${quizType}</h3>
+                            <h3 id="questions-details-title">Quiz Questions for ${username} - ${this.formatQuizName(quizType)}</h3>
                             <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
                     </div>
                         <div class="quiz-summary">
@@ -6167,20 +6167,6 @@ export class Admin2Dashboard {
         return html || '<div class="no-settings-message">No guide settings configured yet.</div>';
     }
 
-    // Helper function to format quiz names from kebab-case to Title Case
-    formatQuizName(quizName) {
-        if (!quizName) return '';
-        
-        // Special case for CMS Testing display name only
-        if (quizName.toLowerCase() === 'cms-testing') {
-            return 'CMS Testing (CRUD)';
-        }
-        
-        return quizName
-            .split('-')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-    }
 
     // Auto-reset settings methods
     async loadAutoResetSettings() {

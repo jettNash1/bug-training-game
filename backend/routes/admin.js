@@ -762,6 +762,13 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
             }
         }).filter(Boolean);
 
+        // Calculate score from question history
+        let calculatedScore = 0;
+        if (formattedHistory.length > 0) {
+            const correctAnswers = formattedHistory.filter(record => record.status === 'passed').length;
+            calculatedScore = Math.round((correctAnswers / formattedHistory.length) * 100);
+        }
+
         // Return the formatted question history
         res.json({
             success: true,
@@ -769,7 +776,7 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
                 questionHistory: formattedHistory,
                 totalQuestions: formattedHistory.length,
                 quizName: normalizedQuizName,
-                score: quizResult?.score || 0,
+                score: calculatedScore,
                 experience: progress?.experience || quizResult?.experience || 0,
                 lastActive: progress?.lastUpdated || quizResult?.lastActive || null
             }
