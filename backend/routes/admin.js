@@ -613,16 +613,6 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
             console.log(`Added previous score: ${currentScore}% for tracking`);
         }
 
-        // FIRST: Capture previous score safely before any deletions
-        let currentScore = null;
-        let completedAt = null;
-        const existingResult = user.quizResults.find(r => r.quizName === quizName);
-        if (existingResult) {
-            currentScore = existingResult.score;
-            completedAt = existingResult.completedAt;
-            user.addPreviousScore(quizName, currentScore, completedAt);
-        }
-
         // Remove quiz result if it exists
         if (user.quizResults) {
             const initialLength = user.quizResults.length;
