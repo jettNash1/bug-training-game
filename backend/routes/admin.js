@@ -157,23 +157,13 @@ router.get('/users', auth, async (req, res) => {
         const populatedUsers = users.map(user => {
             const userData = { ...user };
 
-            // Normalize quizPreviousScores to plain object for frontend consumption
-            if (userData.quizPreviousScores instanceof Map) {
-                const obj = {};
-                for (const [k, v] of userData.quizPreviousScores.entries()) {
-                    obj[String(k).toLowerCase()] = Array.isArray(v) ? v : [];
-                }
-                userData.quizPreviousScores = obj;
-            } else if (userData.quizPreviousScores && typeof userData.quizPreviousScores === 'object') {
-                // Ensure keys are lowercased
-                const obj = {};
-                for (const [k, v] of Object.entries(userData.quizPreviousScores)) {
-                    obj[String(k).toLowerCase()] = Array.isArray(v) ? v : [];
-                }
-                userData.quizPreviousScores = obj;
-            } else {
-                userData.quizPreviousScores = {};
+            // Ensure quizPreviousScores is a plain object with lowercased keys
+            const qps = userData.quizPreviousScores && typeof userData.quizPreviousScores === 'object' ? userData.quizPreviousScores : {};
+            const normalized = {};
+            for (const [k, v] of Object.entries(qps)) {
+                normalized[String(k).toLowerCase()] = Array.isArray(v) ? v : [];
             }
+            userData.quizPreviousScores = normalized;
             userData.quizResults = userData.quizResults || [];
 
             // Update each quiz result with its corresponding progress data
