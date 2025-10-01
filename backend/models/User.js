@@ -22,7 +22,23 @@ const quizResultSchema = new mongoose.Schema({
     completedAt: {
         type: Date,
         default: Date.now
-    }
+    },
+    previousScores: [{
+        score: {
+            type: Number,
+            required: true,
+            min: 0,
+            max: 100
+        },
+        completedAt: {
+            type: Date,
+            required: true
+        },
+        resetAt: {
+            type: Date,
+            default: Date.now
+        }
+    }]
 });
 
 const userSchema = new mongoose.Schema({
@@ -87,6 +103,46 @@ userSchema.methods.toJSON = function() {
     delete user.password;
     delete user.refreshToken;
     return user;
+};
+
+// Method to add previous score when quiz is reset
+userSchema.methods.addPreviousScore = function(quizName, currentScore) {
+    const quizResult = this.quizResults.find(r => r.quizName === quizName);
+    if (quizResult) {
+        // Add current score to previous scores before reset
+        quizResult.previousScores.push({
+            score: currentScore,
+            completedAt: quizResult.completedAt,
+            resetAt: new Date()
+        });
+        
+        // Keep only the last 3 previous scores
+        if (quizResult.previousScores.length > 3) {
+            quizResult.previousScores = quizResult.previousScores.slice(-3);
+        }
+    }
+};
+
+// Method to get score comparison data
+userSchema.methods.getScoreComparison = function(quizName) {
+    const quizResult = this.quizResults.find(r => r.quizName === quizName);
+    if (!quizResult) return null;
+    
+    const currentScore = quizResult.score;
+    const previousScores = quizResult.previousScores || [];
+    const latestPreviousScore = previousScores.length > 0 ? previousScores[previousScores.length - 1].score : null;
+    
+    return {
+        currentScore,
+        previousScores: previousScores.map(ps => ({
+            score: ps.score,
+            completedAt: ps.completedAt,
+            resetAt: ps.resetAt
+        })),
+        latestPreviousScore,
+        improvement: latestPreviousScore ? currentScore - latestPreviousScore : null,
+        totalAttempts: previousScores.length + 1
+    };
 };
 
 const User = mongoose.model('User', userSchema);

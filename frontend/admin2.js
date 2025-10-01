@@ -8247,7 +8247,7 @@ export class Admin2Dashboard {
         const quizLower = quizName.toLowerCase();
         
         // Header row
-        data.push(['Username', 'Email', 'Last Active', 'Questions Answered', 'Score %', 'Status', 'Completed At']);
+        data.push(['Username', 'Email', 'Last Active', 'Questions Answered', 'Score %', 'Status', 'Completed At', 'Previous Scores']);
         
         // Data rows
         this.users.forEach(user => {
@@ -8279,6 +8279,12 @@ export class Admin2Dashboard {
             
             const completedAt = result?.completedAt ? this.formatDate(new Date(result.completedAt).getTime()) : 'N/A';
             
+            // Get previous scores for this quiz
+            let previousScores = '';
+            if (result && result.previousScores && result.previousScores.length > 0) {
+                previousScores = result.previousScores.map(ps => `${ps.score}%`).join('; ');
+            }
+            
             data.push([
                 user.username,
                 user.email || 'N/A',
@@ -8286,7 +8292,8 @@ export class Admin2Dashboard {
                 questionsAnswered,
                 `${score}%`,
                 status,
-                completedAt
+                completedAt,
+                previousScores
             ]);
         });
         
@@ -8316,7 +8323,7 @@ export class Admin2Dashboard {
             
             // Add quiz names to header
             this.quizTypes.forEach(quizName => {
-                csvContent += `${this.formatQuizName(quizName)} Questions,${this.formatQuizName(quizName)} Score%,${this.formatQuizName(quizName)} Status,`;
+                csvContent += `${this.formatQuizName(quizName)} Questions,${this.formatQuizName(quizName)} Score%,${this.formatQuizName(quizName)} Status,${this.formatQuizName(quizName)} Previous Scores,`;
             });
             
             // Add overall stats
@@ -8366,8 +8373,14 @@ export class Admin2Dashboard {
                         status = "Incomplete";
                     }
                     
+                    // Get previous scores for this quiz
+                    let previousScores = '';
+                    if (result && result.previousScores && result.previousScores.length > 0) {
+                        previousScores = result.previousScores.map(ps => `${ps.score}%`).join('; ');
+                    }
+                    
                     // Add quiz data to CSV
-                    csvContent += `${questionsAnswered}/15,${score}%,${status},`;
+                    csvContent += `${questionsAnswered}/15,${score}%,${status},"${previousScores}",`;
                 });
                 
                 // Add overall stats
@@ -8441,7 +8454,7 @@ export class Admin2Dashboard {
             this.updateExportProgress(60, 'Processing user data...');
             
             // Create CSV header row
-            let csvContent = "Name,Quiz,Questions,Score%,Status\n";
+            let csvContent = "Name,Quiz,Questions,Score%,Status,Previous Scores\n";
             
             // Add data for each user and their quizzes
             const totalUsers = this.users.length;
@@ -8484,9 +8497,15 @@ export class Admin2Dashboard {
                         status = "Incomplete";
                     }
                     
+                    // Get previous scores for this quiz
+                    let previousScores = '';
+                    if (result && result.previousScores && result.previousScores.length > 0) {
+                        previousScores = result.previousScores.map(ps => `${ps.score}%`).join('; ');
+                    }
+                    
                     // Only add rows for quizzes that have been started
                     if (questionsAnswered > 0) {
-                        csvContent += `${user.username},${this.formatQuizName(quizType)},${questionsAnswered}/15,${score}%,${status}\n`;
+                        csvContent += `${user.username},${this.formatQuizName(quizType)},${questionsAnswered}/15,${score}%,${status},"${previousScores}"\n`;
                     }
                 });
             });
@@ -8713,7 +8732,7 @@ export class Admin2Dashboard {
             this.updateExportProgress(0, 'Processing selected users...');
 
             // Create CSV header
-            const headers = ['Username', 'Email', 'Last Active', ...selectedQuizzes.map(quiz => this.formatQuizName(quiz))];
+            const headers = ['Username', 'Email', 'Last Active', ...selectedQuizzes.map(quiz => this.formatQuizName(quiz)), ...selectedQuizzes.map(quiz => `${this.formatQuizName(quiz)} Previous Scores`)];
             
             // Create CSV content
             const csvRows = [headers];
@@ -8750,6 +8769,16 @@ export class Admin2Dashboard {
                     }
                     
                     row.push(`${score}%`);
+                });
+
+                // Add previous scores for selected quizzes
+                selectedQuizzes.forEach(quizId => {
+                    let previousScores = '';
+                    const result = user.quizResults?.find(r => r.quizName?.toLowerCase() === quizId.toLowerCase());
+                    if (result && result.previousScores && result.previousScores.length > 0) {
+                        previousScores = result.previousScores.map(ps => `${ps.score}%`).join('; ');
+                    }
+                    row.push(previousScores);
                 });
 
                 csvRows.push(row);

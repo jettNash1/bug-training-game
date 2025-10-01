@@ -458,6 +458,18 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
             });
             console.log('User model - Deleted quiz progress for variations:', deletedVariations);
 
+            // Store current score before reset for tracking
+            let currentScore = null;
+            const existingResult = user.quizResults.find(r => r.quizName === quizName);
+            if (existingResult) {
+                currentScore = existingResult.score;
+                console.log(`Current score before reset: ${currentScore}%`);
+                
+                // Add previous score before resetting
+                user.addPreviousScore(quizName, currentScore);
+                console.log(`Added previous score: ${currentScore}% for tracking`);
+            }
+
             // Remove quiz results for all variations
             if (user.quizResults) {
                 const initialLength = user.quizResults.length;
@@ -581,6 +593,18 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
                 success: false,
                 message: 'User not found'
             });
+        }
+
+        // Store current score before reset for tracking
+        let currentScore = null;
+        const existingResult = user.quizResults.find(r => r.quizName === quizName);
+        if (existingResult) {
+            currentScore = existingResult.score;
+            console.log(`Current score before reset: ${currentScore}%`);
+            
+            // Add previous score before resetting
+            user.addPreviousScore(quizName, currentScore);
+            console.log(`Added previous score: ${currentScore}% for tracking`);
         }
 
         // Remove quiz result if it exists
@@ -2553,6 +2577,165 @@ router.post('/auto-reset/:quizName', auth, async (req, res) => {
 function getCacheInvalidations() {
     return cacheInvalidations;
 }
+
+// Get score comparison for a specific user and quiz
+router.get('/users/:username/score-comparison/:quizName', auth, async (req, res) => {
+    try {
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username, quizName } = req.params;
+        const user = await User.findOne({ username });
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const scoreComparison = user.getScoreComparison(quizName);
+        
+        if (!scoreComparison) {
+            return res.status(404).json({
+                success: false,
+                message: 'No quiz data found for this user and quiz'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                username,
+                quizName,
+                ...scoreComparison
+            }
+        });
+    } catch (error) {
+        console.error('Error getting score comparison:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get score comparison',
+            error: error.message
+        });
+    }
+});
+
+// Get all users' score comparisons for a specific quiz
+router.get('/score-comparisons/:quizName', auth, async (req, res) => {
+    try {
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { quizName } = req.params;
+        const users = await User.find({
+            'quizResults.quizName': quizName
+        });
+
+        const comparisons = users.map(user => {
+            const comparison = user.getScoreComparison(quizName);
+            return {
+                username: user.username,
+                ...comparison
+            };
+        }).filter(comparison => comparison.currentScore !== undefined);
+
+        res.json({
+            success: true,
+            data: {
+                quizName,
+                totalUsers: comparisons.length,
+                comparisons
+            }
+        });
+    } catch (error) {
+        console.error('Error getting score comparisons:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get score comparisons',
+            error: error.message
+        });
+    }
+});
+
+// Get improvement statistics for a specific quiz
+router.get('/improvement-stats/:quizName', auth, async (req, res) => {
+    try {
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { quizName } = req.params;
+        const users = await User.find({
+            'quizResults.quizName': quizName
+        });
+
+        const stats = {
+            totalUsers: 0,
+            usersWithPreviousScores: 0,
+            improved: 0,
+            declined: 0,
+            noChange: 0,
+            averageImprovement: 0,
+            totalImprovement: 0
+        };
+
+        let totalImprovement = 0;
+        let improvementCount = 0;
+
+        users.forEach(user => {
+            const comparison = user.getScoreComparison(quizName);
+            if (comparison && comparison.currentScore !== undefined) {
+                stats.totalUsers++;
+                
+                if (comparison.latestPreviousScore !== null) {
+                    stats.usersWithPreviousScores++;
+                    
+                    if (comparison.improvement > 0) {
+                        stats.improved++;
+                    } else if (comparison.improvement < 0) {
+                        stats.declined++;
+                    } else {
+                        stats.noChange++;
+                    }
+                    
+                    totalImprovement += comparison.improvement;
+                    improvementCount++;
+                }
+            }
+        });
+
+        if (improvementCount > 0) {
+            stats.averageImprovement = Math.round((totalImprovement / improvementCount) * 100) / 100;
+        }
+
+        res.json({
+            success: true,
+            data: {
+                quizName,
+                ...stats
+            }
+        });
+    } catch (error) {
+        console.error('Error getting improvement stats:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get improvement stats',
+            error: error.message
+        });
+    }
+});
 
 module.exports = router;
 module.exports.getCacheInvalidations = getCacheInvalidations;
