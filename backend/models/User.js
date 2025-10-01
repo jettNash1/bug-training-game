@@ -79,7 +79,27 @@ const userSchema = new mongoose.Schema({
     hiddenQuizzes: [{
         type: String,
         lowercase: true
-    }]
+    }],
+    quizPreviousScores: {
+        type: Map,
+        of: [{
+            score: {
+                type: Number,
+                required: true,
+                min: 0,
+                max: 100
+            },
+            completedAt: {
+                type: Date,
+                required: true
+            },
+            resetAt: {
+                type: Date,
+                default: Date.now
+            }
+        }],
+        default: () => ({})
+    }
 }, {
     timestamps: true
 });
@@ -106,21 +126,29 @@ userSchema.methods.toJSON = function() {
 };
 
 // Method to add previous score when quiz is reset
-userSchema.methods.addPreviousScore = function(quizName, currentScore) {
-    const quizResult = this.quizResults.find(r => r.quizName === quizName);
-    if (quizResult) {
-        // Add current score to previous scores before reset
-        quizResult.previousScores.push({
-            score: currentScore,
-            completedAt: quizResult.completedAt,
-            resetAt: new Date()
-        });
-        
-        // Keep only the last 3 previous scores
-        if (quizResult.previousScores.length > 3) {
-            quizResult.previousScores = quizResult.previousScores.slice(-3);
-        }
+userSchema.methods.addPreviousScore = function(quizName, currentScore, completedAt) {
+    // Initialize quizPreviousScores if it doesn't exist
+    if (!this.quizPreviousScores) {
+        this.quizPreviousScores = new Map();
     }
+    
+    // Get existing previous scores for this quiz
+    const existingScores = this.quizPreviousScores.get(quizName) || [];
+    
+    // Add new previous score
+    existingScores.push({
+        score: currentScore,
+        completedAt: completedAt || new Date(),
+        resetAt: new Date()
+    });
+    
+    // Keep only the last 3 previous scores
+    if (existingScores.length > 3) {
+        existingScores.splice(0, existingScores.length - 3);
+    }
+    
+    // Store back in the map
+    this.quizPreviousScores.set(quizName, existingScores);
 };
 
 // Method to get score comparison data
@@ -129,7 +157,9 @@ userSchema.methods.getScoreComparison = function(quizName) {
     if (!quizResult) return null;
     
     const currentScore = quizResult.score;
-    const previousScores = quizResult.previousScores || [];
+    
+    // Get previous scores from the separate field
+    const previousScores = this.quizPreviousScores?.get(quizName) || [];
     const latestPreviousScore = previousScores.length > 0 ? previousScores[previousScores.length - 1].score : null;
     
     return {

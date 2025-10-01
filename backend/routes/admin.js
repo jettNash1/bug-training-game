@@ -460,17 +460,19 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
 
             // Store current score before reset for tracking
             let currentScore = null;
+            let completedAt = null;
             const existingResult = user.quizResults.find(r => r.quizName === quizName);
             if (existingResult) {
                 currentScore = existingResult.score;
+                completedAt = existingResult.completedAt;
                 console.log(`Current score before reset: ${currentScore}%`);
                 
                 // Add previous score before resetting
-                user.addPreviousScore(quizName, currentScore);
+                user.addPreviousScore(quizName, currentScore, completedAt);
                 console.log(`Added previous score: ${currentScore}% for tracking`);
             }
 
-            // Remove quiz results for all variations, but preserve the one with previous scores
+            // Remove quiz results for all variations
             if (user.quizResults) {
                 const initialLength = user.quizResults.length;
                 user.quizResults = user.quizResults.filter(result => {
@@ -483,35 +485,6 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
                     return shouldKeep;
                 });
                 console.log(`User model - Removed ${initialLength - user.quizResults.length} quiz results`);
-            }
-
-            // Create a new quiz result entry with only previous scores (no current score)
-            if (currentScore !== null) {
-                const preservedResult = user.quizResults.find(r => r.quizName === quizName);
-                if (preservedResult) {
-                    // Clear current score data but keep previous scores
-                    preservedResult.score = 0;
-                    preservedResult.experience = 0;
-                    preservedResult.questionHistory = [];
-                    preservedResult.questionsAnswered = 0;
-                    preservedResult.completedAt = new Date();
-                    preservedResult.status = 'reset';
-                    console.log('User model - Preserved quiz result with previous scores only');
-                } else {
-                    // Create new entry with previous scores if none exists
-                    const previousScores = existingResult ? existingResult.previousScores : [];
-                    user.quizResults.push({
-                        quizName: quizName,
-                        score: 0,
-                        experience: 0,
-                        questionHistory: [],
-                        questionsAnswered: 0,
-                        completedAt: new Date(),
-                        status: 'reset',
-                        previousScores: previousScores
-                    });
-                    console.log('User model - Created new quiz result entry with previous scores');
-                }
             }
 
             // ENHANCED: Also clear any quiz-related fields that might store progress
@@ -626,13 +599,15 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
 
         // Store current score before reset for tracking
         let currentScore = null;
+        let completedAt = null;
         const existingResult = user.quizResults.find(r => r.quizName === quizName);
         if (existingResult) {
             currentScore = existingResult.score;
+            completedAt = existingResult.completedAt;
             console.log(`Current score before reset: ${currentScore}%`);
             
             // Add previous score before resetting
-            user.addPreviousScore(quizName, currentScore);
+            user.addPreviousScore(quizName, currentScore, completedAt);
             console.log(`Added previous score: ${currentScore}% for tracking`);
         }
 
@@ -649,22 +624,6 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
                        result.quizName !== quizName;
             });
             console.log(`Removed ${initialLength - user.quizResults.length} quiz results for ${quizName}`);
-        }
-
-        // Create a new quiz result entry with only previous scores (no current score)
-        if (currentScore !== null) {
-            const previousScores = existingResult ? existingResult.previousScores : [];
-            user.quizResults.push({
-                quizName: quizName,
-                score: 0,
-                experience: 0,
-                questionHistory: [],
-                questionsAnswered: 0,
-                completedAt: new Date(),
-                status: 'reset',
-                previousScores: previousScores
-            });
-            console.log('User model - Created new quiz result entry with previous scores');
         }
 
         // Also ensure quiz progress is reset

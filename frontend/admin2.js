@@ -8279,10 +8279,13 @@ export class Admin2Dashboard {
             
             const completedAt = result?.completedAt ? this.formatDate(new Date(result.completedAt).getTime()) : 'N/A';
             
-            // Get previous scores for this quiz
-            let previousScores = '';
-            if (result && result.previousScores && result.previousScores.length > 0) {
-                previousScores = result.previousScores.map(ps => `${ps.score}%`).join('; ');
+            // Get previous scores for this quiz from the separate field
+            let previousScores = 'N/A';
+            if (user.quizPreviousScores && user.quizPreviousScores.get && user.quizPreviousScores.get(quizLower)) {
+                const prevScores = user.quizPreviousScores.get(quizLower);
+                if (prevScores && prevScores.length > 0) {
+                    previousScores = prevScores.map(ps => `${ps.score}%`).join('; ');
+                }
             }
             
             data.push([
@@ -8373,13 +8376,16 @@ export class Admin2Dashboard {
                         status = "Incomplete";
                     }
                     
-                    // Get previous scores for this quiz
+                    // Get previous scores for this quiz from the separate field
                     let previousScores = 'N/A';
-                    if (result && result.previousScores && result.previousScores.length > 0) {
-                        previousScores = result.previousScores.map(ps => `${ps.score}%`).join('; ');
-                        console.log(`[Export] Found previous scores for ${user.username} - ${quizType}:`, previousScores);
+                    if (user.quizPreviousScores && user.quizPreviousScores.get && user.quizPreviousScores.get(quizLower)) {
+                        const prevScores = user.quizPreviousScores.get(quizLower);
+                        if (prevScores && prevScores.length > 0) {
+                            previousScores = prevScores.map(ps => `${ps.score}%`).join('; ');
+                            console.log(`[Export] Found previous scores for ${user.username} - ${quizType}:`, previousScores);
+                        }
                     } else {
-                        console.log(`[Export] No previous scores for ${user.username} - ${quizType}, result:`, result);
+                        console.log(`[Export] No previous scores for ${user.username} - ${quizType}, quizPreviousScores:`, user.quizPreviousScores);
                     }
                     
                     // Add quiz data to CSV
@@ -8500,10 +8506,13 @@ export class Admin2Dashboard {
                         status = "Incomplete";
                     }
                     
-                    // Get previous scores for this quiz
+                    // Get previous scores for this quiz from the separate field
                     let previousScores = 'N/A';
-                    if (result && result.previousScores && result.previousScores.length > 0) {
-                        previousScores = result.previousScores.map(ps => `${ps.score}%`).join('; ');
+                    if (user.quizPreviousScores && user.quizPreviousScores.get && user.quizPreviousScores.get(quizLower)) {
+                        const prevScores = user.quizPreviousScores.get(quizLower);
+                        if (prevScores && prevScores.length > 0) {
+                            previousScores = prevScores.map(ps => `${ps.score}%`).join('; ');
+                        }
                     }
                     
                     // Only add rows for quizzes that have been started
@@ -8777,9 +8786,11 @@ export class Admin2Dashboard {
                 // Add previous scores for selected quizzes
                 selectedQuizzes.forEach(quizId => {
                     let previousScores = 'N/A';
-                    const result = user.quizResults?.find(r => r.quizName?.toLowerCase() === quizId.toLowerCase());
-                    if (result && result.previousScores && result.previousScores.length > 0) {
-                        previousScores = result.previousScores.map(ps => `${ps.score}%`).join('; ');
+                    if (user.quizPreviousScores && user.quizPreviousScores.get && user.quizPreviousScores.get(quizId.toLowerCase())) {
+                        const prevScores = user.quizPreviousScores.get(quizId.toLowerCase());
+                        if (prevScores && prevScores.length > 0) {
+                            previousScores = prevScores.map(ps => `${ps.score}%`).join('; ');
+                        }
                     }
                     row.push(previousScores);
                 });
