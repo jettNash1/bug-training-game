@@ -8767,20 +8767,23 @@ export class Admin2Dashboard {
             // Update progress for data processing
             this.updateExportProgress(0, 'Processing selected users...');
 
-            // Create CSV header
-            const headers = ['Username', 'Email', 'Last Active', ...selectedQuizzes.map(quiz => this.formatQuizName(quiz)), ...selectedQuizzes.map(quiz => `${this.formatQuizName(quiz)} Previous Scores`)];
+            // Create CSV content with vertical layout (transposed)
+            const csvRows = [];
             
-            // Create CSV content
-            const csvRows = [headers];
-            
-            selectedUsers.forEach((user, index) => {
-                const row = [
-                    user.username || '',
-                    user.email || '',
-                    this.formatDate(this.getLastActiveDate(user))
-                ];
+            selectedUsers.forEach((user, userIndex) => {
+                // Add Username row
+                csvRows.push(['Username', user.username || '']);
+                
+                // Add Email row
+                csvRows.push(['Email', user.email || '']);
+                
+                // Add Last Active row
+                csvRows.push(['LastActive', this.formatDate(this.getLastActiveDate(user))]);
+                
+                // Add blank row for spacing
+                csvRows.push(['', '']);
 
-                // Add quiz scores for selected quizzes only
+                // Add quiz scores and previous scores vertically
                 selectedQuizzes.forEach(quizId => {
                     let score = 0;
                     
@@ -8804,11 +8807,10 @@ export class Admin2Dashboard {
                         }
                     }
                     
-                    row.push(`${score}%`);
-                });
-
-                // Add previous scores for selected quizzes
-                selectedQuizzes.forEach(quizId => {
+                    // Add quiz score row
+                    csvRows.push([this.formatQuizName(quizId), `${score}%`]);
+                    
+                    // Add previous scores row immediately after
                     let previousScores = 'N/A';
                     if (user.quizPreviousScores) {
                         let prevScores = null;
@@ -8821,10 +8823,15 @@ export class Admin2Dashboard {
                             previousScores = prevScores.map(ps => `${ps.score}%`).join('; ');
                         }
                     }
-                    row.push(previousScores);
+                    csvRows.push([`${this.formatQuizName(quizId)} Previous Scores`, previousScores]);
                 });
-
-                csvRows.push(row);
+                
+                // Add separator between users if there are multiple users
+                if (userIndex < selectedUsers.length - 1) {
+                    csvRows.push(['', '']);
+                    csvRows.push(['='.repeat(50), '']);
+                    csvRows.push(['', '']);
+                }
             });
 
             // Update progress for file generation

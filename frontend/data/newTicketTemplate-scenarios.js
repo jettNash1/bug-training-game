@@ -340,34 +340,6 @@ export const newTicketTemplateScenarios = {
                         experience: -5
                     }
                 ]
-            },
-            {
-                id: 18,
-                level: 'Intermediate',
-                title: 'Supporting Material',
-                description: 'Aside from Video and Screenshots, what else can be used as supporting material?',
-                options: [
-                    {
-                        text: 'References to documentation, log files from the browser console, relevant error codes and other related materials',
-                        outcome: 'Correct - Supporting material should not simply be limited to video and screenshots, other materials can be used to help the developer understand the issue.',
-                        experience: 20
-                    },
-                    {
-                        text: 'Written descriptions of the issues should be sufficient if they are concisely written.',
-                        outcome: 'Written descriptions alone are often insufficient - supporting evidence helps developers understand and reproduce issues more effectively.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Personal opinions about the severity and priority of the issue',
-                        outcome: 'Tickets should remain factual and objective. Personal opinions about severity and priority are not appropriate supporting materials.',
-                        experience: -10,
-                    },
-                    {
-                        text: 'Code snippets showing how to fix the issue',
-                        outcome: 'Testers should focus on describing and evidencing the issue, not suggesting code fixes which is the developer\'s responsibility.',
-                        experience: -5
-                    }
-                ]
             }
         ],
 
@@ -432,27 +404,27 @@ export const newTicketTemplateScenarios = {
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Environments',
-                description: 'What should be included within the \'Environments observed on\' section?',
+                title: 'Supporting Material',
+                description: 'Aside from Video and Screenshots, what else can be used as supporting material?',
                 options: [
                     {
-                        text: 'All environments that the issue was observed on',
-                        outcome: 'Additional environments should be included in the \'Also observed on\' section',
-                        experience: -10
+                        text: 'References to documentation, log files from the browser console, relevant error codes and other related materials',
+                        outcome: 'Correct - Supporting material should not simply be limited to video and screenshots, other materials can be used to help the developer understand the issue.',
+                        experience: 25
                     },
                     {
-                        text: 'Primary and additional environments that the issue was observed on',
-                        outcome: 'There are inumerable environments that the issue was not observed on and this would take too much time to consider',
+                        text: 'Written descriptions of the issues should be sufficient if they are concisely written.',
+                        outcome: 'Written descriptions alone are often insufficient - supporting evidence helps developers understand and reproduce issues more effectively.',
                         experience: -15
                     },
                     {
-                        text: 'The Primary environment that the issue was observed on',
-                        outcome: 'Correct - This should include device, operating system and browser/application version details',
-                        experience: 25, 
+                        text: 'Personal opinions about the severity and priority of the issue',
+                        outcome: 'Tickets should remain factual and objective. Personal opinions about severity and priority are not appropriate supporting materials.',
+                        experience: -10,
                     },
                     {
-                        text: 'Only the browser/application version details',
-                        outcome: 'Ideally you should state the device, operating system and browser/application version details',
+                        text: 'Code snippets showing how to fix the issue',
+                        outcome: 'Testers should focus on describing and evidencing the issue, not suggesting code fixes which is the developer\'s responsibility.',
                         experience: -5
                     }
                 ]
