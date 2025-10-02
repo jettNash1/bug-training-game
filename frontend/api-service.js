@@ -1013,6 +1013,36 @@ export class APIService {
         }
     }
 
+    // User password change method (requires old password)
+    async changeUserPassword(oldPassword, newPassword) {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Not authenticated');
+            }
+
+            const response = await fetch(`${this.baseUrl}/api/user/change-password`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ oldPassword, newPassword })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to change password');
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Failed to change password:', error);
+            throw error;
+        }
+    }
+
     async getUserData() {
         const username = localStorage.getItem('username');
         const cacheKey = `getUserData_${username}`;

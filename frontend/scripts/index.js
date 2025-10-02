@@ -754,9 +754,17 @@ class IndexPage {
         badgesButton.innerHTML = '<i class="fa-solid fa-award"></i> Badges';
         badgesButton.setAttribute('aria-label', 'View your earned badges');
         
-        // Insert buttons before the logout button (info first, then badges)
+        // Create the profile button
+        const profileButton = document.createElement('button');
+        profileButton.className = 'profile-button';
+        profileButton.innerHTML = '<i class="fa-solid fa-user"></i> Profile';
+        profileButton.setAttribute('aria-label', 'View your profile');
+        profileButton.addEventListener('click', () => this.showProfileOverlay());
+        
+        // Insert buttons before the logout button (info, badges, profile)
         headerRightSection.insertBefore(infoButton, logoutButton);
         headerRightSection.insertBefore(badgesButton, logoutButton);
+        headerRightSection.insertBefore(profileButton, logoutButton);
         
         // Add Font Awesome if not already included
         if (!document.querySelector('link[href*="font-awesome"]')) {
@@ -771,7 +779,7 @@ class IndexPage {
             const style = document.createElement('style');
             style.id = 'header-buttons-style';
             style.textContent = `
-                .info-button, .badges-button {
+                .info-button, .badges-button, .profile-button {
                     color: white;
                     border-radius: 4px;
                     padding: 8px 16px;
@@ -783,6 +791,9 @@ class IndexPage {
                     margin-right: 10px;
                     font-weight: 500;
                     font-size: 14px;
+                    border: none;
+                    cursor: pointer;
+                    font-family: inherit;
                 }
                 
                 .info-button {
@@ -803,8 +814,175 @@ class IndexPage {
                     color: white;
                 }
                 
-                .info-button i, .badges-button i {
+                .profile-button {
+                    background-color: #6c757d;
+                }
+                
+                .profile-button:hover {
+                    background-color: #5a6268;
+                    color: white;
+                }
+                
+                .info-button i, .badges-button i, .profile-button i {
                     margin-right: 6px;
+                }
+                
+                /* Profile overlay styles */
+                .profile-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.75);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 1000;
+                    padding: 1.5rem;
+                }
+                
+                .profile-content {
+                    background-color: white;
+                    border-radius: 12px;
+                    width: 95%;
+                    max-width: 600px;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+                    padding: 2rem;
+                }
+                
+                .profile-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 1rem;
+                    border-bottom: 2px solid #eee;
+                }
+                
+                .profile-header h2 {
+                    margin: 0;
+                    color: #333;
+                }
+                
+                .profile-close-btn {
+                    background: none;
+                    border: none;
+                    font-size: 1.5rem;
+                    cursor: pointer;
+                    padding: 0.5rem;
+                    color: #666;
+                    transition: color 0.2s;
+                }
+                
+                .profile-close-btn:hover {
+                    color: #e74c3c;
+                }
+                
+                .profile-section {
+                    margin-bottom: 2rem;
+                }
+                
+                .profile-section h3 {
+                    margin-bottom: 1rem;
+                    color: #555;
+                    font-size: 1.1rem;
+                }
+                
+                .profile-info {
+                    background-color: #f8f9fa;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    margin-bottom: 1rem;
+                }
+                
+                .profile-info-item {
+                    display: flex;
+                    padding: 0.5rem 0;
+                }
+                
+                .profile-info-label {
+                    font-weight: 600;
+                    color: #555;
+                    min-width: 120px;
+                }
+                
+                .profile-info-value {
+                    color: #333;
+                }
+                
+                .password-change-form {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+                
+                .form-group {
+                    display: flex;
+                    flex-direction: column;
+                }
+                
+                .form-group label {
+                    margin-bottom: 0.5rem;
+                    font-weight: 600;
+                    color: #555;
+                }
+                
+                .form-group input {
+                    padding: 0.75rem;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    font-size: 1rem;
+                }
+                
+                .form-group input:focus {
+                    outline: none;
+                    border-color: var(--primary-color, #4a90e2);
+                    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+                }
+                
+                .profile-btn {
+                    padding: 0.75rem 1.5rem;
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0.5rem;
+                }
+                
+                .profile-btn-primary {
+                    background-color: var(--primary-color, #4a90e2);
+                    color: white;
+                }
+                
+                .profile-btn-primary:hover {
+                    background-color: var(--primary-color-dark, #3a80d2);
+                }
+                
+                .profile-message {
+                    padding: 0.75rem;
+                    border-radius: 4px;
+                    margin-top: 1rem;
+                    text-align: center;
+                }
+                
+                .profile-message.success {
+                    background-color: #d4edda;
+                    color: #155724;
+                    border: 1px solid #c3e6cb;
+                }
+                
+                .profile-message.error {
+                    background-color: #f8d7da;
+                    color: #721c24;
+                    border: 1px solid #f5c6cb;
                 }
             `;
             document.head.appendChild(style);
@@ -923,6 +1101,167 @@ class IndexPage {
                 }
             `;
             document.head.appendChild(style);
+        }
+    }
+
+    // Show profile overlay with user details and password change
+    showProfileOverlay() {
+        const username = localStorage.getItem('username');
+        if (!username) {
+            alert('Unable to load profile. Please log in again.');
+            return;
+        }
+
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'profile-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-labelledby', 'profile-title');
+
+        // Create content
+        const content = document.createElement('div');
+        content.className = 'profile-content';
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'profile-header';
+        header.innerHTML = `
+            <h2 id="profile-title">My Profile</h2>
+            <button class="profile-close-btn" aria-label="Close profile">&times;</button>
+        `;
+
+        // Profile info section
+        const profileSection = document.createElement('div');
+        profileSection.className = 'profile-section';
+        profileSection.innerHTML = `
+            <h3>User Information</h3>
+            <div class="profile-info">
+                <div class="profile-info-item">
+                    <span class="profile-info-label">Username:</span>
+                    <span class="profile-info-value">${username}</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-info-label">Role:</span>
+                    <span class="profile-info-value">Learner</span>
+                </div>
+            </div>
+        `;
+
+        // Password change section
+        const passwordSection = document.createElement('div');
+        passwordSection.className = 'profile-section';
+        passwordSection.innerHTML = `
+            <h3>Change Password</h3>
+            <form class="password-change-form" id="password-change-form">
+                <div class="form-group">
+                    <label for="current-password">Current Password:</label>
+                    <input type="password" id="current-password" class="form-control" required minlength="6" aria-label="Current password">
+                </div>
+                <div class="form-group">
+                    <label for="new-password">New Password:</label>
+                    <input type="password" id="new-password" class="form-control" required minlength="6" aria-label="New password">
+                </div>
+                <div class="form-group">
+                    <label for="confirm-new-password">Confirm New Password:</label>
+                    <input type="password" id="confirm-new-password" class="form-control" required minlength="6" aria-label="Confirm new password">
+                </div>
+                <button type="submit" class="profile-btn profile-btn-primary" aria-label="Change password">
+                    <i class="fa-solid fa-key"></i>
+                    Change Password
+                </button>
+                <div id="password-message"></div>
+            </form>
+        `;
+
+        // Assemble content
+        content.appendChild(header);
+        content.appendChild(profileSection);
+        content.appendChild(passwordSection);
+        overlay.appendChild(content);
+        document.body.appendChild(overlay);
+
+        // Event listeners
+        const closeBtn = overlay.querySelector('.profile-close-btn');
+        closeBtn.addEventListener('click', () => overlay.remove());
+
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.remove();
+            }
+        });
+
+        // Escape key handler
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                overlay.remove();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+
+        // Form submission
+        const form = document.getElementById('password-change-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.handlePasswordChange();
+        });
+    }
+
+    // Handle password change
+    async handlePasswordChange() {
+        const currentPassword = document.getElementById('current-password').value;
+        const newPassword = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-new-password').value;
+        const messageDiv = document.getElementById('password-message');
+
+        // Validation
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            this.showProfileMessage('Please fill in all fields.', 'error');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            this.showProfileMessage('New password must be at least 6 characters long.', 'error');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            this.showProfileMessage('New passwords do not match.', 'error');
+            return;
+        }
+
+        try {
+            const response = await this.apiService.changeUserPassword(currentPassword, newPassword);
+
+            if (response.success) {
+                this.showProfileMessage('Password changed successfully!', 'success');
+                
+                // Clear form
+                document.getElementById('current-password').value = '';
+                document.getElementById('new-password').value = '';
+                document.getElementById('confirm-new-password').value = '';
+            } else {
+                throw new Error(response.message || 'Failed to change password');
+            }
+        } catch (error) {
+            console.error('Failed to change password:', error);
+            this.showProfileMessage(error.message || 'Failed to change password. Please check your current password.', 'error');
+        }
+    }
+
+    // Show profile message
+    showProfileMessage(message, type) {
+        const messageDiv = document.getElementById('password-message');
+        messageDiv.className = `profile-message ${type}`;
+        messageDiv.textContent = message;
+        
+        // Auto-hide success messages after 5 seconds
+        if (type === 'success') {
+            setTimeout(() => {
+                messageDiv.className = '';
+                messageDiv.textContent = '';
+            }, 5000);
         }
     }
 
