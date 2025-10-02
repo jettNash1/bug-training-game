@@ -10,47 +10,6 @@
     --text-secondary: #34495e;
     --text-muted: #7f8c8d;
     --progress-bg: #edf2f7;
-    --border-color: rgba(0, 0, 0, 0.05);
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.2);
-}
-
-/* Dark Mode Theme */
-body.dark-mode,
-html.dark-mode {
-    --primary-color: #5dade2;
-    --secondary-color: #5dade2;
-    --success-color: #58d68d;
-    --warning-color: #f4d03f;
-    --danger-color: #ec7063;
-    --background-color: #1a1a2e;
-    --card-background: #16213e;
-    --text-primary: #eaeaea;
-    --text-secondary: #b8b8b8;
-    --text-muted: #888888;
-    --progress-bg: #2c3e50;
-    --border-color: rgba(255, 255, 255, 0.1);
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.6);
-}
-
-/* Smooth theme transitions */
-body,
-.app-header,
-.category-card,
-.quiz-card,
-.badge-card,
-.admin-card,
-.auth-card,
-.option,
-.submit-button,
-.nav-button,
-.logout-button,
-.auth-button,
-.back-link {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 body {
@@ -91,10 +50,10 @@ body {
 .category-card {
     background: var(--card-background);
     border-radius: 16px;
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     overflow: hidden;
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
     min-height: 100%;
@@ -142,9 +101,9 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
-    background: var(--card-background);
+    background: #fff;
     border-radius: 8px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transition: all 0.2s ease;
     min-height: 200px;
 }
@@ -468,7 +427,7 @@ body {
     width: 100%;
     background: var(--card-background);
     border-radius: 16px;
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
     overflow: hidden;
 }
 
@@ -570,7 +529,7 @@ body {
     align-items: center;
     padding: 1.5rem 2rem;
     background: var(--card-background);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     margin-bottom: 2rem;
     width: 100%;
     box-sizing: border-box;
@@ -634,39 +593,7 @@ body {
 .user-menu {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-}
-
-/* Theme Toggle Button */
-.theme-toggle {
-    background: transparent;
-    border: 2px solid var(--text-muted);
-    color: var(--text-primary);
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    min-width: 40px;
-    height: 40px;
-}
-
-.theme-toggle:hover {
-    border-color: var(--secondary-color);
-    color: var(--secondary-color);
-    transform: scale(1.05);
-}
-
-.theme-toggle:focus {
-    outline: 2px solid var(--secondary-color);
-    outline-offset: 2px;
-}
-
-.theme-toggle i {
-    font-size: 1.1rem;
+    gap: 1rem;
 }
 
 .user-info {
@@ -751,9 +678,9 @@ body {
     font-weight: 500;
     transition: color 0.2s ease;
     padding: 0.5rem 1rem;
-    background: var(--card-background);
+    background: white;
     border-radius: 8px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     margin-top: 2rem;
 }
 
@@ -763,10 +690,10 @@ body {
 }
 
 .quiz-progress {
-    background: var(--card-background);
+    background: white;
     padding: 1rem;
     border-radius: 12px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     min-width: 250px;
 }
 
@@ -801,12 +728,12 @@ body {
 }
 
 .quiz-card {
-    background: var(--card-background);
+    background: white;
     border-radius: 16px;
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     padding: 2rem;
     margin-bottom: 2rem;
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(0, 0, 0, 0.05);
     position: relative;
 }
 
@@ -845,7 +772,7 @@ body {
 
 .option:hover {
     border-color: var(--secondary-color);
-    background: var(--card-background);
+    background: white;
     transform: translateX(4px);
 }
 
@@ -874,12 +801,12 @@ body {
     border: 2px solid var(--secondary-color);
     border-radius: 50%;
     transition: background-color 0.1s ease, box-shadow 0.1s ease;
-    background: var(--card-background);
+    background: white;
 }
 
 .option input[type="radio"]:checked + label::before {
     background-color: var(--secondary-color) !important;
-    box-shadow: inset 0 0 0 4px var(--card-background) !important;
+    box-shadow: inset 0 0 0 4px white !important;
     transition: none !important;
 }
 
@@ -992,7 +919,7 @@ body {
 }
 
 .option input[type="radio"]:focus:checked + label::before {
-    box-shadow: inset 0 0 0 4px var(--card-background), 0 0 0 3px rgba(52, 152, 219, 0.2) !important;
+    box-shadow: inset 0 0 0 4px white, 0 0 0 3px rgba(52, 152, 219, 0.2) !important;
 }
 
 /* Loading state */
@@ -1036,7 +963,7 @@ body {
 /* Ensure smooth rapid clicking */
 .option input[type="radio"]:checked + label::before {
     background-color: var(--secondary-color) !important;
-    box-shadow: inset 0 0 0 4px var(--card-background) !important;
+    box-shadow: inset 0 0 0 4px white !important;
     transition: none !important;
 }
 
@@ -1114,11 +1041,11 @@ body {
 }
 
 .admin-card {
-    background: var(--card-background);
+    background: white;
     border-radius: 16px;
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     padding: 1.5rem;
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .stats-grid {
@@ -1806,7 +1733,6 @@ select:disabled {
     padding-bottom: 3rem;
     position: relative;
     box-sizing: border-box;
-    border: 1px solid var(--border-color);
 }
 
 .user-details-header {

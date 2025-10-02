@@ -1,30 +1,12 @@
-/* Dark mode support for quiz pages */
-body.dark-mode .quiz-card,
-body.dark-mode .intro-screen {
-    background: var(--card-background);
-    color: var(--text-primary);
-}
-
-body.dark-mode .loading-overlay {
-    background: rgba(26, 26, 46, 0.9);
-}
-
-body.dark-mode .intro-details,
-body.dark-mode .detail-item {
-    background: var(--background-color);
-    border-color: var(--border-color);
-    color: var(--text-primary);
-}
-
 .loading-indicator {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: var(--card-background);
+    background: rgba(255, 255, 255, 0.9);
     padding: 20px;
     border-radius: 8px;
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -81,7 +63,7 @@ body.dark-mode .detail-item {
 
 /* Progress indicators */
 .quiz-header-progress {
-    background: var(--background-color);
+    background: #f8f9fa;
     border-radius: 8px;
     padding: 0.8rem 1rem;
     margin-bottom: 1rem;
@@ -93,14 +75,14 @@ body.dark-mode .detail-item {
 
 .level-info, .question-counter {
     font-weight: bold;
-    color: var(--text-primary);
+    color: #2c3e50;
     margin-bottom: 3px;
     text-align: right;
 }
 
 .progress-bar {
     height: 8px;
-    background: var(--progress-bg);
+    background: #dee2e6;
     border-radius: 4px;
     overflow: hidden;
 }
@@ -117,11 +99,10 @@ body.dark-mode .detail-item {
     position: absolute;
     top: 10px;
     right: 10px;
-    background-color: var(--background-color);
-    color: var(--text-primary);
+    background-color: #f8f9fa;
     padding: 10px 15px;
     border-radius: 8px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     font-size: 1.4rem;
     font-weight: bold;
     z-index: 100;
@@ -152,25 +133,24 @@ body.dark-mode .detail-item {
 }
 
 .quiz-card {
-    background: var(--card-background);
+    background: white;
     border-radius: 12px;
     padding: 2rem;
     margin: 2rem auto;
     max-width: 800px;
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .question-section h2 {
     font-size: 1.5rem;
-    color: var(--text-primary);
+    color: #2c3e50;
     margin-bottom: 1rem;
 }
 
 .question-section p {
     font-size: 1.1rem;
     line-height: 1.6;
-    color: var(--text-secondary);
+    color: #34495e;
     margin-bottom: 2rem;
 }
 
@@ -188,8 +168,8 @@ body.dark-mode .detail-item {
 }
 
 .option {
-    background: var(--background-color);
-    border: 2px solid var(--progress-bg);
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
     border-radius: 8px;
     padding: 1rem;
     margin-bottom: 0.5rem;
@@ -197,8 +177,8 @@ body.dark-mode .detail-item {
 }
 
 .option:hover {
-    border-color: var(--text-muted);
-    background: var(--card-background);
+    border-color: #adb5bd;
+    background: #e9ecef;
 }
 
 .option input[type="radio"] {
@@ -207,14 +187,14 @@ body.dark-mode .detail-item {
 
 .option label {
     font-size: 1rem;
-    color: var(--text-primary);
+    color: #343a40;
     cursor: pointer;
     flex: 1;
 }
 
 .quiz-option {
-    background: var(--background-color);
-    border: 2px solid var(--progress-bg);
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
     border-radius: 8px;
     padding: 1rem;
     font-size: 1rem;
@@ -223,8 +203,8 @@ body.dark-mode .detail-item {
 }
 
 .quiz-option:hover {
-    background: var(--card-background);
-    border-color: var(--text-muted);
+    background: #e9ecef;
+    border-color: #adb5bd;
 }
 
 .quiz-option:focus {
@@ -259,13 +239,13 @@ body.dark-mode .detail-item {
 .outcome-content {
     text-align: center;
     padding: 2rem;
-    background: var(--background-color);
+    background: #f8f9fa;
     border-radius: 12px;
     margin: 1rem 0;
 }
 
 .outcome-content h3 {
-    color: var(--text-primary);
+    color: #2c3e50;
     margin-bottom: 1rem;
     font-size: 1.5rem;
 }
@@ -273,7 +253,7 @@ body.dark-mode .detail-item {
 .outcome-content p {
     font-size: 1.1rem;
     line-height: 1.6;
-    color: var(--text-secondary);
+    color: #34495e;
     margin-bottom: 1.5rem;
 }
 
@@ -287,7 +267,7 @@ body.dark-mode .detail-item {
 #outcome-text {
     font-size: 1.1rem;
     line-height: 1.6;
-    color: var(--text-secondary);
+    color: #34495e;
     margin-bottom: 1.5rem;
 }
 
@@ -298,7 +278,7 @@ body.dark-mode .detail-item {
 #xp-gained {
     font-size: 1.2rem;
     font-weight: bold;
-    color: var(--text-primary);
+    color: #000000;
     margin-bottom: 0.5rem;
 }
 
@@ -311,7 +291,7 @@ body.dark-mode .detail-item {
 .review-section, .recommendations-section {
     margin-top: 2rem;
     padding: 1rem;
-    background: var(--background-color);
+    background: #f8f9fa;
     border-radius: 8px;
 }
 
@@ -320,11 +300,11 @@ body.dark-mode .detail-item {
 }
 
 .review-item {
-    background: var(--background-color);
+    background: #f8f9fa;
     border-radius: 8px;
     padding: 1rem;
     margin-bottom: 1rem;
-    border-left: 4px solid var(--text-muted);
+    border-left: 4px solid #adb5bd;
 }
 
 .review-item.correct {
@@ -351,14 +331,14 @@ body.dark-mode .detail-item {
 #final-score {
     font-size: 1.5rem;
     font-weight: bold;
-    color: var(--text-primary);
+    color: #2c3e50;
     margin: 1rem 0;
 }
 
 #performance-summary {
     font-size: 1.1rem;
     line-height: 1.6;
-    color: var(--text-secondary);
+    color: #34495e;
     margin-bottom: 2rem;
 }
 
@@ -371,7 +351,7 @@ body.dark-mode .detail-item {
 
 .score-display, .experience-display {
     text-align: center;
-    background: var(--background-color);
+    background: #f8f9fa;
     padding: 1rem;
     border-radius: 8px;
     min-width: 100px;
@@ -380,7 +360,7 @@ body.dark-mode .detail-item {
 .score-value, .experience-value {
     font-size: 2rem;
     font-weight: bold;
-    color: var(--text-primary);
+    color: #2c3e50;
 }
 
 .end-buttons {
@@ -468,14 +448,14 @@ body.dark-mode .detail-item {
 .quiz-name-display {
     font-size: 1.8rem;
     font-weight: bold;
-    color: var(--text-primary);
+    color: #000000;
     text-align: center;
     margin: 0;
     padding: 0.8rem 1rem;
-    background: var(--card-background);
-    border: 2px solid var(--border-color);
+    background: #ffffff;
+    border: 2px solid #e9ecef;
     border-radius: 8px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     flex: 1 1 auto;
     min-width: 0; /* Allow shrinking */
     max-width: 100%;
@@ -546,9 +526,9 @@ body.dark-mode .detail-item {
     text-align: center;
     max-width: 600px;
     margin: 2rem auto;
-    background: var(--card-background);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-md);
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #e9ecef;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .intro-content {
@@ -570,9 +550,9 @@ body.dark-mode .detail-item {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--background-color);
+    background: #fff;
     border-radius: 50%;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     padding: 1rem;
 }
 
@@ -585,14 +565,14 @@ body.dark-mode .detail-item {
 .intro-title {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #2c3e50;
     margin: 0;
     line-height: 1.2;
 }
 
 .intro-description {
     font-size: 1.1rem;
-    color: var(--text-secondary);
+    color: #6c757d;
     line-height: 1.6;
     max-width: 500px;
     margin: 0 auto;
@@ -607,9 +587,9 @@ body.dark-mode .detail-item {
     flex-direction: column;
     gap: 0.75rem;
     padding: 1.5rem;
-    background: var(--background-color);
+    background: #fff;
     border-radius: 10px;
-    border: 1px solid var(--border-color);
+    border: 1px solid #e9ecef;
 }
 
 .detail-item {
@@ -618,7 +598,7 @@ body.dark-mode .detail-item {
     justify-content: center;
     gap: 0.75rem;
     font-size: 1rem;
-    color: var(--text-secondary);
+    color: #495057;
 }
 
 .detail-icon {
@@ -665,7 +645,7 @@ body.dark-mode .detail-item {
 }
 
 .cancel-link {
-    color: var(--text-muted);
+    color: #6c757d;
     text-decoration: none;
     font-size: 0.95rem;
     padding: 0.5rem 1rem;
@@ -674,8 +654,8 @@ body.dark-mode .detail-item {
 }
 
 .cancel-link:hover {
-    color: var(--text-secondary);
-    background: var(--background-color);
+    color: #495057;
+    background: #f8f9fa;
 }
 
 .cancel-link:focus {

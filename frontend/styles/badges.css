@@ -205,11 +205,6 @@
     transition: width 0.5s ease-in-out;
 }
 
-/* Dark mode support for badges page */
-body.dark-mode .loading-overlay {
-    background: rgba(26, 26, 46, 0.9);
-}
-
 .loading-overlay {
     position: fixed;
     top: 0;

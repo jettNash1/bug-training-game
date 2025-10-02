@@ -14,7 +14,6 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="styles/badges.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script type="module" src="./scripts/theme-manager.js"></script>
     <script type="module" src="./scripts/badges.js" defer></script>
     <style>
         /* Remove the border under the header */
@@ -97,9 +96,6 @@
             <a href="badges.html" class="badges-button active">
                 <i class="fa-solid fa-award"></i> Badges
             </a>
-            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
-                <i id="theme-icon" class="fas fa-moon"></i>
-            </button>
             <button class="logout-button" onclick="handleLogout()" aria-label="Logout">Logout</button>
         </div>
     </header>
@@ -141,10 +137,7 @@
         </div>
     </footer>
 
-    <script type="module">
-        import { handleLogout } from './auth.js';
-        window.handleLogout = handleLogout;
-        
+    <script>
         // Add username to the header
         document.addEventListener('DOMContentLoaded', () => {
             const username = localStorage.getItem('username');

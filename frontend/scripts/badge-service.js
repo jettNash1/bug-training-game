@@ -99,14 +99,11 @@ export class BadgeService {
             console.log('Real quiz IDs from categories:', realQuizIds);
             
             // Convert to array and filter out hidden quizzes
-            // Normalize quiz IDs to lowercase for comparison since hiddenQuizzes stores lowercase values
-            const visibleQuizIds = Array.from(allQuizIds).filter(quizId => {
-                const normalizedQuizId = quizId.toLowerCase();
-                return !hiddenQuizzes.includes(normalizedQuizId);
-            });
+            const visibleQuizIds = Array.from(allQuizIds).filter(quizId => 
+                !hiddenQuizzes.includes(quizId)
+            );
             
             console.log('All quiz IDs:', Array.from(allQuizIds));
-            console.log('Hidden quizzes (from user settings):', hiddenQuizzes);
             console.log('Visible quiz IDs after filtering:', visibleQuizIds);
 
             if (visibleQuizIds.length === 0) {
