@@ -8767,23 +8767,19 @@ export class Admin2Dashboard {
             // Update progress for data processing
             this.updateExportProgress(0, 'Processing selected users...');
 
-            // Create CSV content with vertical layout (transposed)
+            // Create CSV content with vertical layout
             const csvRows = [];
             
             selectedUsers.forEach((user, userIndex) => {
-                // Add Username row
-                csvRows.push(['Username', user.username || '']);
-                
-                // Add Email row
-                csvRows.push(['Email', user.email || '']);
-                
-                // Add Last Active row
-                csvRows.push(['LastActive', this.formatDate(this.getLastActiveDate(user))]);
+                // User details section
+                csvRows.push(['Username', user.username || '', '', '']);
+                csvRows.push(['Email', user.email || '', '', '']);
+                csvRows.push(['LastActive', this.formatDate(this.getLastActiveDate(user)), '', '']);
                 
                 // Add blank row for spacing
-                csvRows.push(['', '']);
+                csvRows.push(['', '', '', '']);
 
-                // Add quiz scores and previous scores vertically
+                // Add quiz scores with previous scores on the same row
                 selectedQuizzes.forEach(quizId => {
                     let score = 0;
                     
@@ -8807,10 +8803,7 @@ export class Admin2Dashboard {
                         }
                     }
                     
-                    // Add quiz score row
-                    csvRows.push([this.formatQuizName(quizId), `${score}%`]);
-                    
-                    // Add previous scores row immediately after
+                    // Get previous scores
                     let previousScores = 'N/A';
                     if (user.quizPreviousScores) {
                         let prevScores = null;
@@ -8820,17 +8813,19 @@ export class Admin2Dashboard {
                             prevScores = user.quizPreviousScores[quizId.toLowerCase()];
                         }
                         if (prevScores && Array.isArray(prevScores) && prevScores.length > 0) {
-                            previousScores = prevScores.map(ps => `${ps.score}%`).join('; ');
+                            previousScores = prevScores.map(ps => `${ps.score}%`).join(';');
                         }
                     }
-                    csvRows.push([`${this.formatQuizName(quizId)} Previous Scores`, previousScores]);
+                    
+                    // Add row with quiz name in column A, empty column B, score in column C, previous scores in column D
+                    csvRows.push([this.formatQuizName(quizId), '', `${score}%`, previousScores]);
                 });
                 
                 // Add separator between users if there are multiple users
                 if (userIndex < selectedUsers.length - 1) {
-                    csvRows.push(['', '']);
-                    csvRows.push(['='.repeat(50), '']);
-                    csvRows.push(['', '']);
+                    csvRows.push(['', '', '', '']);
+                    csvRows.push(['='.repeat(50), '', '', '']);
+                    csvRows.push(['', '', '', '']);
                 }
             });
 
