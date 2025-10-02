@@ -1021,7 +1021,7 @@ export class APIService {
                 throw new Error('Not authenticated');
             }
 
-            const response = await fetch(`${this.baseUrl}/api/user/change-password`, {
+            const response = await fetch(`${this.baseUrl}/user/change-password`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
