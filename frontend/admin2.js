@@ -182,6 +182,9 @@ export class Admin2Dashboard {
                 // Update schedule section user dropdown
                 this.populateUserDropdown();
                 
+                // Update change password section user dropdown
+                this.populatePasswordUserDropdown();
+                
                 return response.data;
             } else {
                 console.error('Failed to load users:', response.error);
@@ -1100,6 +1103,10 @@ export class Admin2Dashboard {
             case 'export-section':
                 // Initialize custom export when export section is activated
                 setTimeout(() => this.initializeCustomExport(), 300);
+                break;
+            case 'change-password-section':
+                // Initialize change password section
+                this.setupChangePasswordSection();
                 break;
         }
     }
@@ -7464,6 +7471,104 @@ export class Admin2Dashboard {
         
         // Fallback to a default image if no specific match
         return '../assets/badges/default.svg';
+    }
+
+    // Change User Password Section Methods
+    setupChangePasswordSection() {
+        console.log('Setting up change password section');
+        // Populate user dropdown
+        this.populatePasswordUserDropdown();
+        
+        // Add event listener for change password button
+        const changePasswordBtn = document.getElementById('change-password-btn');
+        if (changePasswordBtn) {
+            changePasswordBtn.addEventListener('click', () => this.handleChangePassword());
+            
+            // Add keyboard support
+            changePasswordBtn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.handleChangePassword();
+                }
+            });
+        }
+    }
+    
+    populatePasswordUserDropdown() {
+        const userDropdown = document.getElementById('password-user-select');
+        if (!userDropdown) return;
+        
+        // Clear existing options except the first one
+        userDropdown.innerHTML = '<option value="">-- Select a user --</option>';
+        
+        // Sort users alphabetically by username
+        const sortedUsers = [...this.users].sort((a, b) => 
+            a.username.localeCompare(b.username)
+        );
+        
+        // Add user options
+        sortedUsers.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.username;
+            option.textContent = user.username;
+            userDropdown.appendChild(option);
+        });
+    }
+    
+    async handleChangePassword() {
+        const userSelect = document.getElementById('password-user-select');
+        const newPasswordInput = document.getElementById('new-password-input');
+        const confirmPasswordInput = document.getElementById('confirm-password-input');
+        
+        const username = userSelect.value;
+        const newPassword = newPasswordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        
+        // Validation
+        if (!username) {
+            this.showError('Please select a user.');
+            return;
+        }
+        
+        if (!newPassword) {
+            this.showError('Please enter a new password.');
+            return;
+        }
+        
+        if (newPassword.length < 6) {
+            this.showError('Password must be at least 6 characters long.');
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            this.showError('Passwords do not match. Please try again.');
+            return;
+        }
+        
+        // Confirmation prompt
+        const confirmMessage = `Are you sure you want to change password for ${username}?`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+        
+        try {
+            // Call API to reset password
+            const response = await this.apiService.resetUserPassword(username, newPassword);
+            
+            if (response.success !== false) {
+                this.showSuccess(`Password changed successfully for ${username}.`);
+                
+                // Clear form fields
+                userSelect.value = '';
+                newPasswordInput.value = '';
+                confirmPasswordInput.value = '';
+            } else {
+                throw new Error(response.message || 'Failed to change password');
+            }
+        } catch (error) {
+            console.error('Failed to change password:', error);
+            this.showError(`Failed to change password for ${username}: ${error.message}`);
+        }
     }
 
     // Fix for export functions
