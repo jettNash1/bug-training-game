@@ -312,7 +312,7 @@ router.get('/version', (req, res) => {
 router.put('/user/change-password', auth, async (req, res) => {
     try {
         const { oldPassword, newPassword } = req.body;
-        const username = req.user.username;
+        const userId = req.user.id; // JWT token contains user id, not username
 
         if (!oldPassword || !newPassword) {
             return res.status(400).json({
@@ -328,9 +328,9 @@ router.put('/user/change-password', auth, async (req, res) => {
             });
         }
 
-        // Get the user from database
+        // Get the user from database by ID
         const User = require('../models/user.model');
-        const user = await User.findOne({ username });
+        const user = await User.findById(userId);
 
         if (!user) {
             return res.status(404).json({
@@ -352,7 +352,7 @@ router.put('/user/change-password', auth, async (req, res) => {
         user.password = newPassword;
         await user.save();
 
-        console.log(`Password changed successfully for user: ${username}`);
+        console.log(`Password changed successfully for user: ${user.username}`);
 
         res.json({
             success: true,
