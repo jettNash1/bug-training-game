@@ -690,14 +690,54 @@ export class APIService {
             
             console.log('[API] Reset flag check:', resetFlagChecks);
             
-            const resetFlags = Object.values(resetFlagChecks);
-            const hasResetFlag = resetFlags.some(flag => flag && flag !== 'null' && flag !== 'undefined');
+            // SMART STALE FLAG DETECTION: Check if flags are recent (within last 5 minutes)
+            // This prevents old/stale flags from blocking users while still catching real resets
+            const MAX_FLAG_AGE_MS = 5 * 60 * 1000; // 5 minutes
+            const now = Date.now();
+            let hasValidResetFlag = false;
+            let staleFlags = [];
             
-            if (hasResetFlag) {
+            // Check timestamp-based flags
+            const timestampFlags = [
+                `cache_invalidated_${username}_${normalizedQuizName}`,
+                `force_reset_${username}_${normalizedQuizName}`,
+                `reset_timestamp_${username}`
+            ];
+            
+            for (const flagKey of timestampFlags) {
+                const flagValue = localStorage.getItem(flagKey);
+                if (flagValue && flagValue !== 'null' && flagValue !== 'undefined') {
+                    const flagTimestamp = parseInt(flagValue, 10);
+                    const flagAge = now - flagTimestamp;
+                    
+                    if (flagAge < MAX_FLAG_AGE_MS) {
+                        // Flag is fresh, honor it
+                        hasValidResetFlag = true;
+                        console.log(`[API] Fresh reset flag detected: ${flagKey} (age: ${Math.round(flagAge / 1000)}s)`);
+                    } else {
+                        // Flag is stale, mark for cleanup
+                        staleFlags.push(flagKey);
+                        console.warn(`[API] Stale reset flag detected: ${flagKey} (age: ${Math.round(flagAge / 1000)}s), will clear`);
+                    }
+                }
+            }
+            
+            // Check window flags (these are session-based)
+            if (window.CACHE_INVALIDATED || window.RESET_IN_PROGRESS) {
+                hasValidResetFlag = true;
+            }
+            
+            // Clear stale flags immediately
+            if (staleFlags.length > 0) {
+                console.log(`[API] Clearing ${staleFlags.length} stale reset flags`);
+                staleFlags.forEach(flag => localStorage.removeItem(flag));
+            }
+            
+            if (hasValidResetFlag) {
                 const activeFlags = Object.entries(resetFlagChecks)
                     .filter(([key, value]) => value && value !== 'null' && value !== 'undefined')
                     .map(([key]) => key);
-                console.warn(`[API] RESET DETECTED: Returning fresh progress for ${quizName} due to reset flags:`, activeFlags);
+                console.warn(`[API] VALID RESET DETECTED: Returning fresh progress for ${quizName} due to reset flags:`, activeFlags);
                 
                 // IMPORTANT: Clear the reset flags immediately after detecting them
                 // This prevents them from persisting and causing issues on subsequent loads
@@ -719,6 +759,11 @@ export class APIService {
                         questionHistory: []
                     }
                 };
+            }
+            
+            // If we only had stale flags, log that we're continuing normally
+            if (staleFlags.length > 0) {
+                console.log('[API] Stale flags cleared, continuing with normal progress load');
             }
             
             // ENHANCED: Check for cross-browser cache invalidation
