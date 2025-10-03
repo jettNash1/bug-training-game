@@ -524,15 +524,7 @@ export class TestSupportQuiz extends BaseQuiz {
             const scenario = currentScenarios[scenarioIndex];
             
             // Get the selected answer
-            const selectedAnswer = scenario.options[optionIndex];
-            
-            console.log('[TestSupportQuiz] Selected answer:', {
-                text: selectedAnswer.text,
-                experience: selectedAnswer.experience,
-                timedOut: timedOut
-            });
-            
-            // Add to player experience (no points if timed out)
+            const selectedAnswer = scenario.options[optionIndex];             // Add to player experience (no points if timed out)
             if (!timedOut) {
                 this.player.experience += selectedAnswer.experience;
             }

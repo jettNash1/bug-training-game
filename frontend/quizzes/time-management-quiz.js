@@ -526,12 +526,6 @@ export class TimeManagementQuiz extends BaseQuiz {
             // Get the selected answer
             const selectedAnswer = scenario.options[optionIndex];
             
-            console.log('[TimeManagementQuiz] Selected answer:', {
-                text: selectedAnswer.text,
-                experience: selectedAnswer.experience,
-                timedOut: timedOut
-            });
-            
             // Add to player experience (no points if timed out)
             if (!timedOut) {
                 this.player.experience += selectedAnswer.experience;

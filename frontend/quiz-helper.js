@@ -2023,12 +2023,6 @@ export class BaseQuiz {
             const j = Math.floor(randomValue * (i + 1));
             [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
         }
-        
-        // Log the shuffle result for debugging (can be removed in production)
-        const correctAnswerIndex = shuffledOptions.findIndex(option => 
-            option.experience === Math.max(...scenario.options.map(o => o.experience))
-        );
-        console.log(`[BaseQuiz] Question ${this.player.questionHistory.length + 1}: Correct answer shuffled to position ${correctAnswerIndex + 1} of ${shuffledOptions.length}`);
 
         return shuffledOptions;
     }

@@ -524,12 +524,6 @@ export class InitiativeQuiz extends BaseQuiz {
             // Get the selected answer
             const selectedAnswer = scenario.options[optionIndex];
             
-            console.log('[InitiativeQuiz] Selected answer:', {
-                text: selectedAnswer.text,
-                experience: selectedAnswer.experience,
-                timedOut: timedOut
-            });
-            
             // Add to player experience (no points if timed out)
             if (!timedOut) {
                 this.player.experience += selectedAnswer.experience;
