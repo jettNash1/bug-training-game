@@ -3455,6 +3455,52 @@ export class Admin2Dashboard {
                 hasQuizPreviousScores: !!user.quizPreviousScores
             });
             
+            // Fetch question history for all completed quizzes to get accurate scores
+            console.log(`[Admin] Fetching question history for completed quizzes...`);
+            const completedQuizzes = [];
+            
+            // Check quizProgress for completed quizzes (15 questions answered)
+            if (user.quizProgress) {
+                for (const [quizName, progress] of Object.entries(user.quizProgress)) {
+                    const hasQuestionHistory = progress.questionHistory && 
+                                              Array.isArray(progress.questionHistory) && 
+                                              progress.questionHistory.length > 0;
+                    
+                    if (progress.questionsAnswered === 15 && !hasQuestionHistory) {
+                        completedQuizzes.push(quizName);
+                    }
+                }
+            }
+            
+            // Fetch question history for completed quizzes in parallel
+            if (completedQuizzes.length > 0) {
+                console.log(`[Admin] Fetching question history for ${completedQuizzes.length} completed quizzes:`, completedQuizzes);
+                const questionHistoryPromises = completedQuizzes.map(async (quizName) => {
+                    try {
+                        const response = await this.apiService.getQuizQuestions(username, quizName);
+                        if (response.success && response.data?.questionHistory) {
+                            return { quizName, questionHistory: response.data.questionHistory };
+                        }
+                    } catch (error) {
+                        console.warn(`[Admin] Failed to fetch question history for ${username}/${quizName}:`, error);
+                    }
+                    return null;
+                });
+                
+                const results = await Promise.all(questionHistoryPromises);
+                
+                // Merge question history into user.quizProgress
+                results.forEach(result => {
+                    if (result && result.questionHistory) {
+                        const quizLower = result.quizName.toLowerCase();
+                        if (user.quizProgress[quizLower]) {
+                            user.quizProgress[quizLower].questionHistory = result.questionHistory;
+                            console.log(`[Admin] Added question history to ${username}/${result.quizName} (${result.questionHistory.length} questions)`);
+                        }
+                    }
+                });
+            }
+            
             // Update the cached user in this.users array with fresh data
             const userIndex = this.users.findIndex(u => u.username === username);
             if (userIndex !== -1) {
