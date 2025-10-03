@@ -680,18 +680,24 @@ export class APIService {
             
             // ENHANCED RESET DETECTION: Check for reset flags before returning any progress
             const username = localStorage.getItem('username');
-            const resetFlags = [
-                window.CACHE_INVALIDATED,
-                window.RESET_IN_PROGRESS,
-                localStorage.getItem(`cache_invalidated_${username}_${normalizedQuizName}`),
-                localStorage.getItem(`force_reset_${username}_${normalizedQuizName}`),
-                localStorage.getItem(`reset_timestamp_${username}`)
-            ];
+            const resetFlagChecks = {
+                'window.CACHE_INVALIDATED': window.CACHE_INVALIDATED,
+                'window.RESET_IN_PROGRESS': window.RESET_IN_PROGRESS,
+                [`cache_invalidated_${username}_${normalizedQuizName}`]: localStorage.getItem(`cache_invalidated_${username}_${normalizedQuizName}`),
+                [`force_reset_${username}_${normalizedQuizName}`]: localStorage.getItem(`force_reset_${username}_${normalizedQuizName}`),
+                [`reset_timestamp_${username}`]: localStorage.getItem(`reset_timestamp_${username}`)
+            };
             
+            console.log('[API] Reset flag check:', resetFlagChecks);
+            
+            const resetFlags = Object.values(resetFlagChecks);
             const hasResetFlag = resetFlags.some(flag => flag && flag !== 'null' && flag !== 'undefined');
             
             if (hasResetFlag) {
-                console.warn(`[API] RESET DETECTED: Returning fresh progress for ${quizName} due to reset flags`);
+                const activeFlags = Object.entries(resetFlagChecks)
+                    .filter(([key, value]) => value && value !== 'null' && value !== 'undefined')
+                    .map(([key]) => key);
+                console.warn(`[API] RESET DETECTED: Returning fresh progress for ${quizName} due to reset flags:`, activeFlags);
                 return {
                     success: true,
                     data: {
