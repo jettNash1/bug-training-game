@@ -41,7 +41,7 @@ body {
 .categories-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
+    gap: 24px 16px; /* 24px row gap, 16px column gap */
     padding: 2rem;
     max-width: 1400px;
     margin: 0 auto;
@@ -1472,7 +1472,7 @@ select:disabled {
 .categories-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
+    gap: 24px 16px; /* 24px row gap, 16px column gap */
     padding: 2rem;
     max-width: 1400px;
     margin: 0 auto;
