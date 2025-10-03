@@ -348,22 +348,109 @@
                                     </ul>
                                     
                                     <h4>Individual Quiz Management</h4>
-                                    <p>Each quiz card in the details view displays:</p>
+                                    <p>Each quiz card in the details view displays comprehensive information and management controls:</p>
                                     <ul>
-                                        <li><strong>Status & Score:</strong> Completion status, score percentage, questions answered (X/15)</li>
-                                        <li><strong>Attempts Counter:</strong> Tracks how many times the quiz has been reset and retaken</li>
-                                        <li><strong>Last Active Date:</strong> When the user last worked on this specific quiz</li>
-                                        <li><strong>Visibility Toggle:</strong> Show/hide individual quizzes from the user's dashboard</li>
-                                        <li><strong>Reset Progress:</strong> Clear progress for individual quizzes (preserves attempt history)</li>
-                                        <li><strong>View Questions:</strong> See all questions with answers and pass/fail status for each</li>
+                                        <li><strong>Status & Score:</strong> 
+                                            <ul>
+                                                <li>Completion status: Not Started, In Progress, or Completed</li>
+                                                <li>Score percentage with pass/fail indication (70% threshold)</li>
+                                                <li>Questions answered counter (X/15 format)</li>
+                                                <li>Color-coded background for quick visual assessment</li>
+                                            </ul>
+                                        </li>
+                                        <li><strong>Attempts Counter:</strong> 
+                                            <ul>
+                                                <li>Tracks total number of times quiz has been reset and retaken</li>
+                                                <li>Increments each time "Reset Progress" is used</li>
+                                                <li>Helps identify users who are struggling or need additional support</li>
+                                            </ul>
+                                        </li>
+                                        <li><strong>Last Active Date:</strong> 
+                                            <ul>
+                                                <li>Displays when user last interacted with this specific quiz</li>
+                                                <li>Formats: "Today", "Yesterday", or specific date</li>
+                                                <li>Useful for tracking engagement and identifying inactive users</li>
+                                            </ul>
+                                        </li>
+                                        <li><strong>Visibility Toggle (Eye Icon):</strong> 
+                                            <ul>
+                                                <li>Click eye icon to show/hide quiz from user's dashboard</li>
+                                                <li>Open eye = Visible (user can access)</li>
+                                                <li>Closed eye = Hidden (user cannot see or access)</li>
+                                                <li>Changes apply immediately without page refresh</li>
+                                                <li>Great for controlling learning progression and access</li>
+                                            </ul>
+                                        </li>
+                                        <li><strong>Reset Progress Button:</strong> 
+                                            <ul>
+                                                <li>Clears all question history and progress for this quiz only</li>
+                                                <li>User can start the quiz fresh from question 1</li>
+                                                <li>Attempt counter increments to track retry history</li>
+                                                <li>Useful for allowing retakes after failures</li>
+                                            </ul>
+                                        </li>
+                                        <li><strong>View Questions Button:</strong> 
+                                            <ul>
+                                                <li>Opens detailed view of all 15 questions in the quiz</li>
+                                                <li>Shows user's answer for each question</li>
+                                                <li>Displays correct answer for comparison</li>
+                                                <li>Pass/Fail status for each individual question</li>
+                                                <li>Excellent for identifying knowledge gaps and areas needing improvement</li>
+                                            </ul>
+                                        </li>
                                     </ul>
                                     
                                     <h4>Account Management Actions</h4>
+                                    <p>Powerful tools accessible from the User Details panel for comprehensive account control:</p>
                                     <ul>
-                                        <li><strong>Change Password:</strong> Update user login credentials securely</li>
-                                        <li><strong>Reset All Progress:</strong> Clear all quiz progress for a user (with confirmation)</li>
-                                        <li><strong>Delete Account:</strong> Permanently remove user and all associated data (with double confirmation)</li>
-                                        <li><strong>Quiz Visibility Management:</strong> Control which quizzes appear on user's dashboard</li>
+                                        <li><strong>Change User Password:</strong> 
+                                            <ul>
+                                                <li>Securely update any user's login credentials</li>
+                                                <li>Accessible via dedicated button in User Details overlay</li>
+                                                <li>Password changes take effect immediately</li>
+                                                <li>No email or user notification required - direct credential update</li>
+                                                <li>Useful for: password resets, security updates, assisting locked-out users</li>
+                                            </ul>
+                                        </li>
+                                        <li><strong>Quiz Visibility Management:</strong> 
+                                            <ul>
+                                                <li>Control which quizzes appear on each user's dashboard</li>
+                                                <li>Toggle visibility using the eye icon on each quiz card</li>
+                                                <li>Hidden quizzes: User cannot see or access them</li>
+                                                <li>Shown quizzes: Appear on user's dashboard for taking/continuing</li>
+                                                <li>Changes apply instantly - user sees updates on next page load</li>
+                                                <li>Useful for: Progressive learning paths, restricting access, customized training programs</li>
+                                                <li>Visibility status persists across progress resets</li>
+                                            </ul>
+                                        </li>
+                                        <li><strong>Reset Individual Quiz Progress:</strong> 
+                                            <ul>
+                                                <li>Clear progress for specific quizzes via "Reset Progress" button on quiz cards</li>
+                                                <li>Removes all question history and completion data for that quiz</li>
+                                                <li>Preserves attempt counter to track how many times user has retaken quiz</li>
+                                                <li>Does not affect other quizzes or overall account</li>
+                                                <li>Requires confirmation to prevent accidental resets</li>
+                                            </ul>
+                                        </li>
+                                        <li><strong>Reset All Progress:</strong> 
+                                            <ul>
+                                                <li>Clear all quiz progress for a user via "Reset All Progress" button</li>
+                                                <li>Removes completion data, scores, and question history across all quizzes</li>
+                                                <li>User returns to fresh state as if newly created</li>
+                                                <li>Quiz visibility settings are preserved</li>
+                                                <li>Requires confirmation to prevent accidental data loss</li>
+                                                <li>Useful for: Starting new training cycles, clearing old data</li>
+                                            </ul>
+                                        </li>
+                                        <li><strong>Delete Account:</strong> 
+                                            <ul>
+                                                <li>Permanently remove user and all associated data</li>
+                                                <li>Requires double confirmation (type username to confirm)</li>
+                                                <li>Deletes: User account, all quiz progress, badges, attempt history</li>
+                                                <li>Action is irreversible - no recovery possible</li>
+                                                <li>Use with caution - typically for deactivated users or data cleanup</li>
+                                            </ul>
+                                        </li>
                                     </ul>
                                     
                                     <h4>Data Accuracy Features</h4>
