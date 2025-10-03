@@ -496,7 +496,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
 
             const selectedOption = document.querySelector('input[name="option"]:checked');
             if (!selectedOption && !timedOut) {
-                alert('Please select an answer.');
+                this.showToast('Please select an answer before submitting.', 'warning');
                 this.isLoading = false;
                 if (submitButton) {
                     submitButton.disabled = false;

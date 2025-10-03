@@ -480,6 +480,59 @@ export class BaseQuiz {
         setTimeout(() => errorDiv.remove(), 5000);
     }
 
+    /**
+     * Shows a non-blocking toast notification
+     * @param {string} message - The message to display
+     * @param {string} type - The type of toast: 'info', 'success', 'error', or 'warning'
+     */
+    showToast(message, type = 'warning') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container';
+            document.body.appendChild(toastContainer);
+        }
+
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        
+        // Set icon based on type
+        let icon = 'info-circle';
+        if (type === 'success') icon = 'check-circle';
+        if (type === 'error') icon = 'exclamation-circle';
+        if (type === 'warning') icon = 'exclamation-triangle';
+
+        toast.innerHTML = `
+            <div class="toast-content">
+                <span class="toast-icon">${type === 'warning' ? '⚠️' : type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️'}</span>
+                <span class="toast-message">${message}</span>
+            </div>
+            <button class="toast-close" aria-label="Close notification">&times;</button>
+        `;
+
+        // Add to container
+        toastContainer.appendChild(toast);
+
+        // Add event listener to close button
+        const closeBtn = toast.querySelector('.toast-close');
+        closeBtn.addEventListener('click', () => {
+            toast.classList.add('hiding');
+            setTimeout(() => toast.remove(), 300);
+        });
+
+        // Auto remove after 3 seconds (shorter for quiz context)
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 3000);
+    }
+
     shouldEndGame(totalQuestionsAnswered, currentXP) {
         // End game if we've answered all questions
         return totalQuestionsAnswered >= this.totalQuestions;
