@@ -187,7 +187,7 @@ export const raisingTicketsScenarios = {
                     },
                     {
                         text: 'Blocking Issue/Crash',
-                        outcome: 'Correct! a blocking Issue/Crash would likely prevent further testing completely or prevent testing of an area of the site or application.',
+                        outcome: 'Correct! A blocking Issue/Crash would likely prevent further testing completely or prevent testing of an area of the site or application.',
                         experience: 15,
                     },
                     {
@@ -215,7 +215,7 @@ export const raisingTicketsScenarios = {
                     },
                     {
                         text: 'A video or screenshot showing the issue occurring should be included',
-                        outcome: 'Correct! adding evidence can assist with identifying the root cause of the defect. For defects with low replicability rates, it allows the developer to clearly see what the defect is.',
+                        outcome: 'Correct! Adding evidence can assist with identifying the root cause of the defect. For defects with low replicability rates, it allows the developer to clearly see what the defect is.',
                         experience: 15,
                     },
                     {
@@ -233,7 +233,7 @@ export const raisingTicketsScenarios = {
                 options: [
                     {
                         text: 'Tickets should be factual, neutral, include helpful information and the key characteristics of the issue',
-                        outcome: 'Correct! these are all characteristics of a well-written ticket.',
+                        outcome: 'Correct! These are all characteristics of a well-written ticket.',
                         experience: 15,
                     },
                     {
@@ -261,7 +261,7 @@ export const raisingTicketsScenarios = {
                 options: [
                     {
                         text: 'You should check if there are specific client requests for raising issues',
-                        outcome: 'Correct! consider if there are any specific requests from the client on how they would like issues to be raised to the tracker. You can generally find this information out by looking at the Operational Project Details document.',
+                        outcome: 'Correct! Consider if there are any specific requests from the client on how they would like issues to be raised to the tracker. You can generally find this information out by looking at the Operational Project Details document.',
                         experience: 15,
                     },
                     {

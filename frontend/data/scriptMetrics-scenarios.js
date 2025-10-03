@@ -149,7 +149,7 @@ export const scriptMetricsScenarios = {
                 options: [
                     {
                         text: 'Check that new rows were added within the existing table and have the correct formulas',
-                        outcome: 'Correct! first ensure that new rows in the table are always added within the existing table and copy formulas from existing rows.',
+                        outcome: 'Correct! First ensure that new rows in the table are always added within the existing table and copy formulas from existing rows.',
                         experience: 15,
                     },
                     {
@@ -321,7 +321,7 @@ export const scriptMetricsScenarios = {
                 options: [
                     {
                         text: 'The formula in the cell showing the figure isn\'t encompassing all environment rows',
-                        outcome: 'Correct! by double clicking the cell showing the incorrect figure, you can see if the formula is not encompassing the newly added environment row.',
+                        outcome: 'Correct! By double clicking the cell showing the incorrect figure, you can see if the formula is not encompassing the newly added environment row.',
                         experience: 15,
                     },
                     {

@@ -290,7 +290,7 @@ export const communicationScenarios = {
                 options: [
                     {
                         text: 'Say you\'re unsure but will find out the answer',
-                        outcome: 'Correct! giving incorrect information could lead to accountability issues later.',
+                        outcome: 'Correct! Giving incorrect information could lead to accountability issues later.',
                         experience: 15,
                     },
                     {
@@ -356,7 +356,7 @@ export const communicationScenarios = {
                     },
                     {
                         text: 'Being persuasive is a key characteristic of effective communication',
-                        outcome: 'Correct! being persuasive is not a characteristic of effective communication. The following characteristics should be observed. Being Clear, Consistent, Relevant, Timely, Honest, Open, and Approachable',
+                        outcome: 'Correct! Being persuasive is not a characteristic of effective communication. The following characteristics should be observed. Being Clear, Consistent, Relevant, Timely, Honest, Open, and Approachable',
                         experience: 15,
                     },
                     {
@@ -374,7 +374,7 @@ export const communicationScenarios = {
                 options: [
                     {
                         text: 'Ask a peer or project manager to review and provide feedback',
-                        outcome: 'Correct! ask a peer or project manager to review and provide feedback. This helps ensure communication maintains the appropriate professional tone.',
+                        outcome: 'Correct! Ask a peer or project manager to review and provide feedback. This helps ensure communication maintains the appropriate professional tone.',
                         experience: 15,
                     },
                     {
@@ -402,7 +402,7 @@ export const communicationScenarios = {
                 options: [
                     {
                         text: 'Body language is an aspect of communication that is often overlooked',
-                        outcome: 'Correct! this is an aspect that is often overlooked but just as important, our body language says a lot about us, before we even speak.',
+                        outcome: 'Correct! This is an aspect that is often overlooked but just as important, our body language says a lot about us, before we even speak.',
                         experience: 15,
                     },
                     {

@@ -14,17 +14,17 @@ export const CMSTestingScenarios = {
                     },
                     {
                         text: 'To write code to display content on the front end of a website',
-                        outcome: 'content management system is for content management by non-technical users.',
+                        outcome: 'The content management system is for content management by non-technical users.',
                         experience: -5,
                     },
                     {
                         text: 'It is used for file storage that can be accessed and downloaded for use on external websites',
-                        outcome: 'content management system has broader content management capabilities including, publishing content and Search Engine Optimisation management.',
+                        outcome: 'The content management system has broader content management capabilities including, publishing content and Search Engine Optimisation management.',
                         experience: -10,
                     },
                     {
                         text: 'For website hosting through content management system features management',
-                        outcome: 'Content management system manages content across different platforms.',
+                        outcome: 'The content management system manages content across different platforms.',
                         experience: 0,
                     }
                 ]

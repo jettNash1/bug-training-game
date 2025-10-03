@@ -216,7 +216,7 @@ export const timeManagementScenarios = {
                 },
                 {
                     text: 'Prioritise environments and journeys based on how end users will access the software',
-                    outcome: 'Correct! for example, if a website is designed for use on tablet devices, prioritise tablet coverage, as issues found here will be of a higher value to the client.',
+                    outcome: 'Correct! For example, if a website is designed for use on tablet devices, prioritise tablet coverage, as issues found here will be of a higher value to the client.',
                     experience: 15,
                 },
                 {

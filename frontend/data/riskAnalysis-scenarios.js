@@ -216,7 +216,7 @@ export const riskAnalysisScenarios = {
                     },
                     {
                         text: 'Certain',
-                        outcome: 'Correct! according to the Likelihood Scale in the guide, the highest level (5) is defined as Certain. This represents risks that are guaranteed to occur.',
+                        outcome: 'Correct! According to the Likelihood Scale in the guide, the highest level (5) is defined as Certain. This represents risks that are guaranteed to occur.',
                         experience: 15,
                     },
                     {

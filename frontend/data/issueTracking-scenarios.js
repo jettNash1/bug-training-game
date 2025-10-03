@@ -149,7 +149,7 @@ export const issueTrackingScenarios = {
                 options: [
                     {
                         text: 'Automated bug fixing is not a feature of tracking tools',
-                        outcome: 'Correct! during test support, testers essentially become a part of the client\'s development team.',
+                        outcome: 'Correct! Automated bug fixing is not a feature of tracking tools.',
                         experience: 15,
                     },
                     {
@@ -261,7 +261,7 @@ export const issueTrackingScenarios = {
                 options: [
                     {
                         text: 'To organize issues more effectively',
-                        outcome: 'Correct! many tracking tools include the ability to apply custom tags which aids in organising and searching for issues more effectively.',
+                        outcome: 'Correct! Many tracking tools include the ability to apply custom tags which aids in organising and searching for issues more effectively.',
                         experience: 15,
                     },
                     {

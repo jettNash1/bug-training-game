@@ -150,7 +150,7 @@ export const testSupportScenarios = {
             options: [
                 {
                     text: 'Testers become embedded in the client\'s development team, sometimes joining sprint planning and daily standups',
-                    outcome: 'Correct! during test support, testers essentially become a part of the client\'s development team.',
+                    outcome: 'Correct! During test support, testers essentially become a part of the client\'s development team.',
                     experience: 15,
                 },
                 {

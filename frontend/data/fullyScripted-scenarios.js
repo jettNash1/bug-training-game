@@ -233,7 +233,7 @@ export const fullyScriptedScenarios = {
                 options: [
                     {
                         text: 'It is recommended larger scale or complex projects with specific scope requirements',
-                        outcome: 'Correct! fully scripted testing is for larger scale or complex projects that need specific test scenarios.',
+                        outcome: 'Correct! Fully scripted testing is for larger scale or complex projects that need specific test scenarios.',
                         experience: 15,
                     },
                     {

@@ -3,7 +3,7 @@ export const testerMindsetScenarios = {
         {
             id: 1,
             level: 'Basic',
-            title: 'Project Context',
+            title: 'Project Priorities',
             description: "You're starting a new testing project. What's your first priority?",
         options: [
             {
@@ -149,7 +149,7 @@ export const testerMindsetScenarios = {
         options: [
             {
                 text: 'Being competitive is not a characteristic of an Issue Verifcation tester mindset',
-                outcome: 'Correct! being detailed, timely, observant, investigative, impartial, and quality-driven are all characteristics of a tester mindset during Issue Verification not being competitive.',
+                outcome: 'Correct! Being detailed, timely, observant, investigative, impartial, and quality-driven are all characteristics of a tester mindset during Issue Verification not being competitive.',
                 experience: 15,
             },
             {
@@ -233,7 +233,7 @@ export const testerMindsetScenarios = {
         options: [
             {
                 text: 'The client\'s competitors is not a factor to be considered for a new project',
-                outcome: 'Correct! focus should be on understanding the specific project rather than market positioning or competitive analysis.',
+                outcome: 'Correct! The focus should be on understanding the specific project rather than market positioning or competitive analysis.',
                 experience: 15,
             },
             {

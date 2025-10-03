@@ -186,7 +186,7 @@ export const buildVerificationScenarios = {
                     },
                     {
                         text: 'Customisation is a characteristic of build verification testing',
-                        outcome: 'Correct! this is not a characteristic of build verification testing such as Acceptance, Validation, Regression, and Efficiency.',
+                        outcome: 'Correct! This is not a characteristic of build verification testing such as Acceptance, Validation, Regression, and Efficiency.',
                         experience: 15,
                     },
                     {
