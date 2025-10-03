@@ -4401,12 +4401,22 @@ export class Admin2Dashboard {
         window.CACHE_INVALIDATED = true;
         window.RESET_IN_PROGRESS = true;
         
+        // Set localStorage reset flags to trigger reset detection on user side
+        localStorage.setItem(`cache_invalidated_${username}_${normalizedQuizType}`, Date.now().toString());
+        localStorage.setItem(`force_reset_${username}_${normalizedQuizType}`, Date.now().toString());
+        localStorage.setItem(`reset_timestamp_${username}`, Date.now().toString());
+        
         // Clear ALL possible localStorage keys
         const allKeys = Object.keys(localStorage);
         const keysToClear = allKeys.filter(key => {
             const keyLower = key.toLowerCase();
             const usernameLower = username.toLowerCase();
             const quizLower = normalizedQuizType.toLowerCase();
+            
+            // Skip the reset flags we just set
+            if (key.startsWith('cache_invalidated_') || key.startsWith('force_reset_') || key.startsWith('reset_timestamp_')) {
+                return false;
+            }
             
             return (keyLower.includes(usernameLower) && keyLower.includes(quizLower)) ||
                    (keyLower.includes('quiz') && keyLower.includes(usernameLower) && keyLower.includes(quizLower)) ||
@@ -4438,6 +4448,14 @@ export class Admin2Dashboard {
         } catch (error) {
             console.warn('[Admin] Error clearing sessionStorage:', error);
         }
+        
+        // IMPORTANT: Clear the global flags after a short delay to allow reset to propagate
+        // The user's browser will pick up the localStorage flags and clear them after processing
+        setTimeout(() => {
+            window.CACHE_INVALIDATED = false;
+            window.RESET_IN_PROGRESS = false;
+            console.log('[Admin] Cleared global reset flags after cache clearing');
+        }, 1000);
         
         // Clear in-memory caches
         try {

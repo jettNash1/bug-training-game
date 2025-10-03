@@ -698,6 +698,16 @@ export class APIService {
                     .filter(([key, value]) => value && value !== 'null' && value !== 'undefined')
                     .map(([key]) => key);
                 console.warn(`[API] RESET DETECTED: Returning fresh progress for ${quizName} due to reset flags:`, activeFlags);
+                
+                // IMPORTANT: Clear the reset flags immediately after detecting them
+                // This prevents them from persisting and causing issues on subsequent loads
+                localStorage.removeItem(`cache_invalidated_${username}_${normalizedQuizName}`);
+                localStorage.removeItem(`force_reset_${username}_${normalizedQuizName}`);
+                localStorage.removeItem(`reset_timestamp_${username}`);
+                window.CACHE_INVALIDATED = false;
+                window.RESET_IN_PROGRESS = false;
+                console.log('[API] Reset flags cleared after processing');
+                
                 return {
                     success: true,
                     data: {
@@ -716,6 +726,12 @@ export class APIService {
                 const cacheInvalidated = await this.checkCacheInvalidation(username, normalizedQuizName);
                 if (cacheInvalidated) {
                     console.warn(`[API] CROSS-BROWSER RESET DETECTED: Returning fresh progress for ${quizName}`);
+                    
+                    // Clear reset flags after processing cross-browser reset too
+                    localStorage.removeItem(`cache_invalidated_${username}_${normalizedQuizName}`);
+                    localStorage.removeItem(`force_reset_${username}_${normalizedQuizName}`);
+                    console.log('[API] Cross-browser reset flags cleared');
+                    
                     return {
                         success: true,
                         data: {
