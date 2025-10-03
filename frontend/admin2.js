@@ -3604,6 +3604,14 @@ export class Admin2Dashboard {
                         isVisible
                     });
                 
+                    // DEBUG: Log all quiz progress keys to find mismatches
+                    console.log(`[Admin] DEBUGGING ${quizType}:`, {
+                        quizType,
+                        quizLower,
+                        allQuizProgressKeys: Object.keys(user.quizProgress || {}),
+                        lookingForKey: quizLower
+                    });
+                    
                     const quizProgress = user.quizProgress?.[quizLower] || {};
                     const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
                 
@@ -3621,8 +3629,8 @@ export class Admin2Dashboard {
                     console.log(`[Admin] Score calculation for ${quizType}:`, {
                         quizLower,
                         quizResult: quizResult ? 'found' : 'not found',
-                        quizProgress: quizProgress ? 'found' : 'not found',
-                        quizProgressKeys: Object.keys(quizProgress || {}),
+                        quizProgress: Object.keys(quizProgress).length > 0 ? 'found' : 'empty/not found',
+                        quizProgressData: quizProgress,
                         hasQuizProgressQuestionHistory: !!quizProgress?.questionHistory,
                         quizProgressQuestionHistoryLength: quizProgress?.questionHistory?.length || 0,
                         questionHistory: questionHistory ? `array of ${questionHistory.length}` : 'not found',
@@ -3630,14 +3638,20 @@ export class Admin2Dashboard {
                     });
                     
                     if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                        // Calculate score from question history - check if status is 'passed'
-                        const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
+                        // Calculate score from question history
+                        // Check for both 'status === passed' (from getQuizQuestions API) and 'isCorrect === true' (from quizProgress)
+                        const correctAnswers = questionHistory.filter(item => {
+                            if (!item) return false;
+                            // Check both possible formats
+                            return item.status === 'passed' || item.isCorrect === true;
+                        }).length;
                         score = Math.round((correctAnswers / questionHistory.length) * 100);
                         
                         console.log(`[Admin] Calculated score from question history:`, {
                             totalQuestions: questionHistory.length,
                             correctAnswers,
-                            calculatedScore: score
+                            calculatedScore: score,
+                            sampleItem: questionHistory[0] // Log first item to see structure
                         });
                     } else {
                         // No question history available - quiz not completed or in progress
