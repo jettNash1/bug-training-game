@@ -367,8 +367,8 @@ export const newTicketTemplateScenarios = {
                         experience: -15
                     },
                     {
-                        text: '\'When comparing the application to the provided designs\' or \'When comparing the website to the provided documentation\'',
-                        outcome: 'This is a common way of highlighting an issue, comparing with designs or documentation to ensure uniformity of the product.',
+                        text: '\'This size of this image is inconsistent with other images on the page\' or \'The text on this page differs from the provided copy deck\'',                        
+                        outcome: 'These phrases are actually good to use as they clearly highlight discrepancies between expected and actual behavior.',
                         experience: -5
                     }
                 ]
