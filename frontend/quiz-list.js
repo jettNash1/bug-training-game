@@ -151,12 +151,16 @@ export class QuizList {
                     return acc + (progress.questionsAnswered === 15 ? 1 : 0);
                 }, 0);
 
+                // Determine if this category should use two-column layout
+                const usesTwoColumns = visibleQuizzes.length > 5;
+                const quizListClass = usesTwoColumns ? 'quiz-list quiz-list-two-column' : 'quiz-list';
+
                 return `
-                    <div class="category-card" role="listitem">
+                    <div class="category-card ${usesTwoColumns ? 'category-card-wide' : ''}" role="listitem">
                         <div class="category-header">
                             ${category}
                         </div>
-                        <div class="quiz-list" role="list">
+                        <div class="${quizListClass}" role="list">
                             ${quizItemsHTML}
                         </div>
                         <div class="category-progress" role="status">

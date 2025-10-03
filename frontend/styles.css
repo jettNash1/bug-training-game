@@ -97,6 +97,19 @@ body {
     gap: 1rem;
 }
 
+/* Two-column layout for categories with more than 5 quizzes */
+.quiz-list-two-column {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    column-gap: 1.25rem;
+}
+
+/* Make category card span 2 columns when using two-column layout */
+.category-card-wide {
+    grid-column: span 2;
+}
+
 .quiz-item-wrapper {
     position: relative;
     display: flex;
@@ -1466,10 +1479,26 @@ select:disabled {
 }
 
 /* Responsive adjustments */
+@media (max-width: 1200px) {
+    .categories-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
     .categories-grid {
         grid-template-columns: 1fr;
         padding: 1rem;
+    }
+    
+    /* On mobile, revert two-column layout back to single column */
+    .quiz-list-two-column {
+        grid-template-columns: 1fr;
+    }
+    
+    /* On mobile, category cards don't need to span multiple columns */
+    .category-card-wide {
+        grid-column: span 1;
     }
 
     /* Only adjust padding, don't override background or border */
