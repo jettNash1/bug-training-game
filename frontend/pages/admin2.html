@@ -317,23 +317,61 @@
                                 <h3><i class="fas fa-users"></i> User Management</h3>
                                 <div class="info-content">
                                     <h4>Overview</h4>
-                                    <p>The Users section provides comprehensive tools for managing learners and tracking their progress across all quizzes.</p>
+                                    <p>The Users section provides comprehensive tools for managing learners and tracking their progress across all quizzes with real-time data fetching.</p>
                                     
-                                    <h4>Key Features</h4>
+                                    <h4>Dashboard Features</h4>
                                     <ul>
-                                        <li><strong>Statistics Dashboard:</strong> View total users, daily active users, and overall progress metrics</li>
-                                        <li><strong>User Search & Filtering:</strong> Find users by username, sort by progress or activity</li>
-                                        <li><strong>View Options:</strong> Switch between grid and row views for user display</li>
-                                        <li><strong>User Details:</strong> Click any user to see detailed quiz progress, scores, and activity history</li>
-                                        <li><strong>Progress Management:</strong> Reset individual quiz progress or all progress for a user</li>
-                                        <li><strong>Account Deletion:</strong> Remove user accounts when necessary</li>
+                                        <li><strong>Statistics Panel:</strong> View total users, active today count, and overall progress percentage</li>
+                                        <li><strong>Grid/Row View Toggle:</strong> Switch between card-based grid view and compact row view for different data visualization needs</li>
+                                        <li><strong>Advanced Search:</strong> Real-time username filtering with instant results</li>
+                                        <li><strong>Multi-Sort Options:</strong> Sort by username (A-Z/Z-A), progress (high/low), quizzes assigned (high/low), or last active date</li>
                                     </ul>
                                     
-                                    <h4>User Card Information</h4>
+                                    <h4>User Cards Display</h4>
                                     <ul>
-                                        <li><strong>Progress Bar:</strong> Shows percentage of quizzes completed</li>
-                                        <li><strong>Last Active:</strong> When the user last interacted with the system</li>
-                                        <li><strong>Quiz Status Colors:</strong> White (not started), light cream (in progress), light orange (completed but below 80%), light green (80%+ pass)</li>
+                                        <li><strong>Progress Bar:</strong> Visual percentage showing overall quiz completion</li>
+                                        <li><strong>Quiz Metrics:</strong> Assigned, completed, passed, failed, in progress, and not started counts</li>
+                                        <li><strong>Last Active:</strong> Shows when the user last interacted with the system (Today, Yesterday, or date)</li>
+                                        <li><strong>Color-Coded Status:</strong> White (not started), light cream (in progress), light orange (completed < 70%), light green (passed ≥ 70%)</li>
+                                        <li><strong>Quick Actions:</strong> View Details button for comprehensive user information</li>
+                                    </ul>
+                                    
+                                    <h4>User Details Panel</h4>
+                                    <p>Click "View Details" on any user to access an interactive overlay with:</p>
+                                    <ul>
+                                        <li><strong>User Summary:</strong> Username, overall progress percentage, and last active date</li>
+                                        <li><strong>Smart Category Sorting:</strong> Quiz categories automatically ordered by completion count (most completed first)</li>
+                                        <li><strong>Intelligent Quiz Ordering:</strong> Within each category, quizzes sorted as: Failed → Passed → In Progress → Not Started</li>
+                                        <li><strong>Expandable Categories:</strong> Click category headers to collapse/expand quiz groups</li>
+                                        <li><strong>Category Progress Badges:</strong> Shows X/Y completion for each category</li>
+                                        <li><strong>Fresh Data Loading:</strong> Always fetches latest progress data when opened, preventing stale information</li>
+                                    </ul>
+                                    
+                                    <h4>Individual Quiz Management</h4>
+                                    <p>Each quiz card in the details view displays:</p>
+                                    <ul>
+                                        <li><strong>Status & Score:</strong> Completion status, score percentage, questions answered (X/15)</li>
+                                        <li><strong>Attempts Counter:</strong> Tracks how many times the quiz has been reset and retaken</li>
+                                        <li><strong>Last Active Date:</strong> When the user last worked on this specific quiz</li>
+                                        <li><strong>Visibility Toggle:</strong> Show/hide individual quizzes from the user's dashboard</li>
+                                        <li><strong>Reset Progress:</strong> Clear progress for individual quizzes (preserves attempt history)</li>
+                                        <li><strong>View Questions:</strong> See all questions with answers and pass/fail status for each</li>
+                                    </ul>
+                                    
+                                    <h4>Account Management Actions</h4>
+                                    <ul>
+                                        <li><strong>Change Password:</strong> Update user login credentials securely</li>
+                                        <li><strong>Reset All Progress:</strong> Clear all quiz progress for a user (with confirmation)</li>
+                                        <li><strong>Delete Account:</strong> Permanently remove user and all associated data (with double confirmation)</li>
+                                        <li><strong>Quiz Visibility Management:</strong> Control which quizzes appear on user's dashboard</li>
+                                    </ul>
+                                    
+                                    <h4>Data Accuracy Features</h4>
+                                    <ul>
+                                        <li><strong>Real-Time Fetching:</strong> User details always fetch fresh data from database</li>
+                                        <li><strong>Score Calculation:</strong> Automatically calculates accurate scores from question history</li>
+                                        <li><strong>Cache Prevention:</strong> Prevents showing stale 0% scores on long-idle pages</li>
+                                        <li><strong>Question History Validation:</strong> Supports multiple data formats (isCorrect and status fields)</li>
                                     </ul>
                                 </div>
                             </div>
@@ -374,22 +412,32 @@
                                 <h3><i class="fas fa-user-plus"></i> Create Account</h3>
                                 <div class="info-content">
                                     <h4>Account Creation</h4>
-                                    <p>Create new user accounts with customized quiz visibility.</p>
+                                    <p>Create new user accounts with customized quiz visibility using an intuitive categorized interface.</p>
                                     <ul>
-                                        <li><strong>Username & Password:</strong> Set secure login credentials</li>
-                                        <li><strong>Quiz Visibility:</strong> Select which quizzes the user can access</li>
-                                        <li><strong>Category-Based Selection:</strong> Choose quizzes by functional area</li>
-                                        <li><strong>Bulk Selection:</strong> Enable/disable entire categories at once</li>
-                                        <li><strong>Custom Access:</strong> Fine-tune access for specific learning paths</li>
+                                        <li><strong>Username & Password:</strong> Set secure login credentials (usernames must be unique)</li>
+                                        <li><strong>Default Visibility:</strong> All quizzes are hidden by default for maximum control</li>
+                                        <li><strong>Quiz Visibility Controls:</strong> Select which quizzes the user can see on their dashboard</li>
+                                        <li><strong>Category Organization:</strong> Quizzes grouped into 5 functional categories for easy management</li>
+                                        <li><strong>Expandable Categories:</strong> Click category headers to show/hide quiz selections</li>
+                                        <li><strong>Select All/None:</strong> Bulk toggle buttons for each category</li>
+                                        <li><strong>Individual Selection:</strong> Fine-tune access by selecting specific quizzes</li>
+                                        <li><strong>Visual Feedback:</strong> Clear checkboxes show which quizzes are enabled</li>
                                     </ul>
                                     
                                     <h4>Quiz Categories</h4>
                                     <ul>
-                                        <li><strong>Core Testing:</strong> Fundamental QA skills and mindset</li>
-                                        <li><strong>Test Types:</strong> Different testing approaches and methodologies</li>
-                                        <li><strong>Process & Management:</strong> Test planning, reporting, and team coordination</li>
-                                        <li><strong>Tools & Technology:</strong> Automation, CMS testing, and technical skills</li>
-                                        <li><strong>Specialized Testing:</strong> Mobile, performance, security, and accessibility</li>
+                                        <li><strong>Core QA Skills:</strong> Communication & Collaboration, Initiative & Proactivity, Tester Mindset, Time Management</li>
+                                        <li><strong>Test Execution:</strong> Build Verification, Exploratory, Fully Scripted, Locale Testing, Non-Functional, Sanity & Smoke, Standard Script Testing, Test Support, Test Types & Tricks</li>
+                                        <li><strong>Project Management:</strong> Issue Tracking Tools, Issue Verification, Raising Tickets, Reports, Risk Analysis, Risk Management, Script Metrics & Troubleshooting, Ticket Template</li>
+                                        <li><strong>Content Testing:</strong> CMS Testing, Content Copy Proofing, Email Testing</li>
+                                        <li><strong>Interviews:</strong> Automation Interview, Functional Interview (specialized assessment quizzes)</li>
+                                    </ul>
+                                    
+                                    <h4>Post-Creation Management</h4>
+                                    <ul>
+                                        <li><strong>Visibility Changes:</strong> Quiz visibility can be modified after account creation via User Details panel</li>
+                                        <li><strong>Progressive Unlocking:</strong> Start users with a few quizzes and enable more as they progress</li>
+                                        <li><strong>Custom Learning Paths:</strong> Create tailored training experiences by selecting relevant quiz sets</li>
                                     </ul>
                                 </div>
                             </div>
