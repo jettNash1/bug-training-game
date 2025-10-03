@@ -1012,12 +1012,6 @@
                                     <div class="users-selection">
                                         <div class="panel-header">
                                             <h4 id="selected-quiz-title">Select a quiz to begin</h4>
-                                            <div class="bulk-controls" id="bulk-controls" style="display: none;">
-                                                <button id="select-all-users" class="control-button">Select All</button>
-                                                <button id="deselect-all-users" class="control-button">Deselect All</button>
-                                                <button id="show-selected-users" class="control-button">Set Selected to Visible</button>
-                                                <button id="hide-selected-users" class="control-button">Set Selected to Hidden</button>
-                                            </div>
                                         </div>
                                         
                                         <div class="user-filter">
@@ -1036,6 +1030,12 @@
                                 <div class="export-actions">
                                     <div class="selected-count">
                                         <span id="visibility-status">Select a quiz to begin managing visibility</span>
+                                    </div>
+                                    <div class="bulk-controls" id="bulk-controls" style="display: none;">
+                                        <button id="select-all-users" class="control-button">Select All</button>
+                                        <button id="deselect-all-users" class="control-button">Deselect All</button>
+                                        <button id="show-selected-users" class="control-button">Set Selected to Visible</button>
+                                        <button id="hide-selected-users" class="control-button">Set Selected to Hidden</button>
                                     </div>
                                 </div>
                             </div>
@@ -1475,11 +1475,14 @@
             padding: 1rem;
             background: #f8f9fa;
             border-radius: 6px;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
         .selected-count {
             font-size: 0.9rem;
             color: #6c757d;
+            flex: 0 0 auto;
         }
 
         .quiz-category-group {
@@ -1526,6 +1529,11 @@
                 flex-direction: column;
                 gap: 1rem;
                 text-align: center;
+            }
+            
+            .export-actions .bulk-controls {
+                justify-content: center;
+                width: 100%;
             }
         }
 
@@ -3171,9 +3179,6 @@
         }
 
         .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 1rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid #e0e0e0;
@@ -3188,6 +3193,7 @@
         .bulk-controls {
             display: flex;
             gap: 0.75rem;
+            flex-wrap: wrap;
         }
 
 
