@@ -397,15 +397,6 @@ export class TestQuiz extends BaseQuiz {
         try {
             this.isLoading = true;
             
-            // Clear the timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-                this.questionTimer = null;
-            }
-            
-            // Clear timer state for this question since it's being completed
-            this.clearCurrentTimerState();
-            
             const submitButton = document.querySelector('.submit-button');
             if (submitButton) {
                 submitButton.disabled = true;
@@ -418,10 +409,18 @@ export class TestQuiz extends BaseQuiz {
                 if (submitButton) {
                     submitButton.disabled = false;
                 }
-                // Restart timer since we're not proceeding
-                this.initializeTimer();
+                // Timer continues running - no need to restart
                 return;
             }
+            
+            // Clear the timer only after validation passes
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+            }
+            
+            // Clear timer state for this question since it's being completed
+            this.clearCurrentTimerState()
             
             // Get the selected option index
             const optionIndex = selectedOption ? parseInt(selectedOption.value) : 0;

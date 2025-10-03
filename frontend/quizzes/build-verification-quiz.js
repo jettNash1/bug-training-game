@@ -485,12 +485,6 @@ export class BuildVerificationQuiz extends BaseQuiz {
         
         try {
             this.isLoading = true;
-            
-            // Clear the timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-                this.questionTimer = null;
-            }
         
         const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
@@ -504,9 +498,14 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 if (submitButton) {
                     submitButton.disabled = false;
                 }
-                // Restart timer since we're not proceeding
-                this.initializeTimer();
+                // Timer continues running - no need to restart
                 return;
+            }
+            
+            // Clear the timer only after validation passes
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
             }
             
             // Get the selected option index
