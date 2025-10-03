@@ -502,15 +502,23 @@ export class BaseQuiz {
      */
     async checkForIntroAndStart(playerData = null) {
         console.log('[BaseQuiz] Checking if intro page should be shown...');
+        console.log('[BaseQuiz] this.player exists?', !!this.player);
+        console.log('[BaseQuiz] this.player:', JSON.stringify({
+            currentScenario: this.player?.currentScenario,
+            questionHistoryLength: this.player?.questionHistory?.length,
+            experience: this.player?.experience
+        }));
         
         // Use provided player data or current player state
-        const currentScenario = playerData?.currentScenario ?? this.player.currentScenario ?? 0;
-        const questionHistory = playerData?.questionHistory ?? this.player.questionHistory ?? [];
+        const currentScenario = playerData?.currentScenario ?? this.player?.currentScenario ?? 0;
+        const questionHistory = playerData?.questionHistory ?? this.player?.questionHistory ?? [];
         
         console.log('[BaseQuiz] Intro check - currentScenario:', currentScenario, 'questionHistory.length:', questionHistory.length);
+        console.log('[BaseQuiz] questionHistory:', JSON.stringify(questionHistory.slice(0, 2))); // Log first 2 items
         
         // Always show the introduction page, but with different button text based on progress
         const hasProgress = questionHistory.length > 0;
+        console.log(`[BaseQuiz] hasProgress: ${hasProgress} (questionHistory.length = ${questionHistory.length})`);
         console.log(`[BaseQuiz] Showing introduction page ${hasProgress ? 'with Continue button' : 'with Start button'}`);
         this.showIntroPage(hasProgress);
         
@@ -1048,25 +1056,55 @@ export class BaseQuiz {
      */
     async loadProgress() {
         try {
+            console.log('[BaseQuiz] loadProgress called for quiz:', this.quizName);
+            console.log('[BaseQuiz] this.player before load:', JSON.stringify({
+                exists: !!this.player,
+                currentScenario: this.player?.currentScenario,
+                questionHistoryLength: this.player?.questionHistory?.length
+            }));
+            
             if (!this.quizProgressService) {
                 console.error('[BaseQuiz] QuizProgressService not initialized');
                 return false;
             }
             
             const progressResult = await this.quizProgressService.getQuizProgress(this.quizName);
+            console.log('[BaseQuiz] progressResult:', {
+                success: progressResult.success,
+                hasData: !!progressResult.data,
+                dataKeys: progressResult.data ? Object.keys(progressResult.data) : []
+            });
             
             if (!progressResult.success || !progressResult.data) {
+                console.log('[BaseQuiz] No progress found or failed to load');
                 return false;
             }
             
             const progressData = progressResult.data;
+            console.log('[BaseQuiz] progressData:', JSON.stringify({
+                experience: progressData.experience,
+                questionHistoryLength: progressData.questionHistory?.length,
+                currentScenario: progressData.currentScenario
+            }));
+            
+            // Ensure player object exists before updating
+            if (!this.player) {
+                console.error('[BaseQuiz] this.player is undefined! Cannot load progress.');
+                return false;
+            }
             
             // Update player state
             this.player.experience = progressData.experience || 0;
             this.player.questionHistory = progressData.questionHistory || [];
             this.player.currentScenario = progressData.currentScenario || 0;
+            
+            console.log('[BaseQuiz] this.player after load:', JSON.stringify({
+                experience: this.player.experience,
+                questionHistoryLength: this.player.questionHistory.length,
+                currentScenario: this.player.currentScenario
+            }));
 
-                return true;
+            return true;
         } catch (error) {
             console.error('[BaseQuiz] Error loading progress:', error);
             return false;
