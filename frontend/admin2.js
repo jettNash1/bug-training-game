@@ -3492,13 +3492,23 @@ export class Admin2Dashboard {
                 // Merge question history into user.quizProgress
                 results.forEach(result => {
                     if (result && result.questionHistory) {
-                        const quizLower = result.quizName.toLowerCase();
-                        if (user.quizProgress[quizLower]) {
-                            user.quizProgress[quizLower].questionHistory = result.questionHistory;
-                            console.log(`[Admin] Added question history to ${username}/${result.quizName} (${result.questionHistory.length} questions)`);
+                        // quizName from result is already the key from user.quizProgress (lowercase)
+                        const quizKey = result.quizName;
+                        if (!user.quizProgress[quizKey]) {
+                            console.warn(`[Admin] Quiz ${quizKey} not found in quizProgress, creating entry`);
+                            user.quizProgress[quizKey] = {};
                         }
+                        user.quizProgress[quizKey].questionHistory = result.questionHistory;
+                        console.log(`[Admin] ✓ Added question history to ${username}/${quizKey} (${result.questionHistory.length} questions)`);
+                        console.log(`[Admin] Verification: user.quizProgress['${quizKey}'].questionHistory.length = ${user.quizProgress[quizKey].questionHistory?.length}`);
                     }
                 });
+                
+                console.log(`[Admin] Quiz progress after merging:`, Object.keys(user.quizProgress).map(key => ({
+                    quiz: key,
+                    hasHistory: !!user.quizProgress[key].questionHistory,
+                    historyLength: user.quizProgress[key].questionHistory?.length || 0
+                })));
             }
             
             // Update the cached user in this.users array with fresh data
@@ -3609,39 +3619,29 @@ export class Admin2Dashboard {
                     const questionHistory = quizResult?.questionHistory || quizProgress?.questionHistory;
                     
                     console.log(`[Admin] Score calculation for ${quizType}:`, {
+                        quizLower,
                         quizResult: quizResult ? 'found' : 'not found',
                         quizProgress: quizProgress ? 'found' : 'not found',
+                        quizProgressKeys: Object.keys(quizProgress || {}),
+                        hasQuizProgressQuestionHistory: !!quizProgress?.questionHistory,
+                        quizProgressQuestionHistoryLength: quizProgress?.questionHistory?.length || 0,
                         questionHistory: questionHistory ? `array of ${questionHistory.length}` : 'not found',
                         questionsAnswered
                     });
                     
                     if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                        // Use the same logic as the "View Questions" section - check if status is 'passed'
+                        // Calculate score from question history - check if status is 'passed'
                         const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
                         score = Math.round((correctAnswers / questionHistory.length) * 100);
                         
                         console.log(`[Admin] Calculated score from question history:`, {
                             totalQuestions: questionHistory.length,
                             correctAnswers,
-                            calculatedScore: score,
-                            questionStatuses: questionHistory.map(item => ({ status: item.status, passed: item.status === 'passed' }))
+                            calculatedScore: score
                         });
-                    } else if (questionsAnswered === 15 && !questionHistory) {
-                        // For completed quizzes without question history, we'll fetch it after card creation
-                        console.log(`[Admin] Quiz completed but no question history found. Will fetch from API after card creation.`);
-                        
-                        // For now, show as completed but with unknown score
-                        score = 0; // This will be updated when the API call completes
-                        console.log(`[Admin] Using temporary score of 0 while fetching question history`);
                     } else {
-                        // Fallback to stored score if no question history available
-                        const rawScore = quizResult?.score || quizResult?.scorePercentage || 0;
-                        score = rawScore < 1 && rawScore > 0 ? Math.round(rawScore * 100) : Math.round(rawScore);
-                        
-                        console.log(`[Admin] Using fallback score:`, {
-                            rawScore,
-                            finalScore: score
-                        });
+                        // No question history available - quiz not completed or in progress
+                        console.log(`[Admin] No question history available for ${quizType} - score remains 0`);
                     }
                     const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
                     
