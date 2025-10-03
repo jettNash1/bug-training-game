@@ -3749,8 +3749,27 @@ export class Admin2Dashboard {
                 return quizCard;
             };
             
+            // Sort categories by completion count (most completed first)
+            const sortedCategories = Object.entries(categorizedQuizzes)
+                .map(([category, quizzes]) => {
+                    // Calculate category completion stats
+                    const completedCount = quizzes.reduce((acc, quizName) => {
+                        const quizLower = quizName.toLowerCase();
+                        const quizProgress = user.quizProgress?.[quizLower] || {};
+                        const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                        const questionsAnswered = quizResult?.questionsAnswered || 
+                                                quizResult?.questionHistory?.length ||
+                                                quizProgress?.questionsAnswered || 
+                                                quizProgress?.questionHistory?.length || 0;
+                        return acc + (questionsAnswered === 15 ? 1 : 0);
+                    }, 0);
+                    
+                    return { category, quizzes, completedCount };
+                })
+                .sort((a, b) => b.completedCount - a.completedCount); // Most completed first
+            
             // Generate categorized quiz sections
-            Object.entries(categorizedQuizzes).forEach(([category, quizzes]) => {
+            sortedCategories.forEach(({ category, quizzes, completedCount }) => {
                 // Create category container
                 const categoryContainer = document.createElement('div');
                 categoryContainer.className = 'quiz-category-container';
@@ -3763,23 +3782,11 @@ export class Admin2Dashboard {
                 categoryHeader.setAttribute('aria-expanded', 'true');
                 categoryHeader.setAttribute('aria-label', `Toggle ${category} category`);
                 
-                // Calculate category progress
-                const categoryProgress = quizzes.reduce((acc, quizName) => {
-                    const quizLower = quizName.toLowerCase();
-                    const quizProgress = user.quizProgress?.[quizLower] || {};
-                    const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                    const questionsAnswered = quizResult?.questionsAnswered || 
-                                            quizResult?.questionHistory?.length ||
-                                            quizProgress?.questionsAnswered || 
-                                            quizProgress?.questionHistory?.length || 0;
-                    return acc + (questionsAnswered === 15 ? 1 : 0);
-                }, 0);
-                
                 categoryHeader.innerHTML = `
                     <div class="category-title-section">
                         <i class="fas fa-chevron-down category-toggle-icon" aria-hidden="true"></i>
                         <h4>${category}</h4>
-                        <span class="category-progress-badge">${categoryProgress}/${quizzes.length}</span>
+                        <span class="category-progress-badge">${completedCount}/${quizzes.length}</span>
                     </div>
                 `;
                 
@@ -3788,10 +3795,44 @@ export class Admin2Dashboard {
                 categoryContent.className = 'quiz-category-content';
                 // Start expanded - don't override CSS display property
                 
-                // Sort quizzes within category and add them
+                // Helper function to get quiz status for sorting
+                const getQuizStatus = (quizName) => {
+                    const quizLower = quizName.toLowerCase();
+                    const quizProgress = user.quizProgress?.[quizLower] || {};
+                    const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                    const questionsAnswered = quizResult?.questionsAnswered || 
+                                            quizResult?.questionHistory?.length ||
+                                            quizProgress?.questionsAnswered || 
+                                            quizProgress?.questionHistory?.length || 0;
+                    
+                    if (questionsAnswered === 0) return 3; // Not started - last
+                    if (questionsAnswered < 15) return 2; // In progress
+                    
+                    // Completed - check if passed or failed
+                    const questionHistory = quizResult?.questionHistory || quizProgress?.questionHistory;
+                    if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
+                        const correctAnswers = questionHistory.filter(item => {
+                            if (!item) return false;
+                            return item.status === 'passed' || item.isCorrect === true;
+                        }).length;
+                        const score = Math.round((correctAnswers / questionHistory.length) * 100);
+                        return score >= 70 ? 1 : 0; // 1 = Passed, 0 = Failed (show failed first)
+                    }
+                    return 1; // Default to passed if no history
+                };
+                
+                // Sort quizzes within category: Failed, Passed, In Progress, Not Started
                 quizzes
                     .slice()
-                    .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+                    .sort((a, b) => {
+                        const statusA = getQuizStatus(a);
+                        const statusB = getQuizStatus(b);
+                        // If same status, sort alphabetically
+                        if (statusA === statusB) {
+                            return this.formatQuizName(a).localeCompare(this.formatQuizName(b));
+                        }
+                        return statusA - statusB;
+                    })
                     .forEach(quizType => {
                         const quizCard = createQuizCard(quizType);
                         categoryContent.appendChild(quizCard);
