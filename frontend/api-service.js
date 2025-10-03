@@ -2915,16 +2915,11 @@ export class APIService {
                 };
             }
             
-            // Ensure we have the expected data structure
-            const quizProgress = response.data?.quizProgress || {};
-            const quizResults = response.data?.quizResults || [];
-            
+            // Return the complete user data structure from the API
+            // This includes quizProgress, quizResults, quizAttempts, quizPreviousScores, etc.
             return {
                 success: true,
-                data: {
-                    quizProgress,
-                    quizResults
-                }
+                data: response.data || {}
             };
         } catch (error) {
             console.error(`[API] Error getting user progress:`, error);

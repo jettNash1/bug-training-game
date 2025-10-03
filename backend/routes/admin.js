@@ -274,6 +274,8 @@ router.get('/users/:username/progress', auth, async (req, res) => {
             lastLogin: 1,
             quizResults: 1,
             quizProgress: 1,
+            quizPreviousScores: 1,
+            quizAttempts: 1,
             userType: 1,
             allowedQuizzes: 1,
             hiddenQuizzes: 1,
@@ -291,6 +293,23 @@ router.get('/users/:username/progress', auth, async (req, res) => {
 
         // Process the user data similar to the /users endpoint
         const userData = { ...user };
+        
+        // Ensure quizPreviousScores is a plain object with lowercased keys
+        const qps = userData.quizPreviousScores && typeof userData.quizPreviousScores === 'object' ? userData.quizPreviousScores : {};
+        const normalized = {};
+        for (const [k, v] of Object.entries(qps)) {
+            normalized[String(k).toLowerCase()] = Array.isArray(v) ? v : [];
+        }
+        userData.quizPreviousScores = normalized;
+        
+        // Ensure quizAttempts is a plain object with lowercased keys
+        const qa = userData.quizAttempts && typeof userData.quizAttempts === 'object' ? userData.quizAttempts : {};
+        const normalizedAttempts = {};
+        for (const [k, v] of Object.entries(qa)) {
+            normalizedAttempts[String(k).toLowerCase()] = typeof v === 'number' ? v : 0;
+        }
+        userData.quizAttempts = normalizedAttempts;
+        
         userData.quizResults = userData.quizResults || [];
 
         // Update each quiz result with its corresponding progress data
@@ -324,8 +343,11 @@ router.get('/users/:username/progress', auth, async (req, res) => {
 
                 return {
                     ...result,
+                    quizName: quizNameLower,
                     questionsAnswered,
-                    experience
+                    experience,
+                    score: Number(result.score) || 0,
+                    lastActive: result.lastActive || result.completedAt || null
                 };
             } catch (error) {
                 console.error('Error processing quiz result:', error);

@@ -3440,33 +3440,26 @@ export class Admin2Dashboard {
             console.log(`[Admin] Fetching fresh data for user: ${username}`);
             const progressResponse = await this.apiService.getUserProgress(username);
             
-            if (!progressResponse.success) {
+            if (!progressResponse.success || !progressResponse.data) {
                 throw new Error('Failed to fetch user progress');
             }
             
-            // Get base user data from cached list for basic info
-            const cachedUser = this.users.find(u => u.username === username);
-            if (!cachedUser) {
-                throw new Error('User not found');
-            }
+            // The API returns the complete user object in response.data
+            // Use it directly as it contains all necessary fields
+            const user = progressResponse.data;
             
-            // Merge fresh progress data with cached user data
-            const user = {
-                ...cachedUser,
-                quizProgress: progressResponse.data.quizProgress || cachedUser.quizProgress || {},
-                quizResults: progressResponse.data.quizResults || cachedUser.quizResults || []
-            };
+            console.log(`[Admin] Loaded fresh data for ${username}:`, {
+                quizProgressKeys: Object.keys(user.quizProgress || {}),
+                quizResultsCount: (user.quizResults || []).length,
+                quizAttempts: user.quizAttempts,
+                hasQuizPreviousScores: !!user.quizPreviousScores
+            });
             
             // Update the cached user in this.users array with fresh data
             const userIndex = this.users.findIndex(u => u.username === username);
             if (userIndex !== -1) {
                 this.users[userIndex] = user;
             }
-            
-            console.log(`[Admin] Loaded fresh data for ${username}:`, {
-                quizProgressKeys: Object.keys(user.quizProgress),
-                quizResultsCount: user.quizResults.length
-            });
 
             // All accounts are now regular accounts using hiddenQuizzes logic
             const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
