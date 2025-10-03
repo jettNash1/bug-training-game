@@ -8881,8 +8881,8 @@ export class Admin2Dashboard {
                 csvRows.push(['Email', user.email || '', '', '']);
                 csvRows.push(['LastActive', this.formatDate(this.getLastActiveDate(user)), '', '']);
                 
-                // Add blank row for spacing
-                csvRows.push(['', '', '', '']);
+                // Add headers row for quiz section
+                csvRows.push(['', '', 'Current Score', 'Previous Scores']);
 
                 // Add quiz scores with previous scores on the same row
                 selectedQuizzes.forEach(quizId => {
