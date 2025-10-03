@@ -265,36 +265,38 @@
                         <div class="user-management-panel">
                             <div class="panel-header">
                                 <h2>User Management</h2>
-                                <div class="view-toggle">
-                                    <label>View:</label>
-                                    <div class="toggle-buttons">
-                                        <button class="toggle-button active" data-view="grid" tabindex="0" aria-pressed="true" aria-label="Grid view">
-                                            <i class="fas fa-th-large"></i> Grid
-                                        </button>
-                                        <button class="toggle-button" data-view="row" tabindex="0" aria-pressed="false" aria-label="Row view">
-                                            <i class="fas fa-list"></i> Rows
-                                        </button>
+                                <div class="controls-row">
+                                    <div class="view-toggle">
+                                        <label>View:</label>
+                                        <div class="toggle-buttons">
+                                            <button class="toggle-button active" data-view="grid" tabindex="0" aria-pressed="true" aria-label="Grid view">
+                                                <i class="fas fa-th-large"></i> Grid
+                                            </button>
+                                            <button class="toggle-button" data-view="row" tabindex="0" aria-pressed="false" aria-label="Row view">
+                                                <i class="fas fa-list"></i> Rows
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="search-controls">
-                                    <div class="control-field">
-                                        <label for="userSearch">Search Users</label>
-                                        <input type="text" 
-                                            id="userSearch" 
-                                            placeholder="Search by Username..."
-                                            aria-label="Search users">
-                                    </div>
-                                    <div class="control-field">
-                                        <label for="sortBy">Sort By</label>
-                                        <select id="sortBy" aria-label="Sort users by">
-                                            <option value="username-asc">Username (A-Z)</option>
-                                            <option value="username-desc">Username (Z-A)</option>
-                                            <option value="progress-high">Progress (High to Low)</option>
-                                            <option value="progress-low">Progress (Low to High)</option>
-                                            <option value="assigned-high">Quizzes Assigned (High to Low)</option>
-                                            <option value="assigned-low">Quizzes Assigned (Low to High)</option>
-                                            <option value="last-active">Last Active</option>
-                                        </select>
+                                    <div class="search-controls">
+                                        <div class="control-field">
+                                            <label for="userSearch">Search Users</label>
+                                            <input type="text" 
+                                                id="userSearch" 
+                                                placeholder="Search by Username..."
+                                                aria-label="Search users">
+                                        </div>
+                                        <div class="control-field">
+                                            <label for="sortBy">Sort By</label>
+                                            <select id="sortBy" aria-label="Sort users by">
+                                                <option value="username-asc">Username (A-Z)</option>
+                                                <option value="username-desc">Username (Z-A)</option>
+                                                <option value="progress-high">Progress (High to Low)</option>
+                                                <option value="progress-low">Progress (Low to High)</option>
+                                                <option value="assigned-high">Quizzes Assigned (High to Low)</option>
+                                                <option value="assigned-low">Quizzes Assigned (Low to High)</option>
+                                                <option value="last-active">Last Active</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
