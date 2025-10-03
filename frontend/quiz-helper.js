@@ -509,15 +509,10 @@ export class BaseQuiz {
         
         console.log('[BaseQuiz] Intro check - currentScenario:', currentScenario, 'questionHistory.length:', questionHistory.length);
         
-        // Check if we should show the introduction page
-        if (currentScenario === 0 && questionHistory.length === 0) {
-            console.log('[BaseQuiz] Showing introduction page for fresh quiz start');
-            this.showIntroPage();
-        } else {
-            console.log('[BaseQuiz] Skipping intro page - continuing with existing progress');
-            // Individual quizzes should handle their own quiz continuation logic
-            return false; // Indicates intro was not shown
-        }
+        // Always show the introduction page, but with different button text based on progress
+        const hasProgress = questionHistory.length > 0;
+        console.log(`[BaseQuiz] Showing introduction page ${hasProgress ? 'with Continue button' : 'with Start button'}`);
+        this.showIntroPage(hasProgress);
         
         return true; // Indicates intro was shown
     }
@@ -574,10 +569,16 @@ export class BaseQuiz {
     }
 
     /**
-     * Shows the quiz introduction page with title, description, and start button
+     * Shows the quiz introduction page with title, description, and start/continue button
+     * @param {boolean} hasProgress - Whether the user has existing progress in this quiz
      */
-    showIntroPage() {
-        console.log('[Quiz] Showing introduction page');
+    showIntroPage(hasProgress = false) {
+        console.log('[Quiz] Showing introduction page', hasProgress ? 'with existing progress' : 'as new quiz');
+        console.log('[Quiz] Player state when showing intro:', {
+            currentScenario: this.player?.currentScenario,
+            questionHistoryLength: this.player?.questionHistory?.length,
+            experience: this.player?.experience
+        });
         
         // Clear UI state
         this.clearUIState();
@@ -605,6 +606,22 @@ export class BaseQuiz {
             quizContainer.insertBefore(introScreen, quizHeader.nextSibling);
         }
         
+        // Get the actual question count from player state
+        const questionsCompleted = this.player?.questionHistory?.length || 0;
+        const nextQuestionNumber = questionsCompleted + 1;
+        
+        // Determine button text and additional info based on progress
+        const buttonText = hasProgress ? 'Continue Quiz' : 'Start Quiz';
+        const buttonAriaLabel = hasProgress ? `Continue the ${quizTitle} quiz from question ${nextQuestionNumber}` : `Start the ${quizTitle} quiz`;
+        
+        // Create progress info HTML if there's existing progress
+        const progressInfoHTML = hasProgress ? `
+            <div class="detail-item progress-highlight">
+                <span class="detail-icon">✓</span>
+                <span><strong>Progress:</strong> ${questionsCompleted}/${this.totalQuestions} questions completed</span>
+            </div>
+        ` : '';
+        
         // Populate intro screen content
         introScreen.innerHTML = `
             <div class="intro-content">
@@ -620,6 +637,7 @@ export class BaseQuiz {
                     <p>${quizDescription}</p>
                 </div>
                 <div class="intro-details">
+                    ${progressInfoHTML}
                     <div class="detail-item">
                         <span class="detail-icon">📝</span>
                         <span>Total Questions: ${this.totalQuestions}</span>
@@ -634,8 +652,8 @@ export class BaseQuiz {
                     </div>
                 </div>
                 <div class="intro-actions">
-                    <button id="start-quiz-btn" class="start-quiz-button" tabindex="0" aria-label="Start the ${quizTitle} quiz">
-                        Start Quiz
+                    <button id="start-quiz-btn" class="start-quiz-button ${hasProgress ? 'continue-quiz' : ''}" tabindex="0" aria-label="${buttonAriaLabel}">
+                        ${buttonText}
                     </button>
                     <a href="../index.html" class="cancel-link" tabindex="0" aria-label="Go back to quiz selection">
                         ← Back to Hub
@@ -670,6 +688,11 @@ export class BaseQuiz {
      */
     async handleStartQuizClick() {
         console.log('[Quiz] Start quiz button clicked');
+        console.log('[Quiz] Player state at button click:', {
+            currentScenario: this.player?.currentScenario,
+            questionHistoryLength: this.player?.questionHistory?.length,
+            experience: this.player?.experience
+        });
         
         // Hide intro screen
         const introScreen = document.getElementById('intro-screen');
@@ -686,9 +709,14 @@ export class BaseQuiz {
      */
     async startActualQuiz() {
         console.log('[Quiz] Starting actual quiz...');
+        console.log('[Quiz] Player state before displayScenario:', {
+            currentScenario: this.player?.currentScenario,
+            questionHistoryLength: this.player?.questionHistory?.length,
+            experience: this.player?.experience
+        });
         
         try {
-            // Clear UI state
+            // Clear UI state (but not player data)
             this.clearUIState();
             
             // Display the current scenario
