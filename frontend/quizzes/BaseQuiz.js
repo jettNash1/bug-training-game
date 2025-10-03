@@ -20,6 +20,10 @@ export class BaseQuiz {
         this.maxXP = 100;
         this.isLoading = false;
         
+        // Debouncing for submit button
+        this.lastSubmitTime = 0;
+        this.SUBMIT_COOLDOWN = 500; // 500ms cooldown between submissions
+        
         // Initialize timer settings - start with reasonable default, will be overridden by admin settings
         this.timePerQuestion = 30;
         this.timerDisabled = false;

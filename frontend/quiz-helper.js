@@ -14,6 +14,10 @@ export class BaseQuiz {
         this.questionTimer = null;
         this.apiService = new APIService();
         
+        // Debouncing for submit button
+        this.lastSubmitTime = 0;
+        this.SUBMIT_COOLDOWN = 500; // 500ms cooldown between submissions
+        
         // Show loading overlay immediately
         this.showLoadingOverlay();
         

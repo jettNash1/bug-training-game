@@ -473,6 +473,14 @@ export class EmailTestingQuiz extends BaseQuiz {
     async handleAnswer(timedOut = false) {
         if (this.isLoading) return;
         
+        // Debouncing: prevent rapid successive submissions
+        const now = Date.now();
+        if (now - this.lastSubmitTime < this.SUBMIT_COOLDOWN) {
+            console.log('[Quiz] Submission ignored - too soon after last attempt');
+            return;
+        }
+        this.lastSubmitTime = now;
+        
         try {
             this.isLoading = true;
         
