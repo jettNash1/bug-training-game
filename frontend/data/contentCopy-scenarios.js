@@ -497,7 +497,7 @@ export const contentCopyScenarios = {
                         experience: -10
                     },
                     {
-                        text: 'disregard differences in older designs',
+                        text: 'Disregard differences in older designs',
                         outcome: 'This could lead to missing important inconsistencies.',
                         experience: -5
                     },

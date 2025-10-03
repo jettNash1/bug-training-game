@@ -367,8 +367,8 @@ export const newTicketTemplateScenarios = {
                         experience: -15
                     },
                     {
-                        text: '\'Whilst viewing the website\' or \'Whilst using the application\'',
-                        outcome: 'These are common ways of identifying the environment but are not always necessary as you could be specific regarding the location of the issue.',
+                        text: '\'When comparing the application to the provided designs\' or \'When comparing the website to the provided documentation\'',
+                        outcome: 'This is a common way of highlighting an issue, comparing with designs or documentation to ensure uniformity of the product.',
                         experience: -5
                     }
                 ]

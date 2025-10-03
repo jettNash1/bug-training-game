@@ -3436,11 +3436,37 @@ export class Admin2Dashboard {
 
     async showUserDetails(username) {
         try {
-            // Get user data
-            const user = this.users.find(u => u.username === username);
-            if (!user) {
+            // Fetch fresh user data from API to ensure we have the latest progress
+            console.log(`[Admin] Fetching fresh data for user: ${username}`);
+            const progressResponse = await this.apiService.getUserProgress(username);
+            
+            if (!progressResponse.success) {
+                throw new Error('Failed to fetch user progress');
+            }
+            
+            // Get base user data from cached list for basic info
+            const cachedUser = this.users.find(u => u.username === username);
+            if (!cachedUser) {
                 throw new Error('User not found');
             }
+            
+            // Merge fresh progress data with cached user data
+            const user = {
+                ...cachedUser,
+                quizProgress: progressResponse.data.quizProgress || cachedUser.quizProgress || {},
+                quizResults: progressResponse.data.quizResults || cachedUser.quizResults || []
+            };
+            
+            // Update the cached user in this.users array with fresh data
+            const userIndex = this.users.findIndex(u => u.username === username);
+            if (userIndex !== -1) {
+                this.users[userIndex] = user;
+            }
+            
+            console.log(`[Admin] Loaded fresh data for ${username}:`, {
+                quizProgressKeys: Object.keys(user.quizProgress),
+                quizResultsCount: user.quizResults.length
+            });
 
             // All accounts are now regular accounts using hiddenQuizzes logic
             const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
