@@ -9933,7 +9933,13 @@ export class Admin2Dashboard {
 
         // Copy exact pattern from working Custom Export
         this.quizVisibilityHandler = (e) => {
-            if (e.target.id === 'select-all-users') {
+            if (e.target.id === 'select-all-quizzes') {
+                console.log('[Quiz Visibility] Select All Quizzes clicked');
+                const checkboxes = document.querySelectorAll('#quiz-visibility-list .quiz-checkbox');
+                console.log(`[Quiz Visibility] Found ${checkboxes.length} quiz checkboxes`);
+                checkboxes.forEach(cb => cb.checked = e.target.checked);
+                this.updateSelectedQuizzes();
+            } else if (e.target.id === 'select-all-users') {
                 console.log('[Quiz Visibility] Select All Users clicked');
                 const checkboxes = document.querySelectorAll('#user-visibility-list input[type="checkbox"]');
                 console.log(`[Quiz Visibility] Found ${checkboxes.length} user checkboxes`);
@@ -9979,28 +9985,90 @@ export class Admin2Dashboard {
             'sanity-smoke', 'functional-interview', 'ticket-template'
         ];
 
-        // Create quiz radio buttons
+        // Initialize selected quizzes array if not exists
+        if (!this.selectedQuizzes) {
+            this.selectedQuizzes = [];
+        }
+
+        // Create quiz checkboxes (changed from radio buttons)
         quizList.innerHTML = allQuizzes.map(quiz => {
             const formattedName = this.formatQuizName(quiz);
             
             return `
                 <div class="checkbox-item">
-                    <input type="radio" name="quiz-visibility" value="${quiz}" id="quiz-${quiz}" class="quiz-radio">
+                    <input type="checkbox" value="${quiz}" id="quiz-${quiz}" class="quiz-checkbox">
                     <label for="quiz-${quiz}">${formattedName}</label>
                 </div>
             `;
         }).join('');
 
-        // Add change event listeners to quiz radio buttons
-        quizList.querySelectorAll('.quiz-radio').forEach(radio => {
-            radio.addEventListener('change', () => {
-                if (radio.checked) {
-                    this.selectQuizForVisibility(radio.value);
-                }
+        // Add change event listeners to quiz checkboxes
+        quizList.querySelectorAll('.quiz-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                this.updateSelectedQuizzes();
             });
         });
 
         console.log(`[Quiz Visibility] Loaded ${allQuizzes.length} quizzes`);
+    }
+
+    updateSelectedQuizzes() {
+        // Get all checked quiz checkboxes
+        const checkedQuizzes = document.querySelectorAll('#quiz-visibility-list .quiz-checkbox:checked');
+        this.selectedQuizzes = Array.from(checkedQuizzes).map(checkbox => checkbox.value);
+        
+        console.log(`[Quiz Visibility] Selected quizzes:`, this.selectedQuizzes);
+        
+        // Update header based on selection
+        const titleElement = document.getElementById('selected-quiz-title');
+        const bulkControls = document.getElementById('bulk-controls');
+        
+        if (this.selectedQuizzes.length === 0) {
+            if (titleElement) {
+                titleElement.textContent = 'Select a quiz to begin';
+            }
+            if (bulkControls) {
+                bulkControls.style.display = 'none';
+            }
+            // Clear user list
+            const userList = document.getElementById('user-visibility-list');
+            if (userList) {
+                userList.innerHTML = `
+                    <div class="initial-message">
+                        <i class="fas fa-eye"></i>
+                        <p>Select a quiz from the left panel to manage user visibility</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+        
+        if (titleElement) {
+            if (this.selectedQuizzes.length === 1) {
+                titleElement.textContent = `Managing: ${this.formatQuizName(this.selectedQuizzes[0])}`;
+            } else {
+                titleElement.textContent = `Managing: ${this.selectedQuizzes.length} quizzes selected`;
+            }
+        }
+        
+        // Show bulk controls
+        if (bulkControls) {
+            bulkControls.style.display = 'flex';
+        }
+        
+        // Load users if needed
+        this.loadUsersForSelectedQuizzes();
+    }
+
+    async loadUsersForSelectedQuizzes() {
+        // Use existing users data instead of making API call
+        if (!this.users || this.users.length === 0) {
+            console.log('[Quiz Visibility] No users loaded, loading users...');
+            await this.loadUsers();
+        }
+
+        // Display users (we'll show visibility status for the first selected quiz for simplicity)
+        this.displayUsersForVisibility();
     }
 
     async selectQuizForVisibility(quizName) {
@@ -10046,19 +10114,49 @@ export class Admin2Dashboard {
             return;
         }
 
-        const normalizedQuizName = quizName.toLowerCase();
+        // If no quizzes selected, use selectedQuizzes array
+        const quizzesToCheck = this.selectedQuizzes && this.selectedQuizzes.length > 0 
+            ? this.selectedQuizzes 
+            : (quizName ? [quizName] : []);
+
+        if (quizzesToCheck.length === 0) {
+            userList.innerHTML = `
+                <div class="initial-message">
+                    <i class="fas fa-eye"></i>
+                    <p>Select a quiz from the left panel to manage user visibility</p>
+                </div>
+            `;
+            return;
+        }
 
         // Display users with checkboxes and visibility status
         userList.innerHTML = this.users.map(user => {
-            const isVisible = !user.hiddenQuizzes?.includes(normalizedQuizName);
+            // Check visibility across all selected quizzes
+            let visibilityText = '';
+            let visibilityClass = '';
+            
+            if (quizzesToCheck.length === 1) {
+                const normalizedQuizName = quizzesToCheck[0].toLowerCase();
+                const isVisible = !user.hiddenQuizzes?.includes(normalizedQuizName);
+                visibilityText = isVisible ? 'Visible' : 'Hidden';
+                visibilityClass = isVisible ? 'visible' : 'hidden';
+            } else {
+                // For multiple quizzes, show count of visible/hidden
+                const visibleCount = quizzesToCheck.filter(quiz => 
+                    !user.hiddenQuizzes?.includes(quiz.toLowerCase())
+                ).length;
+                visibilityText = `${visibleCount}/${quizzesToCheck.length} visible`;
+                visibilityClass = visibleCount === quizzesToCheck.length ? 'visible' : 
+                                 visibleCount === 0 ? 'hidden' : 'partial';
+            }
             
             return `
                 <div class="checkbox-item">
                     <input type="checkbox" value="${user.username}" id="user-${user.username}">
                     <label for="user-${user.username}">
                         ${user.username} 
-                        <span class="visibility-status ${isVisible ? 'visible' : 'hidden'}">
-                            (${isVisible ? 'Visible' : 'Hidden'})
+                        <span class="visibility-status ${visibilityClass}">
+                            (${visibilityText})
                         </span>
                     </label>
                 </div>
@@ -10066,7 +10164,7 @@ export class Admin2Dashboard {
         }).join('');
 
         // Update status count
-        this.updateVisibilityStatusCount(quizName);
+        this.updateVisibilityStatusCount(quizzesToCheck);
 
         // Add event listeners for checkbox changes
         userList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
@@ -10080,11 +10178,18 @@ export class Admin2Dashboard {
         const statusElement = document.getElementById('visibility-status');
         if (!statusElement || !this.users) return;
 
-        const normalizedQuizName = quizName.toLowerCase();
-        const visibleCount = this.users.filter(user => !user.hiddenQuizzes?.includes(normalizedQuizName)).length;
-        const hiddenCount = this.users.length - visibleCount;
+        // Handle both single quiz name and array of quizzes
+        const quizzesToCheck = Array.isArray(quizName) ? quizName : [quizName];
         
-        statusElement.textContent = `${this.users.length} users: ${visibleCount} visible, ${hiddenCount} hidden`;
+        if (quizzesToCheck.length === 1) {
+            const normalizedQuizName = quizzesToCheck[0].toLowerCase();
+            const visibleCount = this.users.filter(user => !user.hiddenQuizzes?.includes(normalizedQuizName)).length;
+            const hiddenCount = this.users.length - visibleCount;
+            
+            statusElement.textContent = `${this.users.length} users: ${visibleCount} visible, ${hiddenCount} hidden`;
+        } else {
+            statusElement.textContent = `${this.users.length} users loaded | ${quizzesToCheck.length} quizzes selected`;
+        }
     }
 
     updateSelectedCount() {
@@ -10093,22 +10198,32 @@ export class Admin2Dashboard {
         
         console.log(`[Quiz Visibility] Selected count: ${selectedCheckboxes.length}`);
         
-        if (statusElement && this.currentQuiz) {
+        // Use selectedQuizzes array or fallback to currentQuiz
+        const quizzesToCheck = this.selectedQuizzes && this.selectedQuizzes.length > 0 
+            ? this.selectedQuizzes 
+            : (this.currentQuiz ? [this.currentQuiz] : []);
+        
+        if (statusElement && quizzesToCheck.length > 0) {
             const baseStatus = statusElement.textContent.split(' |')[0]; // Get the main count
             const selectedCount = selectedCheckboxes.length;
             
             if (selectedCount > 0) {
                 statusElement.textContent = `${baseStatus} | ${selectedCount} selected`;
             } else {
-                this.updateVisibilityStatusCount(this.currentQuiz);
+                this.updateVisibilityStatusCount(quizzesToCheck);
             }
         }
     }
 
 
     async bulkUpdateSelectedVisibility(isVisible) {
-        if (!this.currentQuiz) {
-            this.showError('Please select a quiz first');
+        // Check if we have selected quizzes
+        const quizzesToUpdate = this.selectedQuizzes && this.selectedQuizzes.length > 0 
+            ? this.selectedQuizzes 
+            : (this.currentQuiz ? [this.currentQuiz] : []);
+
+        if (quizzesToUpdate.length === 0) {
+            this.showError('Please select at least one quiz first');
             return;
         }
 
@@ -10123,75 +10238,94 @@ export class Admin2Dashboard {
         const userCount = selectedCheckboxes.length;
         const usernames = Array.from(selectedCheckboxes).map(cb => cb.value);
         
-        if (!confirm(`Are you sure you want to ${action} the quiz "${this.formatQuizName(this.currentQuiz)}" for ${userCount} selected users?`)) {
+        const quizText = quizzesToUpdate.length === 1 
+            ? `"${this.formatQuizName(quizzesToUpdate[0])}"` 
+            : `${quizzesToUpdate.length} selected quizzes`;
+        
+        if (!confirm(`Are you sure you want to ${action} ${quizText} for ${userCount} selected users?`)) {
             return;
         }
 
-        console.log(`[Quiz Visibility] Bulk ${action} for quiz ${this.currentQuiz} (${userCount} users)`);
+        console.log(`[Quiz Visibility] Bulk ${action} for ${quizzesToUpdate.length} quiz(es) (${userCount} users)`);
 
         try {
             // Show loading state
             const statusElement = document.getElementById('visibility-status');
             const originalStatus = statusElement.textContent;
-            statusElement.textContent = `Updating visibility for ${userCount} users...`;
+            statusElement.textContent = `Updating visibility for ${userCount} users across ${quizzesToUpdate.length} quiz(es)...`;
 
-            // Prepare bulk update data
+            // Prepare bulk update data for all selected quizzes
             const userUpdates = usernames.map(username => ({
                 username: username,
                 isVisible: isVisible
             }));
 
-            // Make bulk update API call
-            const url = `${this.apiService.baseUrl}/admin/quiz-visibility/bulk-update`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    quizName: this.currentQuiz,
-                    userUpdates: userUpdates
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
+            // Process each quiz
+            let totalSuccessCount = 0;
+            let totalErrorCount = 0;
             
-            if (!data.success) {
-                throw new Error(data.message || 'Bulk update failed');
+            for (const quizName of quizzesToUpdate) {
+                // Make bulk update API call for each quiz
+                const url = `${this.apiService.baseUrl}/admin/quiz-visibility/bulk-update`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        quizName: quizName,
+                        userUpdates: userUpdates
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Bulk update failed');
+                }
+
+                const results = data.results;
+                totalSuccessCount += results.successCount || 0;
+                totalErrorCount += results.errorCount || 0;
+                console.log(`[Quiz Visibility] Updated ${quizName}:`, results);
             }
 
-            const results = data.results;
-            console.log('[Quiz Visibility] Bulk update results:', results);
+            const results = { successCount: totalSuccessCount, errorCount: totalErrorCount };
+            console.log('[Quiz Visibility] Total bulk update results:', results);
 
             // Show success message
-            let message = `Successfully updated visibility for ${results.successCount} users`;
+            let message = `Successfully updated visibility for ${results.successCount} updates`;
             if (results.errorCount > 0) {
                 message += ` (${results.errorCount} errors)`;
             }
             this.showSuccess(message);
 
-            // Update user data in memory and refresh display
+            // Update user data in memory for all quizzes
             usernames.forEach(username => {
                 const user = this.users.find(u => u.username === username);
                 if (user) {
                     if (!user.hiddenQuizzes) user.hiddenQuizzes = [];
-                    const quizIndex = user.hiddenQuizzes.indexOf(this.currentQuiz.toLowerCase());
                     
-                    if (!isVisible && quizIndex === -1) {
-                        user.hiddenQuizzes.push(this.currentQuiz.toLowerCase());
-                    } else if (isVisible && quizIndex !== -1) {
-                        user.hiddenQuizzes.splice(quizIndex, 1);
-                    }
+                    // Update for all selected quizzes
+                    quizzesToUpdate.forEach(quizName => {
+                        const quizIndex = user.hiddenQuizzes.indexOf(quizName.toLowerCase());
+                        
+                        if (!isVisible && quizIndex === -1) {
+                            user.hiddenQuizzes.push(quizName.toLowerCase());
+                        } else if (isVisible && quizIndex !== -1) {
+                            user.hiddenQuizzes.splice(quizIndex, 1);
+                        }
+                    });
                 }
             });
 
             // Refresh the display
-            this.displayUsersForVisibility(this.currentQuiz);
+            this.displayUsersForVisibility();
 
         } catch (error) {
             console.error(`[Quiz Visibility] Error in bulk ${action}:`, error);
