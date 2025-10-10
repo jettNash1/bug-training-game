@@ -9015,26 +9015,32 @@ export class Admin2Dashboard {
             
             selectedUsers.forEach((user, userIndex) => {
                 // User details section
-                csvRows.push(['Username', user.username || '', '', '']);
-                csvRows.push(['Email', user.email || '', '', '']);
-                csvRows.push(['LastActive', this.formatDate(this.getLastActiveDate(user)), '', '']);
+                csvRows.push(['Username', user.username || '', '', '', '']);
+                csvRows.push(['Email', user.email || '', '', '', '']);
+                csvRows.push(['LastActive', this.formatDate(this.getLastActiveDate(user)), '', '', '']);
                 
                 // Add headers row for quiz section
-                csvRows.push(['', '', 'Current Score', 'Previous Scores']);
+                csvRows.push(['', '', 'Questions Answered', 'Current Score', 'Previous Scores']);
 
                 // Add quiz scores with previous scores on the same row
                 selectedQuizzes.forEach(quizId => {
                     let score = 0;
+                    let questionsAnswered = 0;
                     
                     // Try to get score from quizResults first
                     const result = user.quizResults?.find(r => r.quizName?.toLowerCase() === quizId.toLowerCase());
                     const progress = user.quizProgress?.[quizId.toLowerCase()];
                     
+                    // Get question history for counting answered questions
+                    const questionHistory = result?.questionHistory || progress?.questionHistory;
+                    if (questionHistory && Array.isArray(questionHistory)) {
+                        questionsAnswered = questionHistory.length;
+                    }
+                    
                     if (result?.score !== undefined) {
                         score = result.score;
                     } else {
                         // Calculate from question history first (most accurate)
-                        const questionHistory = result?.questionHistory || progress?.questionHistory;
                         if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
                             const correctAnswers = questionHistory.filter(q => q.isCorrect).length;
                             score = Math.round((correctAnswers / questionHistory.length) * 100);
@@ -9060,15 +9066,15 @@ export class Admin2Dashboard {
                         }
                     }
                     
-                    // Add row with quiz name in column A, empty column B, score in column C, previous scores in column D
-                    csvRows.push([this.formatQuizName(quizId), '', `${score}%`, previousScores]);
+                    // Add row with quiz name in column A, empty column B, questions answered in column C, score in column D, previous scores in column E
+                    csvRows.push([this.formatQuizName(quizId), '', `${questionsAnswered}/15`, `${score}%`, previousScores]);
                 });
                 
                 // Add separator between users if there are multiple users
                 if (userIndex < selectedUsers.length - 1) {
-                    csvRows.push(['', '', '', '']);
-                    csvRows.push(['='.repeat(50), '', '', '']);
-                    csvRows.push(['', '', '', '']);
+                    csvRows.push(['', '', '', '', '']);
+                    csvRows.push(['='.repeat(50), '', '', '', '']);
+                    csvRows.push(['', '', '', '', '']);
                 }
             });
 
