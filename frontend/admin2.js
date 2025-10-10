@@ -9015,12 +9015,12 @@ export class Admin2Dashboard {
             
             selectedUsers.forEach((user, userIndex) => {
                 // User details section
-                csvRows.push(['Username', user.username || '', '', '', '']);
-                csvRows.push(['Email', user.email || '', '', '', '']);
-                csvRows.push(['LastActive', this.formatDate(this.getLastActiveDate(user)), '', '', '']);
+                csvRows.push(['Username', user.username || '', '', '', '', '']);
+                csvRows.push(['Email', user.email || '', '', '', '', '']);
+                csvRows.push(['LastActive', this.formatDate(this.getLastActiveDate(user)), '', '', '', '']);
                 
                 // Add headers row for quiz section
-                csvRows.push(['', '', 'Questions Answered', 'Current Score', 'Previous Scores']);
+                csvRows.push(['', '', 'Questions Answered', 'Current Score', 'Status', 'Previous Scores']);
 
                 // Add quiz scores with previous scores on the same row
                 selectedQuizzes.forEach(quizId => {
@@ -9052,6 +9052,16 @@ export class Admin2Dashboard {
                         }
                     }
                     
+                    // Determine status based on questions answered
+                    let status = 'Not Started';
+                    if (questionsAnswered === 0) {
+                        status = 'Not Started';
+                    } else if (questionsAnswered < 15) {
+                        status = 'In Progress';
+                    } else if (questionsAnswered >= 15) {
+                        status = 'Completed';
+                    }
+                    
                     // Get previous scores
                     let previousScores = 'N/A';
                     if (user.quizPreviousScores) {
@@ -9066,15 +9076,15 @@ export class Admin2Dashboard {
                         }
                     }
                     
-                    // Add row with quiz name in column A, empty column B, questions answered in column C, score in column D, previous scores in column E
-                    csvRows.push([this.formatQuizName(quizId), '', `${questionsAnswered}/15`, `${score}%`, previousScores]);
+                    // Add row with quiz name in column A, empty column B, questions answered in column C, score in column D, status in column E, previous scores in column F
+                    csvRows.push([this.formatQuizName(quizId), '', `${questionsAnswered}/15`, `${score}%`, status, previousScores]);
                 });
                 
                 // Add separator between users if there are multiple users
                 if (userIndex < selectedUsers.length - 1) {
-                    csvRows.push(['', '', '', '', '']);
-                    csvRows.push(['='.repeat(50), '', '', '', '']);
-                    csvRows.push(['', '', '', '', '']);
+                    csvRows.push(['', '', '', '', '', '']);
+                    csvRows.push(['='.repeat(50), '', '', '', '', '']);
+                    csvRows.push(['', '', '', '', '', '']);
                 }
             });
 
