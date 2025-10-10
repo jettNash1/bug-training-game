@@ -9020,7 +9020,7 @@ export class Admin2Dashboard {
                 csvRows.push(['LastActive', this.formatDate(this.getLastActiveDate(user)), '', '', '', '']);
                 
                 // Add headers row for quiz section
-                csvRows.push(['', '', 'Questions Answered', 'Current Score', 'Status', 'Previous Scores']);
+                csvRows.push(['', '', 'Questions Answered', 'Current Score', 'Previous Scores', 'Status']);
 
                 // Add quiz scores with previous scores on the same row
                 selectedQuizzes.forEach(quizId => {
@@ -9076,9 +9076,9 @@ export class Admin2Dashboard {
                         }
                     }
                     
-                    // Add row with quiz name in column A, empty column B, questions answered in column C, score in column D, status in column E, previous scores in column F
+                    // Add row with quiz name in column A, empty column B, questions answered in column C, score in column D, previous scores in column E, status in column F
                     // Prefix questions answered with apostrophe to prevent Excel from interpreting it as a date
-                    csvRows.push([this.formatQuizName(quizId), '', `'${questionsAnswered}/15`, `${score}%`, status, previousScores]);
+                    csvRows.push([this.formatQuizName(quizId), '', `'${questionsAnswered}/15`, `${score}%`, previousScores, status]);
                 });
                 
                 // Add separator between users if there are multiple users
