@@ -9077,7 +9077,8 @@ export class Admin2Dashboard {
                     }
                     
                     // Add row with quiz name in column A, empty column B, questions answered in column C, score in column D, status in column E, previous scores in column F
-                    csvRows.push([this.formatQuizName(quizId), '', `${questionsAnswered}/15`, `${score}%`, status, previousScores]);
+                    // Prefix questions answered with apostrophe to prevent Excel from interpreting it as a date
+                    csvRows.push([this.formatQuizName(quizId), '', `'${questionsAnswered}/15`, `${score}%`, status, previousScores]);
                 });
                 
                 // Add separator between users if there are multiple users
