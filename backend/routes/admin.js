@@ -2021,30 +2021,27 @@ router.get('/settings/quiz-configuration', auth, async (req, res) => {
         // Retrieve configuration settings from database
         const configSetting = await Setting.findOne({ key: 'quizConfiguration' });
         console.log('[QUIZ CONFIG] GET request - Found setting:', !!configSetting);
+        
         if (configSetting) {
             console.log('[QUIZ CONFIG] GET request - Current value:', configSetting.value);
+            return res.json({
+                success: true,
+                data: configSetting.value
+            });
+        } else {
+            // Return default settings if no record exists
+            const defaultSettings = {
+                showEndResults: true,
+                showQuestionFeedback: true,
+                showIndexStatus: true,
+                updatedAt: new Date()
+            };
+            console.log('[QUIZ CONFIG] GET request - No record found, returning defaults:', defaultSettings);
+            return res.json({
+                success: true,
+                data: defaultSettings
+            });
         }
-        
-        // Default settings if not found
-        const defaultSettings = {
-            showEndResults: true,
-            showQuestionFeedback: true,
-            showIndexStatus: true,
-            updatedAt: new Date()
-        };
-        
-        // Use stored settings or defaults, ensuring all fields are present
-        const settings = configSetting ? {
-            ...defaultSettings,
-            ...configSetting.value
-        } : defaultSettings;
-        console.log('[QUIZ CONFIG] GET request - Returning settings:', settings);
-        console.log('[QUIZ CONFIG] showIndexStatus specifically in response:', settings.showIndexStatus);
-        
-        return res.json({
-            success: true,
-            data: settings
-        });
     } catch (error) {
         console.error('Error fetching quiz configuration:', error);
         return res.status(500).json({
@@ -2069,63 +2066,52 @@ router.post('/settings/quiz-configuration', auth, async (req, res) => {
         const { showEndResults, showQuestionFeedback, showIndexStatus } = req.body;
         console.log('[QUIZ CONFIG] Received update request:', { showEndResults, showQuestionFeedback, showIndexStatus });
 
-        // Validate settings
-        if (showEndResults !== undefined && typeof showEndResults !== 'boolean') {
-            console.log('[QUIZ CONFIG] Validation failed for showEndResults:', showEndResults);
+        // Validate all settings are booleans
+        if (typeof showEndResults !== 'boolean') {
             return res.status(400).json({
                 success: false,
                 message: 'showEndResults must be a boolean'
             });
         }
-
-        if (showQuestionFeedback !== undefined && typeof showQuestionFeedback !== 'boolean') {
-            console.log('[QUIZ CONFIG] Validation failed for showQuestionFeedback:', showQuestionFeedback);
+        if (typeof showQuestionFeedback !== 'boolean') {
             return res.status(400).json({
                 success: false,
                 message: 'showQuestionFeedback must be a boolean'
             });
         }
-
-        if (showIndexStatus !== undefined && typeof showIndexStatus !== 'boolean') {
-            console.log('[QUIZ CONFIG] Validation failed for showIndexStatus:', showIndexStatus);
+        if (typeof showIndexStatus !== 'boolean') {
             return res.status(400).json({
                 success: false,
                 message: 'showIndexStatus must be a boolean'
             });
         }
 
-        // Get or create settings
+        // Create or update settings with exact values provided
+        const newSettings = {
+            showEndResults,
+            showQuestionFeedback,
+            showIndexStatus,
+            updatedAt: new Date()
+        };
+
+        // Find existing setting or create new one
         let configSetting = await Setting.findOne({ key: 'quizConfiguration' });
         
-        if (!configSetting) {
-            console.log('[QUIZ CONFIG] Creating new quiz configuration setting');
+        if (configSetting) {
+            // Update existing setting
+            configSetting.value = newSettings;
+            await configSetting.save();
+            console.log('[QUIZ CONFIG] Updated existing setting:', newSettings);
+        } else {
+            // Create new setting
             configSetting = new Setting({
                 key: 'quizConfiguration',
-                value: {
-                    showEndResults: true,
-                    showQuestionFeedback: true,
-                    showIndexStatus: true
-                },
+                value: newSettings,
                 description: 'Global quiz configuration settings'
             });
+            await configSetting.save();
+            console.log('[QUIZ CONFIG] Created new setting:', newSettings);
         }
-
-        // Update settings
-        if (showEndResults !== undefined) {
-            configSetting.value.showEndResults = showEndResults;
-        }
-        if (showQuestionFeedback !== undefined) {
-            configSetting.value.showQuestionFeedback = showQuestionFeedback;
-        }
-        if (showIndexStatus !== undefined) {
-            configSetting.value.showIndexStatus = showIndexStatus;
-        }
-        configSetting.value.updatedAt = new Date();
-
-        // Save to database
-        await configSetting.save();
-        console.log('[QUIZ CONFIG] Saved settings:', configSetting.value);
-        console.log('[QUIZ CONFIG] showIndexStatus specifically:', configSetting.value.showIndexStatus);
 
         // Invalidate cache for all clients
         try {
@@ -2140,7 +2126,7 @@ router.post('/settings/quiz-configuration', auth, async (req, res) => {
 
         return res.json({
             success: true,
-            data: configSetting.value,
+            data: newSettings,
             message: 'Quiz configuration updated successfully'
         });
     } catch (error) {

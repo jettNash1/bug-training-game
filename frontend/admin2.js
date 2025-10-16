@@ -10389,27 +10389,8 @@ export class Admin2Dashboard {
                 this.quizConfiguration = response.data;
                 console.log('[Quiz Config] Loaded settings:', this.quizConfiguration);
                 
-                // Update UI checkboxes
-                const showEndResultsCheckbox = document.getElementById('showEndResults');
-                const showQuestionFeedbackCheckbox = document.getElementById('showQuestionFeedback');
-                const showIndexStatusCheckbox = document.getElementById('showIndexStatus');
-                
-                if (showEndResultsCheckbox) {
-                    console.log('[Quiz Config] showEndResults value from API:', this.quizConfiguration.showEndResults);
-                    showEndResultsCheckbox.checked = this.quizConfiguration.showEndResults !== false;
-                    console.log('[Quiz Config] showEndResults checkbox set to:', showEndResultsCheckbox.checked);
-                }
-                if (showQuestionFeedbackCheckbox) {
-                    console.log('[Quiz Config] showQuestionFeedback value from API:', this.quizConfiguration.showQuestionFeedback);
-                    showQuestionFeedbackCheckbox.checked = this.quizConfiguration.showQuestionFeedback !== false;
-                    console.log('[Quiz Config] showQuestionFeedback checkbox set to:', showQuestionFeedbackCheckbox.checked);
-                }
-                if (showIndexStatusCheckbox) {
-                    console.log('[Quiz Config] showIndexStatus value from API:', this.quizConfiguration.showIndexStatus);
-                    console.log('[Quiz Config] showIndexStatus type:', typeof this.quizConfiguration.showIndexStatus);
-                    showIndexStatusCheckbox.checked = this.quizConfiguration.showIndexStatus !== false;
-                    console.log('[Quiz Config] showIndexStatus checkbox set to:', showIndexStatusCheckbox.checked);
-                }
+                // Update UI checkboxes - all three fields handled identically
+                this.updateQuizConfigUI();
                 
                 return this.quizConfiguration;
             } else {
@@ -10423,8 +10404,28 @@ export class Admin2Dashboard {
                 showQuestionFeedback: true,
                 showIndexStatus: true
             };
+            this.updateQuizConfigUI();
             return this.quizConfiguration;
         }
+    }
+
+    /**
+     * Update quiz configuration UI checkboxes
+     */
+    updateQuizConfigUI() {
+        const checkboxes = [
+            { id: 'showEndResults', value: this.quizConfiguration.showEndResults },
+            { id: 'showQuestionFeedback', value: this.quizConfiguration.showQuestionFeedback },
+            { id: 'showIndexStatus', value: this.quizConfiguration.showIndexStatus }
+        ];
+
+        checkboxes.forEach(({ id, value }) => {
+            const checkbox = document.getElementById(id);
+            if (checkbox) {
+                checkbox.checked = value === true;
+                console.log(`[Quiz Config] ${id} set to:`, checkbox.checked);
+            }
+        });
     }
 
     /**
@@ -10433,8 +10434,6 @@ export class Admin2Dashboard {
     async saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus) {
         try {
             console.log('[Quiz Config] Saving configuration:', { showEndResults, showQuestionFeedback, showIndexStatus });
-            console.log('[Quiz Config] showIndexStatus type:', typeof showIndexStatus);
-            console.log('[Quiz Config] showIndexStatus value:', showIndexStatus);
             
             const response = await this.apiService.saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus);
             console.log('[Quiz Config] API response:', response);
@@ -10442,37 +10441,21 @@ export class Admin2Dashboard {
             if (response.success) {
                 this.quizConfiguration = response.data;
                 console.log('[Quiz Config] Settings saved successfully');
-                
-                // Update UI checkboxes with fresh data
-                const showEndResultsCheckbox = document.getElementById('showEndResults');
-                const showQuestionFeedbackCheckbox = document.getElementById('showQuestionFeedback');
-                const showIndexStatusCheckbox = document.getElementById('showIndexStatus');
-                
-                if (showEndResultsCheckbox) {
-                    showEndResultsCheckbox.checked = this.quizConfiguration.showEndResults !== false;
-                }
-                if (showQuestionFeedbackCheckbox) {
-                    showQuestionFeedbackCheckbox.checked = this.quizConfiguration.showQuestionFeedback !== false;
-                }
-                if (showIndexStatusCheckbox) {
-                    showIndexStatusCheckbox.checked = this.quizConfiguration.showIndexStatus !== false;
-                    console.log('[Quiz Config] Updated showIndexStatus checkbox to:', showIndexStatusCheckbox.checked);
-                }
+
+                // Update UI with fresh data - all three fields handled identically
+                this.updateQuizConfigUI();
                 
                 // Show success message
                 const statusElement = document.getElementById('quizConfigStatus');
-                console.log('[Quiz Config] Status element found:', !!statusElement);
                 if (statusElement) {
                     statusElement.className = 'status-message success';
                     statusElement.textContent = 'Configuration saved successfully!';
-                    console.log('[Quiz Config] Success message displayed');
                     
                     setTimeout(() => {
                         statusElement.className = 'status-message';
                         statusElement.textContent = '';
                     }, 3000);
                 } else {
-                    console.warn('[Quiz Config] Status element not found, showing toast instead');
                     this.showSuccess('Quiz configuration saved successfully!');
                 }
                 
@@ -10494,7 +10477,6 @@ export class Admin2Dashboard {
                     statusElement.textContent = '';
                 }, 5000);
             } else {
-                console.warn('[Quiz Config] Status element not found, showing error toast instead');
                 this.showError(`Failed to save configuration: ${error.message}`);
             }
             
@@ -10520,15 +10502,11 @@ export class Admin2Dashboard {
         // Add save button event listener
         saveButton.addEventListener('click', async (e) => {
             e.preventDefault();
-            console.log('[Quiz Config] Save button clicked');
             
+            // Get all three values identically
             const showEndResults = document.getElementById('showEndResults').checked;
             const showQuestionFeedback = document.getElementById('showQuestionFeedback').checked;
             const showIndexStatus = document.getElementById('showIndexStatus').checked;
-            
-            console.log('[Quiz Config] Values to save:', { showEndResults, showQuestionFeedback, showIndexStatus });
-            console.log('[Quiz Config] showIndexStatus checkbox element:', document.getElementById('showIndexStatus'));
-            console.log('[Quiz Config] showIndexStatus checkbox checked:', document.getElementById('showIndexStatus').checked);
             
             // Show loading state
             const originalText = saveButton.innerHTML;
