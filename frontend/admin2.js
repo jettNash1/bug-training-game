@@ -10382,6 +10382,15 @@ export class Admin2Dashboard {
     async loadQuizConfiguration() {
         try {
             console.log('[Quiz Config] Loading quiz configuration settings...');
+            
+            // Clear localStorage cache to ensure fresh data
+            try {
+                localStorage.removeItem('quizConfiguration');
+                console.log('[Quiz Config] Cleared localStorage cache');
+            } catch (e) {
+                console.warn('[Quiz Config] Failed to clear localStorage cache:', e);
+            }
+            
             const response = await this.apiService.getQuizConfiguration();
             
             if (response.success && response.data) {
