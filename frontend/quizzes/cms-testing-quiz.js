@@ -92,13 +92,29 @@ export class CMSTestingQuiz extends BaseQuiz {
         // Add form submission handler
         document.getElementById('options-form')?.addEventListener('submit', (e) => {
             e.preventDefault();
-            this.handleAnswer();
+            const selectedOption = document.querySelector('input[name="option"]:checked');
+            if (selectedOption) {
+                const optionIndex = parseInt(selectedOption.value);
+                const currentScenarios = this.getCurrentScenarios();
+                const scenarioIndex = this.player.questionHistory.length % 5;
+                const scenario = currentScenarios[scenarioIndex];
+                const selectedAnswer = scenario.options[optionIndex];
+                this.handleAnswer(selectedAnswer);
+            }
         });
 
         // Add keyboard navigation
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.type === 'radio') {
-                this.handleAnswer();
+                const selectedOption = document.querySelector('input[name="option"]:checked');
+                if (selectedOption) {
+                    const optionIndex = parseInt(selectedOption.value);
+                    const currentScenarios = this.getCurrentScenarios();
+                    const scenarioIndex = this.player.questionHistory.length % 5;
+                    const scenario = currentScenarios[scenarioIndex];
+                    const selectedAnswer = scenario.options[optionIndex];
+                    this.handleAnswer(selectedAnswer);
+                }
             }
         });
     }
@@ -341,8 +357,14 @@ export class CMSTestingQuiz extends BaseQuiz {
             }
         }
         
-        // Submit the answer with the timed out flag
-        this.handleAnswer(true);
+        // Get the selected answer and submit with timeout flag
+        const optionIndex = selectedOption ? parseInt(selectedOption.value) : 0;
+        const currentScenarios = this.getCurrentScenarios();
+        const scenarioIndex = this.player.questionHistory.length % 5;
+        const scenario = currentScenarios[scenarioIndex];
+        const selectedAnswer = scenario.options[optionIndex];
+        
+        this.handleAnswer(selectedAnswer, true);
     }
     
     // Display the current scenario
@@ -470,7 +492,7 @@ export class CMSTestingQuiz extends BaseQuiz {
     }
     
     // Handle answer submission
-    async handleAnswer(timedOut = false) {
+    async handleAnswer(selectedAnswer, timedOut = false) {
         if (this.isLoading) return;
         
         // Debouncing: prevent rapid successive submissions
@@ -484,19 +506,18 @@ export class CMSTestingQuiz extends BaseQuiz {
         try {
             this.isLoading = true;
         
-        const submitButton = document.querySelector('.submit-button');
-        if (submitButton) {
-            submitButton.disabled = true;
-        }
+            const submitButton = document.querySelector('.submit-button');
+            if (submitButton) {
+                submitButton.disabled = true;
+            }
 
-            const selectedOption = document.querySelector('input[name="option"]:checked');
-            if (!selectedOption && !timedOut) {
+            // Validate selection if not timed out
+            if (!selectedAnswer && !timedOut) {
                 this.showToast('Please select an answer before submitting.', 'warning');
                 this.isLoading = false;
                 if (submitButton) {
                     submitButton.disabled = false;
                 }
-                // Timer continues running - no need to restart
                 return;
             }
             
@@ -505,36 +526,26 @@ export class CMSTestingQuiz extends BaseQuiz {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
             }
-            
-            // Get the selected option index
-            const optionIndex = selectedOption ? parseInt(selectedOption.value) : 0;
-            
-            // Get the current scenario
+
+            // Find the correct answer (option with highest experience)
             const currentScenarios = this.getCurrentScenarios();
             const scenarioIndex = this.player.questionHistory.length % 5;
             const scenario = currentScenarios[scenarioIndex];
-            
-            // Get the selected answer
-            const selectedAnswer = scenario.options[optionIndex];             // Add to player experience (no points if timed out)
-            if (!timedOut) {
-                this.player.experience += selectedAnswer.experience;
-            }
-
-            // Find the correct answer (option with highest experience)
             const correctAnswer = scenario.options.reduce((prev, current) => 
                 (prev.experience > current.experience) ? prev : current
             );
 
             // Mark selected answer as correct or incorrect
-            // If timed out, always mark as incorrect regardless of the randomly selected answer
             if (timedOut) {
                 selectedAnswer.isCorrect = false;
             } else {
                 selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
             }
             
-            // Calculate time spent on this question
-            const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
+            // Set timeout flag if applicable
+            if (timedOut) {
+                selectedAnswer.isTimeout = true;
+            }
 
             // Call parent's handleAnswer method which respects configuration
             await super.handleAnswer(selectedAnswer);
