@@ -5,7 +5,6 @@ export const QUIZ_CATEGORIES = {
     'Core QA Skills': [
         'tester-mindset',
         'communication',
-        'initiative',
         'time-management'
     ],
     'Test Execution': [
@@ -36,7 +35,8 @@ export const QUIZ_CATEGORIES = {
     ],
     'Interviews': [
         'automation-interview',
-        'functional-interview'
+        'functional-interview',
+        'initiative'
     ]
 };
 
