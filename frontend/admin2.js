@@ -10388,15 +10388,29 @@ export class Admin2Dashboard {
                 this.quizConfiguration = response.data;
                 console.log('[Quiz Config] Loaded settings:', this.quizConfiguration);
                 
+                // Validate loaded settings
+                if (typeof this.quizConfiguration.showEndResults !== 'boolean') {
+                    console.warn('[Quiz Config] showEndResults is not a boolean, using default true');
+                    this.quizConfiguration.showEndResults = true;
+                }
+                if (typeof this.quizConfiguration.showQuestionFeedback !== 'boolean') {
+                    console.warn('[Quiz Config] showQuestionFeedback is not a boolean, using default true');
+                    this.quizConfiguration.showQuestionFeedback = true;
+                }
+                
+                console.log('[Quiz Config] Final loaded settings after validation:', this.quizConfiguration);
+                
                 // Update UI checkboxes
                 const showEndResultsCheckbox = document.getElementById('showEndResults');
                 const showQuestionFeedbackCheckbox = document.getElementById('showQuestionFeedback');
                 
                 if (showEndResultsCheckbox) {
                     showEndResultsCheckbox.checked = this.quizConfiguration.showEndResults !== false;
+                    console.log('[Quiz Config] Set showEndResults checkbox to:', this.quizConfiguration.showEndResults);
                 }
                 if (showQuestionFeedbackCheckbox) {
                     showQuestionFeedbackCheckbox.checked = this.quizConfiguration.showQuestionFeedback !== false;
+                    console.log('[Quiz Config] Set showQuestionFeedback checkbox to:', this.quizConfiguration.showQuestionFeedback);
                 }
                 
                 return this.quizConfiguration;
@@ -10420,6 +10434,14 @@ export class Admin2Dashboard {
     async saveQuizConfiguration(showEndResults, showQuestionFeedback) {
         try {
             console.log('[Quiz Config] Saving configuration:', { showEndResults, showQuestionFeedback });
+            
+            // Validate input types
+            if (typeof showEndResults !== 'boolean') {
+                throw new Error('showEndResults must be a boolean');
+            }
+            if (typeof showQuestionFeedback !== 'boolean') {
+                throw new Error('showQuestionFeedback must be a boolean');
+            }
             
             const response = await this.apiService.saveQuizConfiguration(showEndResults, showQuestionFeedback);
             console.log('[Quiz Config] API response:', response);
@@ -10511,6 +10533,39 @@ export class Admin2Dashboard {
         });
         
         console.log('[Quiz Config] Quiz configuration section setup complete');
+    }
+
+    // Test method for debugging configuration
+    async testQuizConfiguration() {
+        console.log('[Quiz Config] Testing quiz configuration...');
+        
+        try {
+            // Load current configuration
+            await this.loadQuizConfiguration();
+            console.log('[Quiz Config] Current configuration:', this.quizConfiguration);
+            
+            // Test saving different combinations
+            console.log('[Quiz Config] Testing save with both enabled...');
+            await this.saveQuizConfiguration(true, true);
+            
+            console.log('[Quiz Config] Testing save with both disabled...');
+            await this.saveQuizConfiguration(false, false);
+            
+            console.log('[Quiz Config] Testing save with mixed settings...');
+            await this.saveQuizConfiguration(true, false);
+            
+            console.log('[Quiz Config] Testing save with opposite mixed settings...');
+            await this.saveQuizConfiguration(false, true);
+            
+            // Load final configuration
+            await this.loadQuizConfiguration();
+            console.log('[Quiz Config] Final configuration after tests:', this.quizConfiguration);
+            
+            return this.quizConfiguration;
+        } catch (error) {
+            console.error('[Quiz Config] Error testing configuration:', error);
+            throw error;
+        }
     }
 }
 

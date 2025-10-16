@@ -2067,6 +2067,18 @@ export class BaseQuiz {
                 console.log('[Quiz] Quiz configuration loaded:', this.quizConfiguration);
                 console.log('[Quiz] showQuestionFeedback:', this.quizConfiguration.showQuestionFeedback);
                 console.log('[Quiz] showEndResults:', this.quizConfiguration.showEndResults);
+                
+                // Validate that both settings are properly loaded
+                if (typeof this.quizConfiguration.showQuestionFeedback !== 'boolean') {
+                    console.warn('[Quiz] showQuestionFeedback is not a boolean, using default true');
+                    this.quizConfiguration.showQuestionFeedback = true;
+                }
+                if (typeof this.quizConfiguration.showEndResults !== 'boolean') {
+                    console.warn('[Quiz] showEndResults is not a boolean, using default true');
+                    this.quizConfiguration.showEndResults = true;
+                }
+                
+                console.log('[Quiz] Final configuration after validation:', this.quizConfiguration);
             } else {
                 console.warn('[Quiz] Failed to load quiz configuration, using defaults');
                 console.log('[Quiz] Using default configuration:', this.quizConfiguration);
@@ -2076,6 +2088,28 @@ export class BaseQuiz {
             console.log('[Quiz] Using default configuration due to error:', this.quizConfiguration);
             // Keep defaults
         }
+    }
+
+    // Test method for debugging configuration
+    testQuizConfiguration() {
+        console.log('[Quiz] Testing quiz configuration...');
+        console.log('[Quiz] Current configuration:', this.quizConfiguration);
+        console.log('[Quiz] showQuestionFeedback:', this.quizConfiguration?.showQuestionFeedback);
+        console.log('[Quiz] showEndResults:', this.quizConfiguration?.showEndResults);
+        
+        // Test the logic used in showOutcome
+        const showFeedback = this.quizConfiguration?.showQuestionFeedback !== false;
+        console.log('[Quiz] showOutcome will show feedback:', showFeedback);
+        
+        // Test the logic used in endGame
+        const showResults = this.quizConfiguration?.showEndResults !== false;
+        console.log('[Quiz] endGame will show results:', showResults);
+        
+        return {
+            configuration: this.quizConfiguration,
+            showFeedback,
+            showResults
+        };
     }
 
     async initializeSettings() {

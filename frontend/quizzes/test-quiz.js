@@ -72,9 +72,12 @@ export class TestQuiz extends BaseQuiz {
         
         this.isLoading = false;
         
+        // Initialize settings (including quiz configuration)
+        this.initializeSettings();
+
         // Initialize event listeners
         this.initializeEventListeners();
-        
+
         // Start the quiz (wait for timer settings to be loaded)
         this.startGameWhenReady();
     }

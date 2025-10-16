@@ -70,6 +70,9 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         
         this.isLoading = false;
         
+        // Initialize settings (including quiz configuration)
+        this.initializeSettings();
+
         // Initialize event listeners
         this.initializeEventListeners();
 

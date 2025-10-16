@@ -69,6 +69,9 @@ export class ContentCopyQuiz extends BaseQuiz {
         
         this.isLoading = false;
         
+        // Initialize settings (including quiz configuration)
+        this.initializeSettings();
+
         // Initialize event listeners
         this.initializeEventListeners();
 
