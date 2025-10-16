@@ -1304,24 +1304,12 @@ export class BaseQuiz {
         // Get the rewards container
         const rewardsDiv = document.getElementById('rewards');
         
-        // Check if we should show rewards
+        // Check if we should show rewards (only when feedback is enabled)
         const showFeedback = this.quizConfiguration?.showQuestionFeedback !== false;
         
-        // Handle rewards visibility
-        if (option.isTimeout || !showFeedback) {
-            // Hide the rewards div for timeout scenarios or when feedback is disabled
-            if (rewardsDiv) rewardsDiv.style.display = 'none';
-        } else {
-            // Show rewards for normal scenarios when feedback is enabled
-            if (rewardsDiv) rewardsDiv.style.display = '';
-            
-            // Update XP display
-            const xpGained = document.getElementById('xp-gained');
-            if (xpGained) {
-                xpGained.textContent = option.experience >= 0 ? 
-                    `Experience gained: +${option.experience}` : 
-                    `Experience: ${option.experience}`;
-            }
+        // Always hide rewards - they should never be shown to users
+        if (rewardsDiv) {
+            rewardsDiv.style.display = 'none';
         }
 
         // Update progress display
