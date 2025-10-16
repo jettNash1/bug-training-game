@@ -1342,6 +1342,38 @@ export class BaseQuiz {
 
         // Update progress display
         this.updateProgress();
+        
+        // Setup continue button functionality
+        this.setupContinueButton();
+    }
+    
+    setupContinueButton() {
+        // Find the continue button in the outcome screen
+        const continueBtn = document.getElementById('continue-btn');
+        if (continueBtn) {
+            // Remove any existing event listeners to avoid duplicates
+            continueBtn.replaceWith(continueBtn.cloneNode(true));
+            const newContinueBtn = document.getElementById('continue-btn');
+            
+            // Add event listener to continue button
+            newContinueBtn.addEventListener('click', () => {
+                console.log('[Quiz] Continue button clicked');
+                this.nextScenario();
+            });
+        } else {
+            console.warn('[Quiz] Continue button not found in outcome screen');
+        }
+    }
+    
+    nextScenario() {
+        // Hide outcome screen and show game screen
+        if (this.outcomeScreen && this.gameScreen) {
+            this.outcomeScreen.classList.add('hidden');
+            this.gameScreen.classList.remove('hidden');
+        }
+        
+        // Display next scenario
+        this.displayScenario();
     }
 
     nextQuestion() {
