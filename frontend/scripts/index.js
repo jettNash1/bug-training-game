@@ -122,6 +122,11 @@ class IndexPage {
         this.quizItems = null;
         this.userProgress = null;
         this.categoryProgress = {};
+        this.quizConfiguration = {
+            showEndResults: true,
+            showQuestionFeedback: true,
+            showIndexStatus: true
+        };
         
         // Bind methods
         this.initialize = this.initialize.bind(this);
@@ -234,6 +239,9 @@ class IndexPage {
             
             // Initialize API service
             this.apiService = new APIService();
+            
+            // Load quiz configuration
+            await this.loadQuizConfiguration();
             
             // Initialize quiz list with retry logic
             await this.initializeWithRetry();
@@ -535,12 +543,20 @@ class IndexPage {
 
             if (questionsAnswered === 15) {
                 progressText = '15/15';
-                const effectiveScore = (score !== undefined && score !== null) ? score : (scorePercentage !== undefined && scorePercentage !== null ? scorePercentage : 0);
-                // console.log(`[Index] - Quiz completed with effective score: ${effectiveScore}`);
-                if (effectiveScore >= 80) {
-                    statusClass = 'completed-perfect';
+                
+                // Check if index status display is enabled
+                if (this.quizConfiguration?.showIndexStatus !== false) {
+                    // Show pass/fail status (original behavior)
+                    const effectiveScore = (score !== undefined && score !== null) ? score : (scorePercentage !== undefined && scorePercentage !== null ? scorePercentage : 0);
+                    // console.log(`[Index] - Quiz completed with effective score: ${effectiveScore}`);
+                    if (effectiveScore >= 80) {
+                        statusClass = 'completed-perfect';
+                    } else {
+                        statusClass = 'completed-partial';
+                    }
                 } else {
-                    statusClass = 'completed-partial';
+                    // Show neutral "Completed" status
+                    statusClass = 'completed-neutral';
                 }
             } else if (questionsAnswered > 0) {
                 statusClass = 'in-progress';
@@ -554,7 +570,7 @@ class IndexPage {
             // console.log(`[Index] - Final progress text: ${progressText}`);
 
             // Remove all status classes from .quiz-item
-            item.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
+            item.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect', 'completed-neutral');
             item.classList.add(statusClass);
 
             // Also apply the status class to the wrapper for robustness
@@ -562,7 +578,7 @@ class IndexPage {
             if (wrapper) {
                 // console.log(`[Index] - Applying status class to wrapper: ${statusClass}`);
                 // console.log(`[Index] - Wrapper before update:`, wrapper.className);
-                wrapper.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
+                wrapper.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect', 'completed-neutral');
                 wrapper.classList.add(statusClass);
                 // console.log(`[Index] - Wrapper after update:`, wrapper.className);
                 
@@ -1502,6 +1518,26 @@ class IndexPage {
             // console.log('[Index] Quiz progress and guide buttons refresh complete');
         } catch (error) {
             console.error('[Index] Error during quiz progress refresh:', error);
+        }
+    }
+
+    /**
+     * Load quiz configuration settings
+     */
+    async loadQuizConfiguration() {
+        try {
+            console.log('[Index] Loading quiz configuration...');
+            const response = await this.apiService.getPublicQuizConfiguration();
+            
+            if (response.success && response.data) {
+                this.quizConfiguration = response.data;
+                console.log('[Index] Loaded quiz configuration:', this.quizConfiguration);
+            } else {
+                console.warn('[Index] Failed to load quiz configuration, using defaults');
+            }
+        } catch (error) {
+            console.error('[Index] Error loading quiz configuration:', error);
+            // Keep default values
         }
     }
 }

@@ -10391,12 +10391,16 @@ export class Admin2Dashboard {
                 // Update UI checkboxes
                 const showEndResultsCheckbox = document.getElementById('showEndResults');
                 const showQuestionFeedbackCheckbox = document.getElementById('showQuestionFeedback');
+                const showIndexStatusCheckbox = document.getElementById('showIndexStatus');
                 
                 if (showEndResultsCheckbox) {
                     showEndResultsCheckbox.checked = this.quizConfiguration.showEndResults !== false;
                 }
                 if (showQuestionFeedbackCheckbox) {
                     showQuestionFeedbackCheckbox.checked = this.quizConfiguration.showQuestionFeedback !== false;
+                }
+                if (showIndexStatusCheckbox) {
+                    showIndexStatusCheckbox.checked = this.quizConfiguration.showIndexStatus !== false;
                 }
                 
                 return this.quizConfiguration;
@@ -10408,7 +10412,8 @@ export class Admin2Dashboard {
             // Set defaults
             this.quizConfiguration = {
                 showEndResults: true,
-                showQuestionFeedback: true
+                showQuestionFeedback: true,
+                showIndexStatus: true
             };
             return this.quizConfiguration;
         }
@@ -10417,11 +10422,11 @@ export class Admin2Dashboard {
     /**
      * Save quiz configuration settings
      */
-    async saveQuizConfiguration(showEndResults, showQuestionFeedback) {
+    async saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus) {
         try {
-            console.log('[Quiz Config] Saving configuration:', { showEndResults, showQuestionFeedback });
+            console.log('[Quiz Config] Saving configuration:', { showEndResults, showQuestionFeedback, showIndexStatus });
             
-            const response = await this.apiService.saveQuizConfiguration(showEndResults, showQuestionFeedback);
+            const response = await this.apiService.saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus);
             console.log('[Quiz Config] API response:', response);
             
             if (response.success) {
@@ -10493,8 +10498,9 @@ export class Admin2Dashboard {
             
             const showEndResults = document.getElementById('showEndResults').checked;
             const showQuestionFeedback = document.getElementById('showQuestionFeedback').checked;
+            const showIndexStatus = document.getElementById('showIndexStatus').checked;
             
-            console.log('[Quiz Config] Values to save:', { showEndResults, showQuestionFeedback });
+            console.log('[Quiz Config] Values to save:', { showEndResults, showQuestionFeedback, showIndexStatus });
             
             // Show loading state
             const originalText = saveButton.innerHTML;
@@ -10502,7 +10508,7 @@ export class Admin2Dashboard {
             saveButton.disabled = true;
             
             try {
-                await this.saveQuizConfiguration(showEndResults, showQuestionFeedback);
+                await this.saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus);
             } finally {
                 // Restore button state
                 saveButton.innerHTML = originalText;

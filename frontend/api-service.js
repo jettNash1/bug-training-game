@@ -2134,7 +2134,7 @@ export class APIService {
     /**
      * Save quiz configuration settings
      */
-    async saveQuizConfiguration(showEndResults, showQuestionFeedback) {
+    async saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus) {
         try {
             console.log('[API] Starting quiz configuration save process...');
             
@@ -2145,11 +2145,12 @@ export class APIService {
                 throw new Error('Authentication failed. Please log in again.');
             }
             
-            console.log('[API] Saving quiz configuration:', { showEndResults, showQuestionFeedback });
+            console.log('[API] Saving quiz configuration:', { showEndResults, showQuestionFeedback, showIndexStatus });
             
             const requestBody = {
                 showEndResults,
-                showQuestionFeedback
+                showQuestionFeedback,
+                showIndexStatus
             };
             console.log('[API] Request body:', requestBody);
             
@@ -2255,7 +2256,8 @@ export class APIService {
             // Return defaults
             const defaults = {
                 showEndResults: true,
-                showQuestionFeedback: true
+                showQuestionFeedback: true,
+                showIndexStatus: true
             };
             console.log('[API] Returning default configuration:', defaults);
             return {

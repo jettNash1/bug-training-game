@@ -281,6 +281,10 @@ body {
     background-color: #C8E6C9 !important;
     border: 2px solid #81C784 !important;
 }
+.quiz-item-wrapper.completed-neutral {
+    background-color: #E8E8E8 !important;
+    border: 2px solid #BDBDBD !important;
+}
 
 /* Higher specificity rules to ensure status classes work */
 .category-card .quiz-list .quiz-item-wrapper.not-started {
@@ -298,6 +302,10 @@ body {
 .category-card .quiz-list .quiz-item-wrapper.completed-perfect {
     background-color: #C8E6C9 !important;
     border: 2px solid #81C784 !important;
+}
+.category-card .quiz-list .quiz-item-wrapper.completed-neutral {
+    background-color: #E8E8E8 !important;
+    border: 2px solid #BDBDBD !important;
 }
 
 /* Guide Button Styles */
@@ -2008,6 +2016,11 @@ select:disabled {
 
 .quiz-item.not-started:hover {
     background-color: #F5F5F5 !important; /* Slightly darker white */
+    border: none !important;
+}
+
+.quiz-item.completed-neutral:hover {
+    background-color: #D5D5D5 !important; /* Slightly darker gray */
     border: none !important;
 }
 

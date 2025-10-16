@@ -2029,6 +2029,7 @@ router.get('/settings/quiz-configuration', auth, async (req, res) => {
         const defaultSettings = {
             showEndResults: true,
             showQuestionFeedback: true,
+            showIndexStatus: true,
             updatedAt: new Date()
         };
         
@@ -2061,8 +2062,8 @@ router.post('/settings/quiz-configuration', auth, async (req, res) => {
             });
         }
 
-        const { showEndResults, showQuestionFeedback } = req.body;
-        console.log('[QUIZ CONFIG] Received update request:', { showEndResults, showQuestionFeedback });
+        const { showEndResults, showQuestionFeedback, showIndexStatus } = req.body;
+        console.log('[QUIZ CONFIG] Received update request:', { showEndResults, showQuestionFeedback, showIndexStatus });
 
         // Validate settings
         if (showEndResults !== undefined && typeof showEndResults !== 'boolean') {
@@ -2081,6 +2082,14 @@ router.post('/settings/quiz-configuration', auth, async (req, res) => {
             });
         }
 
+        if (showIndexStatus !== undefined && typeof showIndexStatus !== 'boolean') {
+            console.log('[QUIZ CONFIG] Validation failed for showIndexStatus:', showIndexStatus);
+            return res.status(400).json({
+                success: false,
+                message: 'showIndexStatus must be a boolean'
+            });
+        }
+
         // Get or create settings
         let configSetting = await Setting.findOne({ key: 'quizConfiguration' });
         
@@ -2090,7 +2099,8 @@ router.post('/settings/quiz-configuration', auth, async (req, res) => {
                 key: 'quizConfiguration',
                 value: {
                     showEndResults: true,
-                    showQuestionFeedback: true
+                    showQuestionFeedback: true,
+                    showIndexStatus: true
                 },
                 description: 'Global quiz configuration settings'
             });
@@ -2102,6 +2112,9 @@ router.post('/settings/quiz-configuration', auth, async (req, res) => {
         }
         if (showQuestionFeedback !== undefined) {
             configSetting.value.showQuestionFeedback = showQuestionFeedback;
+        }
+        if (showIndexStatus !== undefined) {
+            configSetting.value.showIndexStatus = showIndexStatus;
         }
         configSetting.value.updatedAt = new Date();
 
