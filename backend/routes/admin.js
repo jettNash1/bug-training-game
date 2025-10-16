@@ -2033,8 +2033,11 @@ router.get('/settings/quiz-configuration', auth, async (req, res) => {
             updatedAt: new Date()
         };
         
-        // Use stored settings or defaults
-        const settings = configSetting ? configSetting.value : defaultSettings;
+        // Use stored settings or defaults, ensuring all fields are present
+        const settings = configSetting ? {
+            ...defaultSettings,
+            ...configSetting.value
+        } : defaultSettings;
         console.log('[QUIZ CONFIG] GET request - Returning settings:', settings);
         
         return res.json({
