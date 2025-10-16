@@ -1732,7 +1732,13 @@ export class BaseQuiz {
             await this.saveProgress();
 
             // Show outcome using configuration-aware method
-            this.showOutcome(selectedAnswer);
+            console.log('[BaseQuiz] About to call showOutcome');
+            try {
+                this.showOutcome(selectedAnswer);
+                console.log('[BaseQuiz] showOutcome call completed');
+            } catch (error) {
+                console.error('[BaseQuiz] Error in showOutcome:', error);
+            }
         } catch (error) {
             console.error('[BaseQuiz] Error handling answer:', error);
         } finally {
