@@ -10422,6 +10422,7 @@ export class Admin2Dashboard {
             console.log('[Quiz Config] Saving configuration:', { showEndResults, showQuestionFeedback });
             
             const response = await this.apiService.saveQuizConfiguration(showEndResults, showQuestionFeedback);
+            console.log('[Quiz Config] API response:', response);
             
             if (response.success) {
                 this.quizConfiguration = response.data;
@@ -10429,14 +10430,19 @@ export class Admin2Dashboard {
                 
                 // Show success message
                 const statusElement = document.getElementById('quizConfigStatus');
+                console.log('[Quiz Config] Status element found:', !!statusElement);
                 if (statusElement) {
                     statusElement.className = 'status-message success';
                     statusElement.textContent = 'Configuration saved successfully!';
+                    console.log('[Quiz Config] Success message displayed');
                     
                     setTimeout(() => {
                         statusElement.className = 'status-message';
                         statusElement.textContent = '';
                     }, 3000);
+                } else {
+                    console.warn('[Quiz Config] Status element not found, showing toast instead');
+                    this.showSuccess('Quiz configuration saved successfully!');
                 }
                 
                 return true;
@@ -10456,6 +10462,9 @@ export class Admin2Dashboard {
                     statusElement.className = 'status-message';
                     statusElement.textContent = '';
                 }, 5000);
+            } else {
+                console.warn('[Quiz Config] Status element not found, showing error toast instead');
+                this.showError(`Failed to save configuration: ${error.message}`);
             }
             
             return false;
@@ -10478,11 +10487,27 @@ export class Admin2Dashboard {
         this.loadQuizConfiguration();
         
         // Add save button event listener
-        saveButton.addEventListener('click', async () => {
+        saveButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            console.log('[Quiz Config] Save button clicked');
+            
             const showEndResults = document.getElementById('showEndResults').checked;
             const showQuestionFeedback = document.getElementById('showQuestionFeedback').checked;
             
-            await this.saveQuizConfiguration(showEndResults, showQuestionFeedback);
+            console.log('[Quiz Config] Values to save:', { showEndResults, showQuestionFeedback });
+            
+            // Show loading state
+            const originalText = saveButton.innerHTML;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            saveButton.disabled = true;
+            
+            try {
+                await this.saveQuizConfiguration(showEndResults, showQuestionFeedback);
+            } finally {
+                // Restore button state
+                saveButton.innerHTML = originalText;
+                saveButton.disabled = false;
+            }
         });
         
         console.log('[Quiz Config] Quiz configuration section setup complete');

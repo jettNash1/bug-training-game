@@ -1289,6 +1289,12 @@ export class BaseQuiz {
         if (outcomeText) {
             // Check quiz configuration for feedback visibility
             const showFeedback = this.quizConfiguration?.showQuestionFeedback !== false;
+            console.log('[Quiz] showOutcome - Configuration check:', {
+                quizConfiguration: this.quizConfiguration,
+                showQuestionFeedback: this.quizConfiguration?.showQuestionFeedback,
+                showFeedback: showFeedback,
+                optionOutcome: option.outcome
+            });
             
             // Check if this is a timeout scenario using the isTimeout flag
             if (option.isTimeout) {
@@ -1300,9 +1306,11 @@ export class BaseQuiz {
                 // Normal scenario - user selected an answer
                 if (showFeedback) {
                     // Show the user's selected answer outcome
+                    console.log('[Quiz] Showing original outcome:', option.outcome);
                     outcomeText.textContent = option.outcome;
                 } else {
                     // Show neutral feedback
+                    console.log('[Quiz] Showing neutral feedback');
                     outcomeText.textContent = `Thank you for your answer. Let's continue to the next question.`;
                 }
             }
@@ -2041,15 +2049,20 @@ export class BaseQuiz {
         try {
             console.log('[Quiz] Loading quiz configuration settings...');
             const response = await this.apiService.getPublicQuizConfiguration();
+            console.log('[Quiz] Configuration API response:', response);
             
             if (response.success && response.data) {
                 this.quizConfiguration = response.data;
                 console.log('[Quiz] Quiz configuration loaded:', this.quizConfiguration);
+                console.log('[Quiz] showQuestionFeedback:', this.quizConfiguration.showQuestionFeedback);
+                console.log('[Quiz] showEndResults:', this.quizConfiguration.showEndResults);
             } else {
                 console.warn('[Quiz] Failed to load quiz configuration, using defaults');
+                console.log('[Quiz] Using default configuration:', this.quizConfiguration);
             }
         } catch (error) {
             console.error('[Quiz] Error loading quiz configuration:', error);
+            console.log('[Quiz] Using default configuration due to error:', this.quizConfiguration);
             // Keep defaults
         }
     }

@@ -2136,24 +2136,32 @@ export class APIService {
      */
     async saveQuizConfiguration(showEndResults, showQuestionFeedback) {
         try {
+            console.log('[API] Starting quiz configuration save process...');
+            
             // Verify admin authentication
             const authCheck = await this.verifyAdminToken();
+            console.log('[API] Auth check result:', authCheck);
             if (!authCheck.success) {
                 throw new Error('Authentication failed. Please log in again.');
             }
             
             console.log('[API] Saving quiz configuration:', { showEndResults, showQuestionFeedback });
             
+            const requestBody = {
+                showEndResults,
+                showQuestionFeedback
+            };
+            console.log('[API] Request body:', requestBody);
+            
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-configuration`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    showEndResults,
-                    showQuestionFeedback
-                })
+                body: JSON.stringify(requestBody)
             });
+            
+            console.log('[API] Raw response from server:', response);
             
             if (response.success) {
                 console.log('[API] Quiz configuration saved successfully');
@@ -2161,12 +2169,14 @@ export class APIService {
                 // Update localStorage
                 try {
                     localStorage.setItem('quizConfiguration', JSON.stringify(response.data || {}));
+                    console.log('[API] Updated localStorage with new configuration');
                 } catch (e) {
                     console.warn('[API] Failed to save quiz configuration to localStorage:', e);
                 }
                 
                 return response;
             } else {
+                console.error('[API] Server returned error:', response);
                 throw new Error(response.message || 'Failed to save quiz configuration');
             }
         } catch (error) {
@@ -2198,42 +2208,59 @@ export class APIService {
                 console.warn('[API] Failed to read cached quiz configuration:', e);
             }
             
-            // Fetch from API if no cache
-            const response = await fetch(`${this.baseUrl}/admin/settings/quiz-configuration`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
+            // Try to fetch from API with a timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                // Cache it
-                try {
-                    localStorage.setItem('quizConfiguration', JSON.stringify(data.data || {}));
-                } catch (e) {
-                    console.warn('[API] Failed to cache quiz configuration:', e);
+            try {
+                const response = await fetch(`${this.baseUrl}/admin/settings/quiz-configuration`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    console.warn(`[API] HTTP ${response.status} when fetching quiz configuration`);
+                    throw new Error(`HTTP ${response.status}`);
                 }
                 
-                return data;
+                const data = await response.json();
+                console.log('[API] Raw quiz configuration response:', data);
+                
+                if (data.success) {
+                    // Cache it
+                    try {
+                        localStorage.setItem('quizConfiguration', JSON.stringify(data.data || {}));
+                        console.log('[API] Cached quiz configuration');
+                    } catch (e) {
+                        console.warn('[API] Failed to cache quiz configuration:', e);
+                    }
+                    
+                    return data;
+                }
+                
+                throw new Error(data.message || 'Failed to fetch configuration');
+            } catch (fetchError) {
+                clearTimeout(timeoutId);
+                console.warn('[API] Failed to fetch from API, using defaults:', fetchError);
+                throw fetchError;
             }
-            
-            throw new Error(data.message || 'Failed to fetch configuration');
         } catch (error) {
             console.warn('[API] Error fetching public quiz configuration:', error);
             
             // Return defaults
+            const defaults = {
+                showEndResults: true,
+                showQuestionFeedback: true
+            };
+            console.log('[API] Returning default configuration:', defaults);
             return {
                 success: true,
-                data: {
-                    showEndResults: true,
-                    showQuestionFeedback: true
-                },
+                data: defaults,
                 source: 'defaults'
             };
         }
