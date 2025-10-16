@@ -2077,23 +2077,7 @@ export class APIService {
      */
     async getQuizConfiguration() {
         try {
-            console.log('[API] Fetching quiz configuration settings');
-            
-            // Try localStorage first for consistency with public method
-            try {
-                const cached = localStorage.getItem('quizConfiguration');
-                if (cached) {
-                    const config = JSON.parse(cached);
-                    console.log('[API] Using cached quiz configuration:', config);
-                    return {
-                        success: true,
-                        data: config,
-                        source: 'cache'
-                    };
-                }
-            } catch (e) {
-                console.warn('[API] Failed to read cached quiz configuration:', e);
-            }
+            console.log('[API] Fetching quiz configuration settings from API (no cache)');
             
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-configuration`, {
                 method: 'GET',
@@ -2104,14 +2088,6 @@ export class APIService {
             
             if (response.success) {
                 console.log('[API] Successfully fetched quiz configuration:', response.data);
-                
-                // Save to localStorage for quick access
-                try {
-                    localStorage.setItem('quizConfiguration', JSON.stringify(response.data || {}));
-                    console.log('[API] Saved quiz configuration to localStorage');
-                } catch (e) {
-                    console.warn('[API] Failed to save quiz configuration to localStorage:', e);
-                }
                 
                 return response;
             } else {
