@@ -91,15 +91,20 @@ export class CMSTestingQuiz extends BaseQuiz {
         
         // Add form submission handler
         document.getElementById('options-form')?.addEventListener('submit', (e) => {
+            console.log('[CMSTestingQuiz] Form submitted');
             e.preventDefault();
             const selectedOption = document.querySelector('input[name="option"]:checked');
+            console.log('[CMSTestingQuiz] Selected option:', selectedOption);
             if (selectedOption) {
                 const optionIndex = parseInt(selectedOption.value);
                 const currentScenarios = this.getCurrentScenarios();
                 const scenarioIndex = this.player.questionHistory.length % 5;
                 const scenario = currentScenarios[scenarioIndex];
                 const selectedAnswer = scenario.options[optionIndex];
+                console.log('[CMSTestingQuiz] Calling handleAnswer with:', selectedAnswer);
                 this.handleAnswer(selectedAnswer);
+            } else {
+                console.log('[CMSTestingQuiz] No option selected');
             }
         });
 
@@ -548,7 +553,9 @@ export class CMSTestingQuiz extends BaseQuiz {
             }
 
             // Call parent's handleAnswer method which respects configuration
+            console.log('[CMSTestingQuiz] Calling super.handleAnswer with:', selectedAnswer);
             await super.handleAnswer(selectedAnswer);
+            console.log('[CMSTestingQuiz] super.handleAnswer completed');
 
             this.updateProgress();
             

@@ -1274,9 +1274,24 @@ export class BaseQuiz {
     }
 
     showOutcome(option) {
+        console.log('[Quiz] showOutcome called with option:', option);
+        console.log('[Quiz] gameScreen:', this.gameScreen);
+        console.log('[Quiz] outcomeScreen:', this.outcomeScreen);
+        
         // Hide game screen and show outcome screen
-        this.gameScreen.classList.add('hidden');
-        this.outcomeScreen.classList.remove('hidden');
+        if (this.gameScreen) {
+            this.gameScreen.classList.add('hidden');
+            console.log('[Quiz] Hidden game screen');
+        } else {
+            console.warn('[Quiz] gameScreen not found');
+        }
+        
+        if (this.outcomeScreen) {
+            this.outcomeScreen.classList.remove('hidden');
+            console.log('[Quiz] Shown outcome screen');
+        } else {
+            console.warn('[Quiz] outcomeScreen not found');
+        }
 
         // Get current scenario and find correct answer
         const currentScenario = this.getCurrentScenario();
@@ -1685,6 +1700,7 @@ export class BaseQuiz {
     }
 
     async handleAnswer(selectedAnswer) {
+        console.log('[BaseQuiz] handleAnswer called with:', selectedAnswer);
         if (this.isLoading) return;
 
         try {
