@@ -2039,6 +2039,7 @@ router.get('/settings/quiz-configuration', auth, async (req, res) => {
             ...configSetting.value
         } : defaultSettings;
         console.log('[QUIZ CONFIG] GET request - Returning settings:', settings);
+        console.log('[QUIZ CONFIG] showIndexStatus specifically in response:', settings.showIndexStatus);
         
         return res.json({
             success: true,
@@ -2124,6 +2125,7 @@ router.post('/settings/quiz-configuration', auth, async (req, res) => {
         // Save to database
         await configSetting.save();
         console.log('[QUIZ CONFIG] Saved settings:', configSetting.value);
+        console.log('[QUIZ CONFIG] showIndexStatus specifically:', configSetting.value.showIndexStatus);
 
         // Invalidate cache for all clients
         try {

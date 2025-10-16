@@ -10395,10 +10395,14 @@ export class Admin2Dashboard {
                 const showIndexStatusCheckbox = document.getElementById('showIndexStatus');
                 
                 if (showEndResultsCheckbox) {
+                    console.log('[Quiz Config] showEndResults value from API:', this.quizConfiguration.showEndResults);
                     showEndResultsCheckbox.checked = this.quizConfiguration.showEndResults !== false;
+                    console.log('[Quiz Config] showEndResults checkbox set to:', showEndResultsCheckbox.checked);
                 }
                 if (showQuestionFeedbackCheckbox) {
+                    console.log('[Quiz Config] showQuestionFeedback value from API:', this.quizConfiguration.showQuestionFeedback);
                     showQuestionFeedbackCheckbox.checked = this.quizConfiguration.showQuestionFeedback !== false;
+                    console.log('[Quiz Config] showQuestionFeedback checkbox set to:', showQuestionFeedbackCheckbox.checked);
                 }
                 if (showIndexStatusCheckbox) {
                     console.log('[Quiz Config] showIndexStatus value from API:', this.quizConfiguration.showIndexStatus);
@@ -10438,6 +10442,22 @@ export class Admin2Dashboard {
             if (response.success) {
                 this.quizConfiguration = response.data;
                 console.log('[Quiz Config] Settings saved successfully');
+                
+                // Update UI checkboxes with fresh data
+                const showEndResultsCheckbox = document.getElementById('showEndResults');
+                const showQuestionFeedbackCheckbox = document.getElementById('showQuestionFeedback');
+                const showIndexStatusCheckbox = document.getElementById('showIndexStatus');
+                
+                if (showEndResultsCheckbox) {
+                    showEndResultsCheckbox.checked = this.quizConfiguration.showEndResults !== false;
+                }
+                if (showQuestionFeedbackCheckbox) {
+                    showQuestionFeedbackCheckbox.checked = this.quizConfiguration.showQuestionFeedback !== false;
+                }
+                if (showIndexStatusCheckbox) {
+                    showIndexStatusCheckbox.checked = this.quizConfiguration.showIndexStatus !== false;
+                    console.log('[Quiz Config] Updated showIndexStatus checkbox to:', showIndexStatusCheckbox.checked);
+                }
                 
                 // Show success message
                 const statusElement = document.getElementById('quizConfigStatus');
