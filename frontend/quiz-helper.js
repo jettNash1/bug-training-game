@@ -58,6 +58,12 @@ export class BaseQuiz {
         
         console.log('[Quiz] Detected quiz name:', this.quizName);
         
+        // Initialize quiz configuration with defaults
+        this.quizConfiguration = {
+            showEndResults: true,
+            showQuestionFeedback: true
+        };
+        
         // Create a global reference immediately for debugging
         window.quizHelper = this;
         
@@ -1281,26 +1287,39 @@ export class BaseQuiz {
         // Update outcome text
         const outcomeText = document.getElementById('outcome-text');
         if (outcomeText) {
+            // Check quiz configuration for feedback visibility
+            const showFeedback = this.quizConfiguration?.showQuestionFeedback !== false;
+            
             // Check if this is a timeout scenario using the isTimeout flag
             if (option.isTimeout) {
                 // Only show the timeout message without the correct answer
-                outcomeText.textContent = `You did not answer in time.`;
+                outcomeText.textContent = showFeedback ? 
+                    `You did not answer in time.` : 
+                    `Thank you. Moving to the next question.`;
             } else {
                 // Normal scenario - user selected an answer
-                // Only show the user's selected answer outcome, not the correct answer
-                outcomeText.textContent = option.outcome;
+                if (showFeedback) {
+                    // Show the user's selected answer outcome
+                    outcomeText.textContent = option.outcome;
+                } else {
+                    // Show neutral feedback
+                    outcomeText.textContent = `Thank you for your answer. Let's continue to the next question.`;
+                }
             }
         }
 
         // Get the rewards container
         const rewardsDiv = document.getElementById('rewards');
         
+        // Check if we should show rewards
+        const showFeedback = this.quizConfiguration?.showQuestionFeedback !== false;
+        
         // Handle rewards visibility
-        if (option.isTimeout) {
-            // Hide the rewards div completely for timeout scenarios
+        if (option.isTimeout || !showFeedback) {
+            // Hide the rewards div for timeout scenarios or when feedback is disabled
             if (rewardsDiv) rewardsDiv.style.display = 'none';
         } else {
-            // Show rewards for normal scenarios
+            // Show rewards for normal scenarios when feedback is enabled
             if (rewardsDiv) rewardsDiv.style.display = '';
             
             // Update XP display
@@ -1714,16 +1733,39 @@ export class BaseQuiz {
                 quizProgress.style.display = 'none';
             }
 
-            // Update final score display
-            const finalScoreElement = document.getElementById('final-score');
-            if (finalScoreElement) {
-                finalScoreElement.textContent = `Final Score: ${scorePercentage}%`;
-            }
+            // Check if we should show detailed results or just thank you
+            const showResults = this.quizConfiguration?.showEndResults !== false;
+            
+            if (!showResults) {
+                // Show simple thank you message instead of results
+                const endScreen = document.getElementById('end-screen');
+                if (endScreen) {
+                    endScreen.innerHTML = `
+                        <div class="thank-you-container" style="text-align: center; padding: 40px; max-width: 600px; margin: 0 auto;">
+                            <div style="font-size: 72px; margin-bottom: 20px;">🎉</div>
+                            <h2 style="color: #2c3e50; margin-bottom: 20px;">Thank You!</h2>
+                            <p style="color: #6c757d; font-size: 1.2rem; line-height: 1.6; margin-bottom: 30px;">
+                                Thank you for completing the quiz. Your responses have been recorded.
+                            </p>
+                            <a href="../index.html" class="back-link" style="display: inline-block; padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 6px; font-size: 1.1rem; transition: background 0.3s ease;" onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
+                                ← Back to Hub
+                            </a>
+                        </div>
+                    `;
+                }
+            } else {
+                // Show detailed results (original behavior)
+                // Update final score display
+                const finalScoreElement = document.getElementById('final-score');
+                if (finalScoreElement) {
+                    finalScoreElement.textContent = `Final Score: ${scorePercentage}%`;
+                }
 
-            // Update quiz complete header
-            const quizCompleteHeader = document.querySelector('#end-screen h2');
-            if (quizCompleteHeader) {
-                quizCompleteHeader.textContent = hasPassed ? 'Quiz Complete!' : 'Quiz Failed!';
+                // Update quiz complete header
+                const quizCompleteHeader = document.querySelector('#end-screen h2');
+                if (quizCompleteHeader) {
+                    quizCompleteHeader.textContent = hasPassed ? 'Quiz Complete!' : 'Quiz Failed!';
+                }
             }
 
             // Clear any timers
@@ -1995,6 +2037,23 @@ export class BaseQuiz {
         }
     }
 
+    async initializeQuizConfiguration() {
+        try {
+            console.log('[Quiz] Loading quiz configuration settings...');
+            const response = await this.apiService.getPublicQuizConfiguration();
+            
+            if (response.success && response.data) {
+                this.quizConfiguration = response.data;
+                console.log('[Quiz] Quiz configuration loaded:', this.quizConfiguration);
+            } else {
+                console.warn('[Quiz] Failed to load quiz configuration, using defaults');
+            }
+        } catch (error) {
+            console.error('[Quiz] Error loading quiz configuration:', error);
+            // Keep defaults
+        }
+    }
+
     async initializeSettings() {
         // Make sure we have the quiz name set
         if (!this.quizName) {
@@ -2005,6 +2064,9 @@ export class BaseQuiz {
         // Log diagnostics information
         console.log('[Quiz] Running diagnostics for quiz:', this.quizName);
         await this.logQuizProgressDiagnostics();
+        
+        // Initialize quiz configuration
+        await this.initializeQuizConfiguration();
         
         // Initialize guide settings
         if (this.quizName) {

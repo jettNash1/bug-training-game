@@ -187,6 +187,12 @@
                                 <span>Settings</span>
                             </button>
                         </li>
+                        <li class="menu-item" data-section="quiz-config-section">
+                            <button>
+                                <i class="fas fa-sliders-h"></i>
+                                <span>Quiz Configuration</span>
+                            </button>
+                        </li>
                         <li class="menu-item" data-section="create-account-section">
                             <button>
                                 <i class="fas fa-user-plus"></i>
@@ -675,6 +681,56 @@
                                 <div id="guide-settings-container">
                                     <!-- Guide settings will be populated here -->
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quiz Configuration Section -->
+                    <div id="quiz-config-section" class="content-section">
+                        <h2>Quiz Configuration</h2>
+                        <p class="section-description">Configure global quiz behavior settings that apply to all quizzes.</p>
+                        <div class="settings-panel">
+                            <div class="settings-card">
+                                <h3><i class="fas fa-check-circle"></i> End Game Results</h3>
+                                <p>Control whether users see detailed results at the end of a quiz.</p>
+                                <div class="setting-option">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="showEndResults" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="setting-info">
+                                        <strong>Show End Results</strong>
+                                        <span class="setting-description">
+                                            When enabled, users will see their score, question review, and recommendations. 
+                                            When disabled, users will only see a thank you message with a button to return to the hub.
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="settings-card">
+                                <h3><i class="fas fa-comment-dots"></i> Question Feedback</h3>
+                                <p>Control whether users see if their answer was correct/incorrect after each question.</p>
+                                <div class="setting-option">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="showQuestionFeedback" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="setting-info">
+                                        <strong>Show Question Feedback</strong>
+                                        <span class="setting-description">
+                                            When enabled, users see outcome text like "Perfect!" or "Not quite" with XP gained. 
+                                            When disabled, users see neutral feedback like "Thank you for your answer" without revealing correctness.
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="settings-card">
+                                <button id="saveQuizConfig" class="save-button" aria-label="Save quiz configuration">
+                                    <i class="fas fa-save"></i> Save Configuration
+                                </button>
+                                <div id="quizConfigStatus" class="status-message"></div>
                             </div>
                         </div>
                     </div>
@@ -3275,6 +3331,130 @@
         #quiz-visibility-section .panel-header,
         #quiz-visibility-section h4 {
             flex-shrink: 0;
+        }
+
+        /* Quiz Configuration Styles */
+        .setting-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .setting-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .setting-info strong {
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        .setting-description {
+            color: #6c757d;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #4CAF50;
+        }
+
+        .toggle-switch input:focus + .toggle-slider {
+            box-shadow: 0 0 1px #4CAF50;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Save button styles */
+        .save-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .save-button:hover {
+            background-color: #0056b3;
+        }
+
+        .save-button:active {
+            transform: scale(0.98);
+        }
+
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .status-message.success {
+            display: block;
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            display: block;
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
     </style>
 </body>

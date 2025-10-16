@@ -2072,6 +2072,173 @@ export class APIService {
         }
     }
 
+    /**
+     * Get quiz configuration settings
+     */
+    async getQuizConfiguration() {
+        try {
+            console.log('[API] Fetching quiz configuration settings');
+            
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-configuration`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (response.success) {
+                console.log('[API] Successfully fetched quiz configuration:', response.data);
+                
+                // Save to localStorage for quick access
+                try {
+                    localStorage.setItem('quizConfiguration', JSON.stringify(response.data || {}));
+                    console.log('[API] Saved quiz configuration to localStorage');
+                } catch (e) {
+                    console.warn('[API] Failed to save quiz configuration to localStorage:', e);
+                }
+                
+                return response;
+            } else {
+                throw new Error(response.message || 'Failed to fetch quiz configuration');
+            }
+        } catch (error) {
+            console.error('[API] Error fetching quiz configuration:', error);
+            
+            // Try to get from localStorage as fallback
+            try {
+                const cached = localStorage.getItem('quizConfiguration');
+                if (cached) {
+                    console.log('[API] Using cached quiz configuration');
+                    return {
+                        success: true,
+                        data: JSON.parse(cached),
+                        source: 'cache'
+                    };
+                }
+            } catch (e) {
+                console.warn('[API] Failed to read cached quiz configuration:', e);
+            }
+            
+            // Return defaults
+            return {
+                success: true,
+                data: {
+                    showEndResults: true,
+                    showQuestionFeedback: true
+                },
+                source: 'defaults'
+            };
+        }
+    }
+
+    /**
+     * Save quiz configuration settings
+     */
+    async saveQuizConfiguration(showEndResults, showQuestionFeedback) {
+        try {
+            // Verify admin authentication
+            const authCheck = await this.verifyAdminToken();
+            if (!authCheck.success) {
+                throw new Error('Authentication failed. Please log in again.');
+            }
+            
+            console.log('[API] Saving quiz configuration:', { showEndResults, showQuestionFeedback });
+            
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-configuration`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    showEndResults,
+                    showQuestionFeedback
+                })
+            });
+            
+            if (response.success) {
+                console.log('[API] Quiz configuration saved successfully');
+                
+                // Update localStorage
+                try {
+                    localStorage.setItem('quizConfiguration', JSON.stringify(response.data || {}));
+                } catch (e) {
+                    console.warn('[API] Failed to save quiz configuration to localStorage:', e);
+                }
+                
+                return response;
+            } else {
+                throw new Error(response.message || 'Failed to save quiz configuration');
+            }
+        } catch (error) {
+            console.error('[API] Error saving quiz configuration:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get quiz configuration for quiz pages (public endpoint, no auth required)
+     */
+    async getPublicQuizConfiguration() {
+        try {
+            console.log('[API] Fetching public quiz configuration');
+            
+            // Try localStorage first for faster loading
+            try {
+                const cached = localStorage.getItem('quizConfiguration');
+                if (cached) {
+                    const config = JSON.parse(cached);
+                    console.log('[API] Using cached quiz configuration:', config);
+                    return {
+                        success: true,
+                        data: config,
+                        source: 'cache'
+                    };
+                }
+            } catch (e) {
+                console.warn('[API] Failed to read cached quiz configuration:', e);
+            }
+            
+            // Fetch from API if no cache
+            const response = await fetch(`${this.baseUrl}/admin/settings/quiz-configuration`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Cache it
+                try {
+                    localStorage.setItem('quizConfiguration', JSON.stringify(data.data || {}));
+                } catch (e) {
+                    console.warn('[API] Failed to cache quiz configuration:', e);
+                }
+                
+                return data;
+            }
+            
+            throw new Error(data.message || 'Failed to fetch configuration');
+        } catch (error) {
+            console.warn('[API] Error fetching public quiz configuration:', error);
+            
+            // Return defaults
+            return {
+                success: true,
+                data: {
+                    showEndResults: true,
+                    showQuestionFeedback: true
+                },
+                source: 'defaults'
+            };
+        }
+    }
+
     // Guide settings methods for quiz UI
     async fetchGuideSettings(quizName) {
         const cacheKey = `fetchGuideSettings_${quizName || 'all'}`;

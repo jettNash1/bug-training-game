@@ -142,6 +142,9 @@ export class Admin2Dashboard {
             this.setupAutoResetSettings();
             this.displayAutoResetSettings();
 
+            // Initialize quiz configuration section
+            this.setupQuizConfigurationSection();
+
             // Initialize badges section
             this.setupBadgesSection();
 
@@ -10371,6 +10374,118 @@ export class Admin2Dashboard {
             const matches = label.includes(term);
             item.style.display = matches ? 'block' : 'none';
         });
+    }
+
+    /**
+     * Load quiz configuration settings
+     */
+    async loadQuizConfiguration() {
+        try {
+            console.log('[Quiz Config] Loading quiz configuration settings...');
+            const response = await this.apiService.getQuizConfiguration();
+            
+            if (response.success && response.data) {
+                this.quizConfiguration = response.data;
+                console.log('[Quiz Config] Loaded settings:', this.quizConfiguration);
+                
+                // Update UI checkboxes
+                const showEndResultsCheckbox = document.getElementById('showEndResults');
+                const showQuestionFeedbackCheckbox = document.getElementById('showQuestionFeedback');
+                
+                if (showEndResultsCheckbox) {
+                    showEndResultsCheckbox.checked = this.quizConfiguration.showEndResults !== false;
+                }
+                if (showQuestionFeedbackCheckbox) {
+                    showQuestionFeedbackCheckbox.checked = this.quizConfiguration.showQuestionFeedback !== false;
+                }
+                
+                return this.quizConfiguration;
+            } else {
+                throw new Error(response.message || 'Failed to load quiz configuration');
+            }
+        } catch (error) {
+            console.error('[Quiz Config] Error loading configuration:', error);
+            // Set defaults
+            this.quizConfiguration = {
+                showEndResults: true,
+                showQuestionFeedback: true
+            };
+            return this.quizConfiguration;
+        }
+    }
+
+    /**
+     * Save quiz configuration settings
+     */
+    async saveQuizConfiguration(showEndResults, showQuestionFeedback) {
+        try {
+            console.log('[Quiz Config] Saving configuration:', { showEndResults, showQuestionFeedback });
+            
+            const response = await this.apiService.saveQuizConfiguration(showEndResults, showQuestionFeedback);
+            
+            if (response.success) {
+                this.quizConfiguration = response.data;
+                console.log('[Quiz Config] Settings saved successfully');
+                
+                // Show success message
+                const statusElement = document.getElementById('quizConfigStatus');
+                if (statusElement) {
+                    statusElement.className = 'status-message success';
+                    statusElement.textContent = 'Configuration saved successfully!';
+                    
+                    setTimeout(() => {
+                        statusElement.className = 'status-message';
+                        statusElement.textContent = '';
+                    }, 3000);
+                }
+                
+                return true;
+            } else {
+                throw new Error(response.message || 'Failed to save configuration');
+            }
+        } catch (error) {
+            console.error('[Quiz Config] Error saving configuration:', error);
+            
+            // Show error message
+            const statusElement = document.getElementById('quizConfigStatus');
+            if (statusElement) {
+                statusElement.className = 'status-message error';
+                statusElement.textContent = `Failed to save: ${error.message}`;
+                
+                setTimeout(() => {
+                    statusElement.className = 'status-message';
+                    statusElement.textContent = '';
+                }, 5000);
+            }
+            
+            return false;
+        }
+    }
+
+    /**
+     * Setup quiz configuration section event listeners
+     */
+    setupQuizConfigurationSection() {
+        console.log('[Quiz Config] Setting up quiz configuration section...');
+        
+        const saveButton = document.getElementById('saveQuizConfig');
+        if (!saveButton) {
+            console.warn('[Quiz Config] Save button not found');
+            return;
+        }
+        
+        // Load current settings
+        this.loadQuizConfiguration();
+        
+        // Add save button event listener
+        saveButton.addEventListener('click', async () => {
+            const showEndResults = document.getElementById('showEndResults').checked;
+            const showQuestionFeedback = document.getElementById('showQuestionFeedback').checked;
+            
+            await this.saveQuizConfiguration(showEndResults, showQuestionFeedback);
+        });
+        
+        console.log('[Quiz Config] Quiz configuration section setup complete');
     }
 }
 

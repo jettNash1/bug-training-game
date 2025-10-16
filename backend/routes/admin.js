@@ -2005,6 +2005,136 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
     }
 });
 
+// Quiz Configuration Endpoints
+
+// Get quiz configuration settings
+router.get('/settings/quiz-configuration', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        // Retrieve configuration settings from database
+        const configSetting = await Setting.findOne({ key: 'quizConfiguration' });
+        console.log('[QUIZ CONFIG] GET request - Found setting:', !!configSetting);
+        if (configSetting) {
+            console.log('[QUIZ CONFIG] GET request - Current value:', configSetting.value);
+        }
+        
+        // Default settings if not found
+        const defaultSettings = {
+            showEndResults: true,
+            showQuestionFeedback: true,
+            updatedAt: new Date()
+        };
+        
+        // Use stored settings or defaults
+        const settings = configSetting ? configSetting.value : defaultSettings;
+        console.log('[QUIZ CONFIG] GET request - Returning settings:', settings);
+        
+        return res.json({
+            success: true,
+            data: settings
+        });
+    } catch (error) {
+        console.error('Error fetching quiz configuration:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch quiz configuration',
+            error: error.message
+        });
+    }
+});
+
+// Update quiz configuration settings
+router.post('/settings/quiz-configuration', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { showEndResults, showQuestionFeedback } = req.body;
+        console.log('[QUIZ CONFIG] Received update request:', { showEndResults, showQuestionFeedback });
+
+        // Validate settings
+        if (showEndResults !== undefined && typeof showEndResults !== 'boolean') {
+            console.log('[QUIZ CONFIG] Validation failed for showEndResults:', showEndResults);
+            return res.status(400).json({
+                success: false,
+                message: 'showEndResults must be a boolean'
+            });
+        }
+
+        if (showQuestionFeedback !== undefined && typeof showQuestionFeedback !== 'boolean') {
+            console.log('[QUIZ CONFIG] Validation failed for showQuestionFeedback:', showQuestionFeedback);
+            return res.status(400).json({
+                success: false,
+                message: 'showQuestionFeedback must be a boolean'
+            });
+        }
+
+        // Get or create settings
+        let configSetting = await Setting.findOne({ key: 'quizConfiguration' });
+        
+        if (!configSetting) {
+            console.log('[QUIZ CONFIG] Creating new quiz configuration setting');
+            configSetting = new Setting({
+                key: 'quizConfiguration',
+                value: {
+                    showEndResults: true,
+                    showQuestionFeedback: true
+                },
+                description: 'Global quiz configuration settings'
+            });
+        }
+
+        // Update settings
+        if (showEndResults !== undefined) {
+            configSetting.value.showEndResults = showEndResults;
+        }
+        if (showQuestionFeedback !== undefined) {
+            configSetting.value.showQuestionFeedback = showQuestionFeedback;
+        }
+        configSetting.value.updatedAt = new Date();
+
+        // Save to database
+        await configSetting.save();
+        console.log('[QUIZ CONFIG] Saved settings:', configSetting.value);
+
+        // Invalidate cache for all clients
+        try {
+            await CacheInvalidation.create({
+                type: 'quizConfiguration',
+                timestamp: Date.now()
+            });
+            console.log('[QUIZ CONFIG] Cache invalidation record created');
+        } catch (cacheError) {
+            console.warn('[QUIZ CONFIG] Failed to create cache invalidation record:', cacheError);
+        }
+
+        return res.json({
+            success: true,
+            data: configSetting.value,
+            message: 'Quiz configuration updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating quiz configuration:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to update quiz configuration',
+            error: error.message
+        });
+    }
+});
+
 // Scheduled Reset Endpoints
 
 // Get all scheduled resets
