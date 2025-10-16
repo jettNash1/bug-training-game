@@ -1683,11 +1683,8 @@ export class BaseQuiz {
             // Save progress
             await this.saveProgress();
 
-            // Show outcome screen
-            if (this.gameScreen && this.outcomeScreen) {
-                this.gameScreen.classList.add('hidden');
-                this.outcomeScreen.classList.remove('hidden');
-            }
+            // Show outcome using configuration-aware method
+            this.showOutcome(selectedAnswer);
         } catch (error) {
             console.error('[BaseQuiz] Error handling answer:', error);
         } finally {

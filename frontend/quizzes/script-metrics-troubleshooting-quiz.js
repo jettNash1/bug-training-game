@@ -552,54 +552,9 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
 
-            // Add to question history
-            this.player.questionHistory.push({
-                scenario: scenario,
-                selectedAnswer: selectedAnswer,
-                isCorrect: selectedAnswer.isCorrect,
-                timeSpent: timeSpent,
-                timedOut: timedOut
-            });
-
-            // Increment current scenario
-            this.player.currentScenario++;
-
-            // Save progress
-            await this.saveProgress();
+            // Call parent's handleAnswer method which respects configuration
+            await super.handleAnswer(selectedAnswer);
             
-            // Show outcome
-                this.gameScreen.classList.add('hidden');
-                this.outcomeScreen.classList.remove('hidden');
-            
-            // Display outcome content
-            const outcomeContent = document.querySelector('.outcome-content');
-            if (outcomeContent) {
-                // Prepare the outcome message
-                let outcomeHeader = selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect';
-                let outcomeMessage = selectedAnswer.outcome || '';
-                
-                // Add timed out message if applicable
-                if (timedOut) {
-                    outcomeHeader = 'Time\'s Up!';
-                    outcomeMessage = 'You ran out of time. This question is marked as incorrect.';
-                }
-                
-                outcomeContent.innerHTML = `
-                    <h3>${outcomeHeader}</h3>
-                    <p>${outcomeMessage}</p>
-                    <p class="result">${selectedAnswer.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
-                    ${timedOut ? '<p class="timeout-warning">Remember to answer within the time limit!</p>' : ''}
-                    <button id="continue-btn" class="submit-button">Continue</button>
-                `;
-                
-
-                
-                // Add event listener to continue button
-                const continueBtn = outcomeContent.querySelector('#continue-btn');
-                if (continueBtn) {
-                    continueBtn.addEventListener('click', () => this.nextScenario());
-                }
-            }
 
             this.updateProgress();
             
