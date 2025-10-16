@@ -1274,24 +1274,8 @@ export class BaseQuiz {
     }
 
     showOutcome(option) {
-        console.log('[Quiz] showOutcome called with option:', option);
-        console.log('[Quiz] gameScreen:', this.gameScreen);
-        console.log('[Quiz] outcomeScreen:', this.outcomeScreen);
-        
-        // Hide game screen and show outcome screen
-        if (this.gameScreen) {
-            this.gameScreen.classList.add('hidden');
-            console.log('[Quiz] Hidden game screen');
-        } else {
-            console.warn('[Quiz] gameScreen not found');
-        }
-        
-        if (this.outcomeScreen) {
-            this.outcomeScreen.classList.remove('hidden');
-            console.log('[Quiz] Shown outcome screen');
-        } else {
-            console.warn('[Quiz] outcomeScreen not found');
-        }
+        // Note: Screen transitions are handled by individual quiz files
+        // This method only handles the content and configuration
 
         // Get current scenario and find correct answer
         const currentScenario = this.getCurrentScenario();
@@ -1700,7 +1684,6 @@ export class BaseQuiz {
     }
 
     async handleAnswer(selectedAnswer) {
-        console.log('[BaseQuiz] handleAnswer called with:', selectedAnswer);
         if (this.isLoading) return;
 
         try {
@@ -1732,13 +1715,7 @@ export class BaseQuiz {
             await this.saveProgress();
 
             // Show outcome using configuration-aware method
-            console.log('[BaseQuiz] About to call showOutcome');
-            try {
-                this.showOutcome(selectedAnswer);
-                console.log('[BaseQuiz] showOutcome call completed');
-            } catch (error) {
-                console.error('[BaseQuiz] Error in showOutcome:', error);
-            }
+            this.showOutcome(selectedAnswer);
         } catch (error) {
             console.error('[BaseQuiz] Error handling answer:', error);
         } finally {
