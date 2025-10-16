@@ -2108,6 +2108,14 @@ router.post('/settings/quiz-configuration', auth, async (req, res) => {
                 },
                 description: 'Global quiz configuration settings'
             });
+        } else {
+            // Add missing showIndexStatus field to existing record
+            if (configSetting.value.showIndexStatus === undefined) {
+                console.log('[QUIZ CONFIG] Adding missing showIndexStatus field to existing record');
+                configSetting.value.showIndexStatus = true;
+                await configSetting.save();
+                console.log('[QUIZ CONFIG] Updated existing record with showIndexStatus field');
+            }
         }
 
         // Update settings
