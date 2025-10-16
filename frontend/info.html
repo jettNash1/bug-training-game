@@ -70,6 +70,10 @@
             background-color: #C8E6C9;
         }
         
+        .completed-neutral .color-indicator {
+            background-color: #E8E8E8;
+        }
+        
         .quiz-mechanics {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -206,6 +210,14 @@
                     </div>
                 </div>
                 
+                <div class="color-example completed-neutral">
+                    <div class="color-indicator"></div>
+                    <div>
+                        <strong>Completed</strong><br>
+                        <small>Quiz finished (neutral status)</small>
+                    </div>
+                </div>
+                
                 <div class="color-example completed-partial">
                     <div class="color-indicator"></div>
                     <div>
@@ -221,6 +233,15 @@
                         <small>Quiz passed with excellent score!</small>
                     </div>
                 </div>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem; border-left: 4px solid #17a2b8;">
+                <h4 style="margin: 0 0 0.5rem 0; color: #2c3e50;"><i class="fa-solid fa-info-circle"></i> Note About Quiz Status</h4>
+                <p style="margin: 0; font-size: 0.9rem; color: #6c757d;">
+                    Depending on your system configuration, you may see either detailed pass/fail status (green/orange) 
+                    or a neutral "Completed" status (gray) for finished quizzes. The neutral status helps maintain 
+                    privacy while still showing your progress.
+                </p>
             </div>
         </div>
 
