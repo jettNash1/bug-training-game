@@ -10401,7 +10401,10 @@ export class Admin2Dashboard {
                     showQuestionFeedbackCheckbox.checked = this.quizConfiguration.showQuestionFeedback !== false;
                 }
                 if (showIndexStatusCheckbox) {
+                    console.log('[Quiz Config] showIndexStatus value from API:', this.quizConfiguration.showIndexStatus);
+                    console.log('[Quiz Config] showIndexStatus type:', typeof this.quizConfiguration.showIndexStatus);
                     showIndexStatusCheckbox.checked = this.quizConfiguration.showIndexStatus !== false;
+                    console.log('[Quiz Config] showIndexStatus checkbox set to:', showIndexStatusCheckbox.checked);
                 }
                 
                 return this.quizConfiguration;
@@ -10426,6 +10429,8 @@ export class Admin2Dashboard {
     async saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus) {
         try {
             console.log('[Quiz Config] Saving configuration:', { showEndResults, showQuestionFeedback, showIndexStatus });
+            console.log('[Quiz Config] showIndexStatus type:', typeof showIndexStatus);
+            console.log('[Quiz Config] showIndexStatus value:', showIndexStatus);
             
             const response = await this.apiService.saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus);
             console.log('[Quiz Config] API response:', response);
@@ -10502,6 +10507,8 @@ export class Admin2Dashboard {
             const showIndexStatus = document.getElementById('showIndexStatus').checked;
             
             console.log('[Quiz Config] Values to save:', { showEndResults, showQuestionFeedback, showIndexStatus });
+            console.log('[Quiz Config] showIndexStatus checkbox element:', document.getElementById('showIndexStatus'));
+            console.log('[Quiz Config] showIndexStatus checkbox checked:', document.getElementById('showIndexStatus').checked);
             
             // Show loading state
             const originalText = saveButton.innerHTML;
