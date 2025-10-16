@@ -1277,25 +1277,38 @@ export class BaseQuiz {
         // Note: Screen transitions are handled by individual quiz files
         // This method only handles the content and configuration
 
-        // Update outcome text
-        const outcomeText = document.getElementById('outcome-text');
-        if (outcomeText) {
-            // Check quiz configuration for feedback visibility
-            const showFeedback = this.quizConfiguration?.showQuestionFeedback !== false;
-            
-            // Check if this is a timeout scenario using the isTimeout flag
-            if (option.isTimeout) {
-                // Only show the timeout message without the correct answer
-                outcomeText.textContent = showFeedback ? 
-                    `You did not answer in time.` : 
-                    `Thank you. Moving to the next question.`;
-            } else {
-                // Normal scenario - user selected an answer
-                if (showFeedback) {
-                    // Show the user's selected answer outcome
-                    outcomeText.textContent = option.outcome;
+        // Check quiz configuration for feedback visibility
+        const showFeedback = this.quizConfiguration?.showQuestionFeedback !== false;
+        
+        if (showFeedback) {
+            // Show detailed feedback with Correct/Incorrect headers
+            const outcomeContent = document.querySelector('.outcome-content');
+            if (outcomeContent) {
+                // Prepare the outcome message
+                let outcomeHeader = option.isCorrect ? 'Correct!' : 'Incorrect';
+                let outcomeMessage = option.outcome || '';
+                
+                // Add timed out message if applicable
+                if (option.isTimeout) {
+                    outcomeHeader = 'Time\'s Up!';
+                    outcomeMessage = 'You ran out of time. This question is marked as incorrect.';
+                }
+                
+                outcomeContent.innerHTML = `
+                    <h3>${outcomeHeader}</h3>
+                    <p>${outcomeMessage}</p>
+                    <p class="result">${option.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
+                    ${option.isTimeout ? '<p class="timeout-warning">Remember to answer within the time limit!</p>' : ''}
+                    <button id="continue-btn" class="submit-button">Continue</button>
+                `;
+            }
+        } else {
+            // Show neutral feedback
+            const outcomeText = document.getElementById('outcome-text');
+            if (outcomeText) {
+                if (option.isTimeout) {
+                    outcomeText.textContent = `Thank you. Moving to the next question.`;
                 } else {
-                    // Show neutral feedback
                     outcomeText.textContent = `Thank you for your answer. Let's continue to the next question.`;
                 }
             }
@@ -1303,9 +1316,6 @@ export class BaseQuiz {
 
         // Get the rewards container
         const rewardsDiv = document.getElementById('rewards');
-        
-        // Check if we should show rewards (only when feedback is enabled)
-        const showFeedback = this.quizConfiguration?.showQuestionFeedback !== false;
         
         // Always hide rewards - they should never be shown to users
         if (rewardsDiv) {
