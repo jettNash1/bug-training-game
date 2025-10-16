@@ -1277,23 +1277,11 @@ export class BaseQuiz {
         // Note: Screen transitions are handled by individual quiz files
         // This method only handles the content and configuration
 
-        // Get current scenario and find correct answer
-        const currentScenario = this.getCurrentScenario();
-        const correctAnswer = currentScenario.options.reduce((prev, current) => 
-            (prev.experience > current.experience) ? prev : current
-        );
-
         // Update outcome text
         const outcomeText = document.getElementById('outcome-text');
         if (outcomeText) {
             // Check quiz configuration for feedback visibility
             const showFeedback = this.quizConfiguration?.showQuestionFeedback !== false;
-            console.log('[Quiz] showOutcome - Configuration check:', {
-                quizConfiguration: this.quizConfiguration,
-                showQuestionFeedback: this.quizConfiguration?.showQuestionFeedback,
-                showFeedback: showFeedback,
-                optionOutcome: option.outcome
-            });
             
             // Check if this is a timeout scenario using the isTimeout flag
             if (option.isTimeout) {
@@ -1305,11 +1293,9 @@ export class BaseQuiz {
                 // Normal scenario - user selected an answer
                 if (showFeedback) {
                     // Show the user's selected answer outcome
-                    console.log('[Quiz] Showing original outcome:', option.outcome);
                     outcomeText.textContent = option.outcome;
                 } else {
                     // Show neutral feedback
-                    console.log('[Quiz] Showing neutral feedback');
                     outcomeText.textContent = `Thank you for your answer. Let's continue to the next question.`;
                 }
             }
@@ -1336,7 +1322,6 @@ export class BaseQuiz {
                     `Experience gained: +${option.experience}` : 
                     `Experience: ${option.experience}`;
             }
-            
         }
 
         // Update progress display
