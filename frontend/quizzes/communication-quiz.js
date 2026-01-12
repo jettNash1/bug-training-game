@@ -541,6 +541,12 @@ export class CommunicationQuiz extends BaseQuiz {
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
 
+            // CRITICAL FIX: Show outcome screen immediately
+            if (this.gameScreen && this.outcomeScreen) {
+                this.gameScreen.classList.add('hidden');
+                this.outcomeScreen.classList.remove('hidden');
+            }
+
             // Call parent's handleAnswer method which respects configuration
             await super.handleAnswer(selectedAnswer);
 
