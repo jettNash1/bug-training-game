@@ -567,15 +567,17 @@ export class CMSTestingQuiz extends BaseQuiz {
             // Increment scenario counter
             this.player.currentScenario++;
             
-            // Save progress
-            await this.saveProgress();
-
-            // Show outcome screen
+            // Show outcome screen immediately (don't wait for save)
             this.gameScreen.classList.add('hidden');
             this.outcomeScreen.classList.remove('hidden');
             
             // Use base class method for configuration-aware content
             this.showOutcome(selectedAnswer);
+
+            // Save progress in background (non-blocking)
+            this.saveProgress().catch(err => {
+                console.error('[CMSTestingQuiz] Failed to save progress:', err);
+            });
 
             this.updateProgress();
             
