@@ -1694,13 +1694,30 @@ export class BaseQuiz {
             // Increment scenario counter
             this.player.currentScenario++;
             
-            // Save progress
-            await this.saveProgress();
+            // CRITICAL FIX: Show outcome screen BEFORE saving to prevent UI freeze
+            // This ensures users can continue even if API is slow or timing out (Render cold start)
+            if (this.gameScreen && this.outcomeScreen) {
+                this.gameScreen.classList.add('hidden');
+                this.outcomeScreen.classList.remove('hidden');
+            }
 
             // Show outcome using configuration-aware method
             this.showOutcome(selectedAnswer);
+            
+            // Save progress asynchronously - don't block the UI
+            // If Render is sleeping, this might take 30+ seconds, but user can continue
+            this.saveProgress().catch(error => {
+                console.error('[BaseQuiz] Failed to save progress (non-blocking):', error);
+                // Progress loss is acceptable vs frozen UI
+            });
         } catch (error) {
             console.error('[BaseQuiz] Error handling answer:', error);
+            // Even if anything fails, still show the outcome screen so user can continue
+            if (this.gameScreen && this.outcomeScreen) {
+                this.gameScreen.classList.add('hidden');
+                this.outcomeScreen.classList.remove('hidden');
+            }
+            this.showOutcome(selectedAnswer);
         } finally {
             this.isLoading = false;
         }
