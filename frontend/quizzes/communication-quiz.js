@@ -541,14 +541,36 @@ export class CommunicationQuiz extends BaseQuiz {
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
 
+            // Add to question history
+            this.player.questionHistory.push({
+                scenario: this.currentScenario,
+                selectedAnswer: selectedAnswer,
+                isCorrect: selectedAnswer.isCorrect,
+                timeSpent: timeSpent
+            });
+
+            // Update experience (already done above, but ensure consistency)
+            this.player.experience = Math.min(
+                this.maxXP || 300,
+                this.player.experience
+            );
+
+            // Increment scenario counter
+            this.player.currentScenario++;
+
             // CRITICAL FIX: Show outcome screen immediately
             if (this.gameScreen && this.outcomeScreen) {
                 this.gameScreen.classList.add('hidden');
                 this.outcomeScreen.classList.remove('hidden');
             }
 
-            // Call parent's handleAnswer method which respects configuration
-            await super.handleAnswer(selectedAnswer);
+            // Show outcome content
+            this.showOutcome(selectedAnswer);
+
+            // Save progress in background (non-blocking)
+            this.saveProgress().catch(err => {
+                console.error('[CommunicationQuiz] Failed to save progress:', err);
+            });
 
             this.updateProgress();
             
