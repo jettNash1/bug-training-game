@@ -463,9 +463,9 @@ export class TestQuiz extends BaseQuiz {
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
 
-            // Add to question history
+            // Add to question history - use the LOCAL scenario variable, not this.currentScenario
             this.player.questionHistory.push({
-                scenario: this.currentScenario,
+                scenario: scenario,
                 selectedAnswer: selectedAnswer,
                 isCorrect: selectedAnswer.isCorrect,
                 timeSpent: timeSpent
