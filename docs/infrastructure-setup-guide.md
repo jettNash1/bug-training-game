@@ -423,3 +423,4 @@ If you only have a `.pem` key file from AWS:
 2. Click **Load** and select the `.pem` file (change filter to "All Files").
 3. Click **Save private key** to create a `.ppk` file.
 4. Use the `.ppk` file in PuTTY under **Connection > SSH > Auth > Credentials**.
+ 
