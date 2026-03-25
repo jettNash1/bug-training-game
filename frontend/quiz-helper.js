@@ -1642,9 +1642,87 @@ export class BaseQuiz {
     }
 
     calculateScore() {
-        const experience = (Number.isFinite(this.player?.experience)) ? this.player.experience : 0;
-        const maxXP = (Number.isFinite(this.maxXP) && this.maxXP > 0) ? this.maxXP : 1;
-        return Math.round((experience / maxXP) * 100);
+        // Score is based on correctness percentage (XP is no longer the scoring source of truth)
+        try {
+            const history = Array.isArray(this.player?.questionHistory) ? this.player.questionHistory : [];
+            const totalAnswered = history.length;
+            if (totalAnswered <= 0) return 0;
+
+            const correct = history.filter(q => q && q.isCorrect === true).length;
+            const pct = Math.round((correct / Math.max(1, totalAnswered)) * 100);
+            return Math.min(100, Math.max(0, pct));
+        } catch (e) {
+            console.error('[BaseQuiz] Error calculating score percentage:', e);
+            return 0;
+        }
+    }
+
+    getPerformanceMessage(scorePercentage) {
+        const thresholds = Array.isArray(this.config?.performanceThresholds)
+            ? this.config.performanceThresholds
+            : [];
+
+        if (!thresholds.length) {
+            return scorePercentage >= this.passPercentage
+                ? 'Great work — you passed!'
+                : 'Keep practicing and try again.';
+        }
+
+        // Pick the first threshold where score >= threshold (thresholds are expected high→low)
+        const match = thresholds.find(t => typeof t?.threshold === 'number' && scorePercentage >= t.threshold);
+        return match?.message || (scorePercentage >= this.passPercentage ? 'Great work — you passed!' : 'Keep practicing and try again.');
+    }
+
+    renderEndScreenDetails(scorePercentage) {
+        // Performance summary
+        const performanceEl = document.getElementById('performance-summary');
+        if (performanceEl) {
+            const msg = this.getPerformanceMessage(scorePercentage);
+            performanceEl.textContent = msg;
+        }
+
+        // Question review
+        const reviewEl = document.getElementById('question-review');
+        if (reviewEl) {
+            const history = Array.isArray(this.player?.questionHistory) ? this.player.questionHistory : [];
+            if (!history.length) {
+                reviewEl.innerHTML = '<div class="review-item">No answers recorded.</div>';
+            } else {
+                reviewEl.innerHTML = history.map((q, i) => {
+                    const isCorrect = q?.isCorrect === true;
+                    const answerText = q?.selectedAnswer?.text || q?.selectedAnswer?.label || q?.selectedAnswer?.value || 'Answer';
+                    const outcome = q?.selectedAnswer?.outcome;
+                    const outcomeHtml = outcome ? `<div class="review-outcome">${String(outcome)}</div>` : '';
+                    return `
+                        <div class="review-item ${isCorrect ? 'correct' : 'incorrect'}">
+                            <div class="review-title">Q${i + 1}: ${isCorrect ? 'Correct' : 'Incorrect'}</div>
+                            <div class="review-answer"><strong>Your answer:</strong> ${String(answerText)}</div>
+                            ${outcomeHtml}
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Recommendations
+        const recEl = document.getElementById('recommendations');
+        if (recEl) {
+            if (scorePercentage >= this.passPercentage) {
+                recEl.innerHTML = `
+                    <ul class="recommendations-list">
+                        <li>Nice work — try another quiz category to keep building momentum.</li>
+                        <li>Review any incorrect questions above to reinforce the key takeaways.</li>
+                    </ul>
+                `;
+            } else {
+                recEl.innerHTML = `
+                    <ul class="recommendations-list">
+                        <li>Review the incorrect questions above and re-try the quiz.</li>
+                        <li>Aim for at least ${this.passPercentage}% to pass.</li>
+                    </ul>
+                `;
+            }
+        }
     }
 
     getCurrentScenario() {
@@ -1808,6 +1886,9 @@ export class BaseQuiz {
                 if (quizCompleteHeader) {
                     quizCompleteHeader.textContent = hasPassed ? 'Quiz Complete!' : 'Quiz Failed!';
                 }
+
+                // Populate the end-screen sections (performance summary, question review, recommendations)
+                this.renderEndScreenDetails(scorePercentage);
             }
 
             // Clear any timers
