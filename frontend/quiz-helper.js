@@ -8,6 +8,9 @@ export class BaseQuiz {
         this.config = config;
         this.totalQuestions = config.totalQuestions || 15;
         this.passPercentage = config.passPercentage || 70;
+        // Many quiz implementations pass `maxXP` in their config; without this,
+        // score calculation divides by `undefined`, producing `NaN%` at the end.
+        this.maxXP = (typeof config.maxXP === 'number' && Number.isFinite(config.maxXP)) ? config.maxXP : 300;
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.isLoading = false;
@@ -1639,7 +1642,9 @@ export class BaseQuiz {
     }
 
     calculateScore() {
-        return Math.round((this.player.experience / this.maxXP) * 100);
+        const experience = (Number.isFinite(this.player?.experience)) ? this.player.experience : 0;
+        const maxXP = (Number.isFinite(this.maxXP) && this.maxXP > 0) ? this.maxXP : 1;
+        return Math.round((experience / maxXP) * 100);
     }
 
     getCurrentScenario() {
@@ -1686,8 +1691,9 @@ export class BaseQuiz {
             });
 
             // Update experience
+            const maxXP = (Number.isFinite(this.maxXP) && this.maxXP > 0) ? this.maxXP : 300;
             this.player.experience = Math.min(
-                this.maxXP,
+                maxXP,
                 this.player.experience + (selectedAnswer.experience || 0)
             );
 

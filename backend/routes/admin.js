@@ -2008,16 +2008,10 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
 // Quiz Configuration Endpoints
 
 // Get quiz configuration settings
-router.get('/settings/quiz-configuration', auth, async (req, res) => {
+// NOTE: This endpoint is intentionally public because quiz pages need to
+// read quiz display settings without an admin session.
+router.get('/settings/quiz-configuration', async (req, res) => {
     try {
-        // Verify admin status
-        if (!req.user.isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin access required'
-            });
-        }
-
         // Retrieve configuration settings from database
         const configSetting = await Setting.findOne({ key: 'quizConfiguration' });
         console.log('[QUIZ CONFIG] GET request - Found setting:', !!configSetting);
