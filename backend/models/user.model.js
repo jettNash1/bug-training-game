@@ -4,6 +4,14 @@ const bcrypt = require('bcryptjs');
 const quizResultSchema = new mongoose.Schema({
     quizName: String,
     score: Number,
+    scorePercentage: Number,
+    experience: Number,
+    questionsAnswered: Number,
+    status: String,
+    currentScenario: Number,
+    questionHistory: [mongoose.Schema.Types.Mixed],
+    lastActive: Date,
+    updatedAt: Date,
     completedAt: Date,
     answers: [{
         questionId: Number,

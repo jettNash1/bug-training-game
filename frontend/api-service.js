@@ -2274,7 +2274,9 @@ export class APIService {
                 success: true,
                 data: {
                     showEndResults: true,
-                    showQuestionFeedback: true
+                    showQuestionFeedback: true,
+                    showIndexStatus: true,
+                    showIndexPassThreshold: true
                 },
                 source: 'defaults'
             };
@@ -2284,7 +2286,7 @@ export class APIService {
     /**
      * Save quiz configuration settings
      */
-    async saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus) {
+    async saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus, showIndexPassThreshold) {
         try {
             console.log('[API] Starting quiz configuration save process...');
             
@@ -2295,12 +2297,18 @@ export class APIService {
                 throw new Error('Authentication failed. Please log in again.');
             }
             
-            console.log('[API] Saving quiz configuration:', { showEndResults, showQuestionFeedback, showIndexStatus });
+            console.log('[API] Saving quiz configuration:', {
+                showEndResults,
+                showQuestionFeedback,
+                showIndexStatus,
+                showIndexPassThreshold
+            });
             
             const requestBody = {
                 showEndResults,
                 showQuestionFeedback,
-                showIndexStatus
+                showIndexStatus,
+                showIndexPassThreshold
             };
             console.log('[API] Request body:', requestBody);
             
@@ -2407,7 +2415,8 @@ export class APIService {
             const defaults = {
                 showEndResults: true,
                 showQuestionFeedback: true,
-                showIndexStatus: true
+                showIndexStatus: true,
+                showIndexPassThreshold: true
             };
             console.log('[API] Returning default configuration:', defaults);
             return {

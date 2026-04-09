@@ -748,6 +748,36 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="settings-card">
+                                <h3><i class="fas fa-percent"></i> Index Pass Threshold Label</h3>
+                                <p>Control whether users see the effective pass threshold on homepage quiz cards.</p>
+                                <div class="setting-option">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="showIndexPassThreshold" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="setting-info">
+                                        <strong>Show Pass Threshold Label</strong>
+                                        <span class="setting-description">
+                                            When enabled, completed quiz cards show pass threshold context (for example, "Pass: 75%") as card text and tooltip.
+                                            When disabled, threshold hints are hidden from homepage cards.
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="setting-option" style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed rgba(0,0,0,0.1);">
+                                    <div class="setting-info" style="width: 100%;">
+                                        <strong>Threshold Preview</strong>
+                                        <span class="setting-description">Select a quiz to preview the effective pass threshold currently applied.</span>
+                                        <div style="display: flex; gap: 12px; align-items: center; margin-top: 10px; flex-wrap: wrap;">
+                                            <select id="indexPassThresholdPreviewQuiz" class="settings-input" style="min-width: 220px;">
+                                                <option value="">-- Select a Quiz --</option>
+                                            </select>
+                                            <span id="indexPassThresholdPreviewValue" style="font-weight: 600; color: #2c3e50;">Effective threshold: 70% (default)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             
                             <div class="settings-card">
                                 <button id="saveQuizConfig" class="save-button" aria-label="Save quiz configuration">

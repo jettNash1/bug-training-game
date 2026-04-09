@@ -125,7 +125,8 @@ class IndexPage {
         this.quizConfiguration = {
             showEndResults: true,
             showQuestionFeedback: true,
-            showIndexStatus: true
+            showIndexStatus: true,
+            showIndexPassThreshold: true
         };
         this.passSettings = {
             defaultPercentage: 70,
@@ -554,11 +555,16 @@ class IndexPage {
                 if (this.quizConfiguration?.showIndexStatus !== false) {
                     // Show pass/fail status (original behavior)
                     const effectiveScore = (score !== undefined && score !== null) ? score : (scorePercentage !== undefined && scorePercentage !== null ? scorePercentage : 0);
+                    const showPassThresholdLabel = this.quizConfiguration?.showIndexPassThreshold !== false;
                     // console.log(`[Index] - Quiz completed with effective score: ${effectiveScore}`);
                     if (effectiveScore >= passPercentage) {
                         statusClass = 'completed-perfect';
                     } else {
                         statusClass = 'completed-partial';
+                    }
+
+                    if (showPassThresholdLabel) {
+                        progressText = `15/15 (Pass: ${passPercentage}%)`;
                     }
                 } else {
                     // Show neutral "Completed" status
@@ -614,6 +620,7 @@ class IndexPage {
                     if (this.quizConfiguration?.showIndexStatus !== false) {
                         // Show pass/fail status (original behavior)
                         const effectiveScore = (score !== undefined && score !== null) ? score : (scorePercentage !== undefined && scorePercentage !== null ? scorePercentage : 0);
+                        const showPassThresholdLabel = this.quizConfiguration?.showIndexPassThreshold !== false;
                         
                         if (effectiveScore >= passPercentage) {
                             passFail.textContent = 'PASS';
@@ -624,15 +631,32 @@ class IndexPage {
                             passFail.className = 'quiz-pass-fail fail';
                             passFail.style.display = '';
                         }
+
+                        if (showPassThresholdLabel) {
+                            const thresholdText = `Pass threshold: ${passPercentage}%`;
+                            passFail.title = thresholdText;
+                            passFail.setAttribute('aria-label', `${passFail.textContent}. ${thresholdText}`);
+                            progressElement.title = thresholdText;
+                        } else {
+                            passFail.removeAttribute('title');
+                            passFail.removeAttribute('aria-label');
+                            progressElement.removeAttribute('title');
+                        }
                         
                         // console.log(`[Index] - Pass/Fail indicator: ${effectiveScore >= passPercentage ? 'PASS' : 'FAIL'} (score: ${effectiveScore}%, pass: ${passPercentage}%)`);
                     } else {
                         // Hide pass/fail indicator when configuration is disabled
                         passFail.style.display = 'none';
+                        passFail.removeAttribute('title');
+                        passFail.removeAttribute('aria-label');
+                        progressElement.removeAttribute('title');
                     }
                 } else {
                     // Quiz not completed, hide Pass/Fail indicator
                     passFail.style.display = 'none';
+                    passFail.removeAttribute('title');
+                    passFail.removeAttribute('aria-label');
+                    progressElement.removeAttribute('title');
                 }
             }
 
@@ -1553,7 +1577,13 @@ class IndexPage {
             const response = await this.apiService.getPublicQuizConfiguration();
             
             if (response.success && response.data) {
-                this.quizConfiguration = response.data;
+                this.quizConfiguration = {
+                    showEndResults: true,
+                    showQuestionFeedback: true,
+                    showIndexStatus: true,
+                    showIndexPassThreshold: true,
+                    ...response.data
+                };
                 console.log('[Index] Loaded quiz configuration:', this.quizConfiguration);
             } else {
                 console.warn('[Index] Failed to load quiz configuration, using defaults');

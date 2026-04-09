@@ -1257,6 +1257,13 @@ export class BaseQuiz {
 
         const currentScenario = this.getCurrentScenario();
         const selectedOption = currentScenario.options[optionElement.dataset.index];
+        const correctOption = currentScenario.options.reduce((best, option) =>
+            (option?.experience ?? -Infinity) > (best?.experience ?? -Infinity) ? option : best
+        , currentScenario.options[0]);
+        const isCorrect = selectedOption === correctOption || selectedOption?.isCorrect === true;
+
+        // Ensure downstream UI and history consumers have explicit correctness.
+        selectedOption.isCorrect = isCorrect;
         
         // Calculate time spent on this question
         const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
@@ -1264,9 +1271,12 @@ export class BaseQuiz {
         // Record the choice
         this.player.questionHistory.push({
             scenarioId: currentScenario.id,
+            scenario: currentScenario,
             selectedOption: selectedOption.text,
+            selectedAnswer: selectedOption,
             outcome: selectedOption.outcome,
             experience: selectedOption.experience,
+            isCorrect,
             timeSpent: timeSpent,
             timedOut: false
         });

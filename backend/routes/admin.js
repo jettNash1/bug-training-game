@@ -2153,6 +2153,7 @@ router.get('/settings/quiz-configuration', async (req, res) => {
                 showEndResults: true,
                 showQuestionFeedback: true,
                 showIndexStatus: true,
+                showIndexPassThreshold: true,
                 updatedAt: new Date()
             };
             console.log('[QUIZ CONFIG] GET request - No record found, returning defaults:', defaultSettings);
@@ -2182,8 +2183,13 @@ router.post('/settings/quiz-configuration', auth, async (req, res) => {
             });
         }
 
-        const { showEndResults, showQuestionFeedback, showIndexStatus } = req.body;
-        console.log('[QUIZ CONFIG] Received update request:', { showEndResults, showQuestionFeedback, showIndexStatus });
+        const { showEndResults, showQuestionFeedback, showIndexStatus, showIndexPassThreshold } = req.body;
+        console.log('[QUIZ CONFIG] Received update request:', {
+            showEndResults,
+            showQuestionFeedback,
+            showIndexStatus,
+            showIndexPassThreshold
+        });
 
         // Validate all settings are booleans
         if (typeof showEndResults !== 'boolean') {
@@ -2204,12 +2210,19 @@ router.post('/settings/quiz-configuration', auth, async (req, res) => {
                 message: 'showIndexStatus must be a boolean'
             });
         }
+        if (typeof showIndexPassThreshold !== 'boolean') {
+            return res.status(400).json({
+                success: false,
+                message: 'showIndexPassThreshold must be a boolean'
+            });
+        }
 
         // Create or update settings with exact values provided
         const newSettings = {
             showEndResults,
             showQuestionFeedback,
             showIndexStatus,
+            showIndexPassThreshold,
             updatedAt: new Date()
         };
 

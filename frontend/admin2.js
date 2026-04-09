@@ -342,7 +342,7 @@ export class Admin2Dashboard {
                             questionsAnswered = questionHistory.length;
                             
                             // Use the same logic as detailed view - count 'passed' status
-                            const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
+                            const correctAnswers = this.countCorrectAnswers(questionHistory);
                             const score = Math.round((correctAnswers / questionHistory.length) * 100);
                             isPassed = this.isPassingScore(score, quizType);
                             
@@ -370,12 +370,12 @@ export class Admin2Dashboard {
                         isPassed = false;
                         console.log(`[Admin] ${user.username}/${quizType}: Using stored status - FAILED`);
                     } else if (result?.questionHistory?.length > 0) {
-                        const correctAnswers = result.questionHistory.filter(item => item && item.status === 'passed').length;
+                        const correctAnswers = this.countCorrectAnswers(result.questionHistory);
                         const score = Math.round((correctAnswers / result.questionHistory.length) * 100);
                         isPassed = this.isPassingScore(score, quizType);
                         console.log(`[Admin] ${user.username}/${quizType}: Using stored questionHistory - ${score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
                     } else if (progress?.questionHistory?.length > 0) {
-                        const correctAnswers = progress.questionHistory.filter(item => item && item.status === 'passed').length;
+                        const correctAnswers = this.countCorrectAnswers(progress.questionHistory);
                         const score = Math.round((correctAnswers / progress.questionHistory.length) * 100);
                         isPassed = this.isPassingScore(score, quizType);
                         console.log(`[Admin] ${user.username}/${quizType}: Using progress questionHistory - ${score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
@@ -808,7 +808,7 @@ export class Admin2Dashboard {
                         
                         // Priority 1: Use questionHistory if available (most accurate)
                         if (progress.questionHistory && progress.questionHistory.length > 0) {
-                            const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                            const correctAnswers = this.countCorrectAnswers(progress.questionHistory);
                             accurateScore = (correctAnswers / progress.questionHistory.length) * 100;
                             console.log(`[Admin] ${username}/${quizType}: Using questionHistory score: ${accurateScore}%`);
                         }
@@ -3405,7 +3405,7 @@ export class Admin2Dashboard {
                 
                 // Use the same logic as the "View Questions" section to determine correct answers
                 // An answer is correct if the status is 'passed'
-                const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
+                const correctAnswers = this.countCorrectAnswers(questionHistory);
                 const calculatedScore = Math.round((correctAnswers / questionHistory.length) * 100);
                 
                 console.log(`[Admin] Successfully calculated score from fetched question history:`, {
@@ -3414,7 +3414,7 @@ export class Admin2Dashboard {
                     totalQuestions: questionHistory.length,
                     correctAnswers,
                     calculatedScore,
-                    questionStatuses: questionHistory.map(item => ({ status: item.status, passed: item.status === 'passed' }))
+                    questionStatuses: questionHistory.map(item => ({ status: item.status, passed: this.isCorrectQuestionResult(item) }))
                 });
                 
                 // Update the quiz card with the correct score
@@ -3654,7 +3654,7 @@ export class Admin2Dashboard {
                         const correctAnswers = questionHistory.filter(item => {
                             if (!item) return false;
                             // Check both possible formats
-                            return item.status === 'passed' || item.isCorrect === true;
+                            return this.isCorrectQuestionResult(item);
                         }).length;
                         score = Math.round((correctAnswers / questionHistory.length) * 100);
                         
@@ -3824,7 +3824,7 @@ export class Admin2Dashboard {
                     if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
                         const correctAnswers = questionHistory.filter(item => {
                             if (!item) return false;
-                            return item.status === 'passed' || item.isCorrect === true;
+                            return this.isCorrectQuestionResult(item);
                         }).length;
                         const score = Math.round((correctAnswers / questionHistory.length) * 100);
                         return this.isPassingScore(score, quizName) ? 1 : 0; // 1 = Passed, 0 = Failed (show failed first)
@@ -4646,7 +4646,7 @@ export class Admin2Dashboard {
                     // Map the API response to the format expected by the UI
                     const apiQuestionHistory = response.data.questionHistory || [];
                     const questionHistory = apiQuestionHistory.map(item => {
-                        const isPassed = item.status === 'passed';
+                        const isPassed = this.isCorrectQuestionResult(item);
                         const isTimedOut = item.timedOut === true;
                         
                         // Get the correct answer
@@ -6272,6 +6272,7 @@ export class Admin2Dashboard {
                     quizPercentages: response.data.quizPercentages || {},
                     updatedAt: response.data.updatedAt || new Date()
                 };
+                this.updateIndexPassThresholdPreview();
                 return;
             }
         } catch (error) {
@@ -6283,6 +6284,7 @@ export class Admin2Dashboard {
             quizPercentages: {},
             updatedAt: new Date()
         };
+        this.updateIndexPassThresholdPreview();
     }
 
     getPassPercentageForQuiz(quizName) {
@@ -6299,6 +6301,65 @@ export class Admin2Dashboard {
     isPassingScore(score, quizName) {
         const threshold = this.getPassPercentageForQuiz(quizName);
         return Number(score) >= threshold;
+    }
+
+    isCorrectQuestionResult(item) {
+        if (!item) return false;
+        return item.status === 'passed' || item.isCorrect === true;
+    }
+
+    countCorrectAnswers(questionHistory) {
+        if (!Array.isArray(questionHistory) || questionHistory.length === 0) return 0;
+        return questionHistory.filter(item => this.isCorrectQuestionResult(item)).length;
+    }
+
+    initializeIndexPassThresholdPreview() {
+        const select = document.getElementById('indexPassThresholdPreviewQuiz');
+        if (!select) return;
+
+        const allQuizTypes = [...new Set([...this.quizTypes, ...this.getHardcodedQuizTypes()])].sort();
+        const existingValue = select.value;
+
+        select.innerHTML = `
+            <option value="">-- Select a Quiz --</option>
+            ${allQuizTypes.map(quiz => `<option value="${quiz}">${this.formatQuizName(quiz)}</option>`).join('')}
+        `;
+
+        if (existingValue && allQuizTypes.includes(existingValue)) {
+            select.value = existingValue;
+        }
+
+        if (!select.dataset.previewBound) {
+            select.addEventListener('change', () => this.updateIndexPassThresholdPreview());
+            select.dataset.previewBound = 'true';
+        }
+
+        this.updateIndexPassThresholdPreview();
+    }
+
+    updateIndexPassThresholdPreview() {
+        const select = document.getElementById('indexPassThresholdPreviewQuiz');
+        const preview = document.getElementById('indexPassThresholdPreviewValue');
+        if (!preview) return;
+
+        if (!select || !select.value) {
+            const defaultThreshold = typeof this.passSettings?.defaultPercentage === 'number'
+                ? this.passSettings.defaultPercentage
+                : 70;
+            preview.textContent = `Effective threshold: ${defaultThreshold}% (default)`;
+            return;
+        }
+
+        const selectedQuiz = select.value;
+        const normalizedQuiz = this.quizProgressService.normalizeQuizName(selectedQuiz);
+        const quizSpecific = this.passSettings?.quizPercentages?.[normalizedQuiz];
+        const threshold = this.getPassPercentageForQuiz(selectedQuiz);
+
+        if (typeof quizSpecific === 'number') {
+            preview.textContent = `Effective threshold: ${threshold}% (quiz-specific override)`;
+        } else {
+            preview.textContent = `Effective threshold: ${threshold}% (using default)`;
+        }
     }
 
     displayPassSettings() {
@@ -6372,6 +6433,7 @@ export class Admin2Dashboard {
                 await this.loadPassSettings();
                 await this.updateUsersList();
                 this.displayPassSettings();
+                this.updateIndexPassThresholdPreview();
                 this.showInfo(`Default pass percentage set to ${value}%`, 'success');
             } catch (error) {
                 this.showInfo(`Failed to save default pass percentage: ${error.message}`, 'error');
@@ -6406,6 +6468,7 @@ export class Admin2Dashboard {
                 await this.loadPassSettings();
                 await this.updateUsersList();
                 this.displayPassSettings();
+                this.updateIndexPassThresholdPreview();
                 this.showInfo(`Pass percentage for ${this.formatQuizName(selectedQuiz)} set to ${value}%`, 'success');
             } catch (error) {
                 this.showInfo(`Failed to save quiz pass percentage: ${error.message}`, 'error');
@@ -6424,6 +6487,7 @@ export class Admin2Dashboard {
                 await this.loadPassSettings();
                 await this.updateUsersList();
                 this.displayPassSettings();
+                this.updateIndexPassThresholdPreview();
                 this.showInfo(`Pass percentage for ${this.formatQuizName(selectedQuiz)} reset to default`, 'success');
             } catch (error) {
                 this.showInfo(`Failed to reset quiz pass percentage: ${error.message}`, 'error');
@@ -8280,10 +8344,10 @@ export class Admin2Dashboard {
                     if (result && result.score !== undefined) {
                         score = Math.round(result.score);
                     } else if (result && result.questionHistory) {
-                        const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                        const correctAnswers = this.countCorrectAnswers(result.questionHistory);
                         score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
                     } else if (progress && progress.questionHistory) {
-                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                        const correctAnswers = this.countCorrectAnswers(progress.questionHistory);
                         score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
                     }
                     
@@ -8347,10 +8411,10 @@ export class Admin2Dashboard {
                 if (result && result.score !== undefined) {
                     score = Math.round(result.score);
                 } else if (result && result.questionHistory) {
-                    const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                    const correctAnswers = this.countCorrectAnswers(result.questionHistory);
                     score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
                 } else if (progress && progress.questionHistory) {
-                    const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                    const correctAnswers = this.countCorrectAnswers(progress.questionHistory);
                     score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
                 }
                 
@@ -8413,11 +8477,11 @@ export class Admin2Dashboard {
                         score = Math.round(result.score);
                     } else if (result && result.questionHistory) {
                         const questionsAnswered = result.questionHistory.length;
-                        const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                        const correctAnswers = this.countCorrectAnswers(result.questionHistory);
                         score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
                     } else if (progress && progress.questionHistory) {
                         const questionsAnswered = progress.questionHistory.length;
-                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                        const correctAnswers = this.countCorrectAnswers(progress.questionHistory);
                         score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
                     }
                     
@@ -8477,11 +8541,11 @@ export class Admin2Dashboard {
                     score = Math.round(result.score);
                 } else if (result && result.questionHistory) {
                     const questionsAnswered = result.questionHistory.length;
-                    const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                    const correctAnswers = this.countCorrectAnswers(result.questionHistory);
                     score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
                 } else if (progress && progress.questionHistory) {
                     const questionsAnswered = progress.questionHistory.length;
-                    const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                    const correctAnswers = this.countCorrectAnswers(progress.questionHistory);
                     score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
                 }
                 
@@ -8531,11 +8595,11 @@ export class Admin2Dashboard {
                 score = Math.round(result.score);
             } else if (result && result.questionHistory) {
                 const questionsAnswered = result.questionHistory.length;
-                const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                const correctAnswers = this.countCorrectAnswers(result.questionHistory);
                 score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
             } else if (progress && progress.questionHistory) {
                 const questionsAnswered = progress.questionHistory.length;
-                const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                const correctAnswers = this.countCorrectAnswers(progress.questionHistory);
                 score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
             }
             
@@ -8720,10 +8784,10 @@ export class Admin2Dashboard {
             if (result && result.score !== undefined) {
                 score = Math.round(result.score);
             } else if (result && result.questionHistory) {
-                const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                const correctAnswers = this.countCorrectAnswers(result.questionHistory);
                 score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
             } else if (progress && progress.questionHistory) {
-                const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                const correctAnswers = this.countCorrectAnswers(progress.questionHistory);
                 score = questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
             }
             
@@ -8814,11 +8878,11 @@ export class Admin2Dashboard {
                         score = result.score;
                     } else if (progress && progress.questionHistory && progress.questionHistory.length > 0) {
                         // Calculate score from question history (most accurate)
-                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                        const correctAnswers = this.countCorrectAnswers(progress.questionHistory);
                         score = Math.round((correctAnswers / progress.questionHistory.length) * 100);
                     } else if (result && result.questionHistory && result.questionHistory.length > 0) {
                         // Calculate score from result question history
-                        const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                        const correctAnswers = this.countCorrectAnswers(result.questionHistory);
                         score = Math.round((correctAnswers / result.questionHistory.length) * 100);
                     } else if (progress && progress.experience !== undefined && questionsAnswered >= 15) {
                         // Fallback: calculate score from experience for completed quizzes
@@ -8957,11 +9021,11 @@ export class Admin2Dashboard {
                         score = result.score;
                     } else if (progress && progress.questionHistory && progress.questionHistory.length > 0) {
                         // Calculate score from question history (most accurate)
-                        const correctAnswers = progress.questionHistory.filter(q => q.isCorrect).length;
+                        const correctAnswers = this.countCorrectAnswers(progress.questionHistory);
                         score = Math.round((correctAnswers / progress.questionHistory.length) * 100);
                     } else if (result && result.questionHistory && result.questionHistory.length > 0) {
                         // Calculate score from result question history
-                        const correctAnswers = result.questionHistory.filter(q => q.isCorrect).length;
+                        const correctAnswers = this.countCorrectAnswers(result.questionHistory);
                         score = Math.round((correctAnswers / result.questionHistory.length) * 100);
                     } else if (progress && progress.experience !== undefined && questionsAnswered >= 15) {
                         // Fallback: calculate score from experience for completed quizzes
@@ -9250,7 +9314,7 @@ export class Admin2Dashboard {
                     } else {
                         // Calculate from question history first (most accurate)
                         if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                            const correctAnswers = questionHistory.filter(q => q.isCorrect).length;
+                            const correctAnswers = this.countCorrectAnswers(questionHistory);
                             score = Math.round((correctAnswers / questionHistory.length) * 100);
                         } else {
                             // Fallback: calculate from experience if quiz is completed
@@ -10591,7 +10655,13 @@ export class Admin2Dashboard {
             const response = await this.apiService.getQuizConfiguration();
             
             if (response.success && response.data) {
-                this.quizConfiguration = response.data;
+                this.quizConfiguration = {
+                    showEndResults: true,
+                    showQuestionFeedback: true,
+                    showIndexStatus: true,
+                    showIndexPassThreshold: true,
+                    ...response.data
+                };
                 console.log('[Quiz Config] Loaded settings:', this.quizConfiguration);
                 
                 // Update UI checkboxes - all three fields handled identically
@@ -10607,7 +10677,8 @@ export class Admin2Dashboard {
             this.quizConfiguration = {
                 showEndResults: true,
                 showQuestionFeedback: true,
-                showIndexStatus: true
+                showIndexStatus: true,
+                showIndexPassThreshold: true
             };
             this.updateQuizConfigUI();
             return this.quizConfiguration;
@@ -10621,7 +10692,8 @@ export class Admin2Dashboard {
         const checkboxes = [
             { id: 'showEndResults', value: this.quizConfiguration.showEndResults },
             { id: 'showQuestionFeedback', value: this.quizConfiguration.showQuestionFeedback },
-            { id: 'showIndexStatus', value: this.quizConfiguration.showIndexStatus }
+            { id: 'showIndexStatus', value: this.quizConfiguration.showIndexStatus },
+            { id: 'showIndexPassThreshold', value: this.quizConfiguration.showIndexPassThreshold }
         ];
 
         checkboxes.forEach(({ id, value }) => {
@@ -10636,11 +10708,21 @@ export class Admin2Dashboard {
     /**
      * Save quiz configuration settings
      */
-    async saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus) {
+    async saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus, showIndexPassThreshold) {
         try {
-            console.log('[Quiz Config] Saving configuration:', { showEndResults, showQuestionFeedback, showIndexStatus });
+            console.log('[Quiz Config] Saving configuration:', {
+                showEndResults,
+                showQuestionFeedback,
+                showIndexStatus,
+                showIndexPassThreshold
+            });
             
-            const response = await this.apiService.saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus);
+            const response = await this.apiService.saveQuizConfiguration(
+                showEndResults,
+                showQuestionFeedback,
+                showIndexStatus,
+                showIndexPassThreshold
+            );
             console.log('[Quiz Config] API response:', response);
             
             if (response.success) {
@@ -10703,6 +10785,7 @@ export class Admin2Dashboard {
         
         // Load current settings
         this.loadQuizConfiguration();
+        this.initializeIndexPassThresholdPreview();
         
         // Add save button event listener
         saveButton.addEventListener('click', async (e) => {
@@ -10712,6 +10795,7 @@ export class Admin2Dashboard {
             const showEndResults = document.getElementById('showEndResults').checked;
             const showQuestionFeedback = document.getElementById('showQuestionFeedback').checked;
             const showIndexStatus = document.getElementById('showIndexStatus').checked;
+            const showIndexPassThreshold = document.getElementById('showIndexPassThreshold').checked;
             
             // Show loading state
             const originalText = saveButton.innerHTML;
@@ -10719,7 +10803,12 @@ export class Admin2Dashboard {
             saveButton.disabled = true;
             
             try {
-                await this.saveQuizConfiguration(showEndResults, showQuestionFeedback, showIndexStatus);
+                await this.saveQuizConfiguration(
+                    showEndResults,
+                    showQuestionFeedback,
+                    showIndexStatus,
+                    showIndexPassThreshold
+                );
             } finally {
                 // Restore button state
                 saveButton.innerHTML = originalText;
