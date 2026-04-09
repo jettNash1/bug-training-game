@@ -278,7 +278,8 @@ class BadgesPage {
             // Always show as percentage for consistency
             scoreInfoHtml = `<div class="badge-score-progress">Progress: ${badge.scorePercentage}% complete</div>`;
         } else if (!badge.earned) {
-            scoreInfoHtml = `<div class="badge-score-requirement">Requires: Complete quiz with 80%+ score</div>`;
+            const requiredPassPercentage = typeof badge.requiredPassPercentage === 'number' ? badge.requiredPassPercentage : 70;
+            scoreInfoHtml = `<div class="badge-score-requirement">Requires: Complete quiz with ${requiredPassPercentage}%+ score</div>`;
         }
         
         // Handle special cases for badge image paths

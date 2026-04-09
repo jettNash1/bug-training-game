@@ -11,7 +11,6 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         const config = {
             maxXP: 300,
             totalQuestions: 15,
-            passPercentage: 70,
             performanceThresholds: [
                 { threshold: 90, message: '🏆 Outstanding! You\'re an automation interview expert!' },
                 { threshold: 80, message: '👏 Great job! You\'ve shown strong automation interview instincts!' },

@@ -11,7 +11,6 @@ export class FunctionalInterviewQuiz extends BaseQuiz {
         const config = {
             maxXP: 300,
             totalQuestions: 15,
-            passPercentage: 70,
             performanceThresholds: [
                 { threshold: 90, message: '🏆 Outstanding! You\'re a functional interview expert!' },
                 { threshold: 80, message: '👏 Great job! You\'ve shown strong functional interview instincts!' },

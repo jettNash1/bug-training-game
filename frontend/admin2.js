@@ -17,6 +17,10 @@ export class Admin2Dashboard {
             secondsPerQuestion: 60, // Default value
             quizTimers: {} // Property for custom timers
         };
+        this.passSettings = {
+            defaultPercentage: 70,
+            quizPercentages: {}
+        };
         
         // Additional initialization for Admin2Dashboard
         this.isRowView = false; // Default to grid view
@@ -124,6 +128,8 @@ export class Admin2Dashboard {
 
             // Always load timer settings before displaying the UI
             await this.loadTimerSettings();
+            await this.loadPassSettings();
+            await this.updateUsersList();
 
             // Set up all UI components
             // console.log('Setting up UI components...');
@@ -131,6 +137,7 @@ export class Admin2Dashboard {
             this.setupScenariosList();
             this.setupScheduleSection();
             this.displayTimerSettings();
+            this.displayPassSettings();
             
             // Ensure guide settings are displayed even if loading had errors
             if (!this.guideSettings) {
@@ -337,7 +344,7 @@ export class Admin2Dashboard {
                             // Use the same logic as detailed view - count 'passed' status
                             const correctAnswers = questionHistory.filter(item => item && item.status === 'passed').length;
                             const score = Math.round((correctAnswers / questionHistory.length) * 100);
-                            isPassed = score >= 70;
+                            isPassed = this.isPassingScore(score, quizType);
                             
                             console.log(`[Admin] ${user.username}/${quizType}: API data - ${correctAnswers}/${questionHistory.length} = ${score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
                         } else {
@@ -365,12 +372,12 @@ export class Admin2Dashboard {
                     } else if (result?.questionHistory?.length > 0) {
                         const correctAnswers = result.questionHistory.filter(item => item && item.status === 'passed').length;
                         const score = Math.round((correctAnswers / result.questionHistory.length) * 100);
-                        isPassed = score >= 70;
+                        isPassed = this.isPassingScore(score, quizType);
                         console.log(`[Admin] ${user.username}/${quizType}: Using stored questionHistory - ${score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
                     } else if (progress?.questionHistory?.length > 0) {
                         const correctAnswers = progress.questionHistory.filter(item => item && item.status === 'passed').length;
                         const score = Math.round((correctAnswers / progress.questionHistory.length) * 100);
-                        isPassed = score >= 70;
+                        isPassed = this.isPassingScore(score, quizType);
                         console.log(`[Admin] ${user.username}/${quizType}: Using progress questionHistory - ${score}% (${isPassed ? 'PASSED' : 'FAILED'})`);
                     } else {
                         isPassed = true; // Assume passed if completed but no reliable data
@@ -1084,6 +1091,7 @@ export class Admin2Dashboard {
             case 'settings-section':
                 this.displayTimerSettings();
                 this.displayGuideSettings();
+                this.displayPassSettings();
                 break;
             case 'scenarios-section':
                 this.setupScenariosList();
@@ -3674,7 +3682,7 @@ export class Admin2Dashboard {
                     if (questionsAnswered > 0) {
                         if (questionsAnswered === 15) {
                             // All questions completed
-                            if (score >= 70) {
+                            if (this.isPassingScore(score, quizType)) {
                                 backgroundColor = '#C8E6C9'; // Light green for 70% or higher (matches index page)
                             } else {
                                 backgroundColor = '#FFE0B2'; // Light orange for completed but less than 70% (matches index page)
@@ -3687,7 +3695,7 @@ export class Admin2Dashboard {
                     // Determine quiz status class
                     let statusClass = 'not-started';
                     if (questionsAnswered === 15) {
-                        if (score >= 70) {
+                        if (this.isPassingScore(score, quizType)) {
                             statusClass = 'completed-perfect'; // 70% or higher score
                         } else {
                             statusClass = 'completed-partial'; // Completed but less than 70%
@@ -3819,7 +3827,7 @@ export class Admin2Dashboard {
                             return item.status === 'passed' || item.isCorrect === true;
                         }).length;
                         const score = Math.round((correctAnswers / questionHistory.length) * 100);
-                        return score >= 70 ? 1 : 0; // 1 = Passed, 0 = Failed (show failed first)
+                        return this.isPassingScore(score, quizName) ? 1 : 0; // 1 = Passed, 0 = Failed (show failed first)
                     }
                     return 1; // Default to passed if no history
                 };
@@ -6253,6 +6261,203 @@ export class Admin2Dashboard {
         console.log('Timer localStorage cleared');
     }
 
+    async loadPassSettings() {
+        try {
+            const response = await this.apiService.getQuizPassSettings();
+            if (response?.success && response.data) {
+                this.passSettings = {
+                    defaultPercentage: typeof response.data.defaultPercentage === 'number'
+                        ? response.data.defaultPercentage
+                        : 70,
+                    quizPercentages: response.data.quizPercentages || {},
+                    updatedAt: response.data.updatedAt || new Date()
+                };
+                return;
+            }
+        } catch (error) {
+            console.error('Error loading pass settings:', error);
+        }
+
+        this.passSettings = {
+            defaultPercentage: 70,
+            quizPercentages: {},
+            updatedAt: new Date()
+        };
+    }
+
+    getPassPercentageForQuiz(quizName) {
+        const normalizedQuizName = this.quizProgressService.normalizeQuizName(quizName || '');
+        const quizSpecific = this.passSettings?.quizPercentages?.[normalizedQuizName];
+        if (typeof quizSpecific === 'number' && Number.isFinite(quizSpecific)) {
+            return quizSpecific;
+        }
+        return typeof this.passSettings?.defaultPercentage === 'number'
+            ? this.passSettings.defaultPercentage
+            : 70;
+    }
+
+    isPassingScore(score, quizName) {
+        const threshold = this.getPassPercentageForQuiz(quizName);
+        return Number(score) >= threshold;
+    }
+
+    displayPassSettings() {
+        const container = document.getElementById('pass-settings-container');
+        if (!container) return;
+
+        const defaultPercentage = typeof this.passSettings?.defaultPercentage === 'number'
+            ? this.passSettings.defaultPercentage
+            : 70;
+        const quizPercentages = this.passSettings?.quizPercentages || {};
+        const allQuizTypes = [...new Set([...this.quizTypes, ...this.getHardcodedQuizTypes()])].sort();
+
+        container.innerHTML = `
+            <div class="timer-section">
+                <h4>Default Pass Percentage</h4>
+                <p>This applies to all quizzes unless overridden below.</p>
+                <div class="form-row">
+                    <label>Default pass percentage (0-100):</label>
+                    <div class="input-button-group">
+                        <input type="number" id="default-pass-percentage" value="${defaultPercentage}" min="0" max="100" class="timer-seconds-input">
+                        <button id="save-default-pass-btn" class="action-button">Save Default</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timer-section">
+                <h4>Per-Quiz Pass Percentage</h4>
+                <p>Set a specific pass threshold for an individual quiz.</p>
+                <div class="form-row">
+                    <label>Select Quiz:</label>
+                    <select id="pass-quiz-select" class="settings-input">
+                        <option value="">-- Select a Quiz --</option>
+                        ${allQuizTypes.map(quiz => `<option value="${quiz}">${this.formatQuizName(quiz)}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Pass percentage for this quiz (0-100):</label>
+                    <div class="input-button-group">
+                        <input type="number" id="quiz-pass-percentage" placeholder="Leave empty to use default (${defaultPercentage}%)" min="0" max="100" class="timer-seconds-input settings-input">
+                        <button id="set-quiz-pass-btn" class="action-button">Set Percentage</button>
+                        <button id="reset-quiz-pass-btn" class="action-button secondary">Reset to Default</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timer-section">
+                <h4>Current Pass Settings</h4>
+                <p>Default: ${defaultPercentage}%</p>
+                <div id="quiz-pass-list">
+                    ${this.generateQuizPassList(quizPercentages)}
+                </div>
+            </div>
+        `;
+
+        const defaultInput = container.querySelector('#default-pass-percentage');
+        const saveDefaultBtn = container.querySelector('#save-default-pass-btn');
+        const quizSelect = container.querySelector('#pass-quiz-select');
+        const quizInput = container.querySelector('#quiz-pass-percentage');
+        const setQuizBtn = container.querySelector('#set-quiz-pass-btn');
+        const resetQuizBtn = container.querySelector('#reset-quiz-pass-btn');
+
+        saveDefaultBtn?.addEventListener('click', async () => {
+            const value = Number(defaultInput.value);
+            if (!Number.isFinite(value) || value < 0 || value > 100) {
+                this.showInfo('Please enter a valid default pass percentage (0-100)', 'error');
+                return;
+            }
+            try {
+                const response = await this.apiService.updateQuizPassSettings(value, this.passSettings.quizPercentages || {});
+                if (!response?.success) throw new Error(response?.message || 'Failed to save pass settings');
+                await this.loadPassSettings();
+                await this.updateUsersList();
+                this.displayPassSettings();
+                this.showInfo(`Default pass percentage set to ${value}%`, 'success');
+            } catch (error) {
+                this.showInfo(`Failed to save default pass percentage: ${error.message}`, 'error');
+            }
+        });
+
+        quizSelect?.addEventListener('change', () => {
+            const selectedQuiz = quizSelect.value;
+            if (!selectedQuiz) {
+                quizInput.value = '';
+                return;
+            }
+            const normalized = this.quizProgressService.normalizeQuizName(selectedQuiz);
+            const existing = quizPercentages[normalized];
+            quizInput.value = typeof existing === 'number' ? existing : '';
+        });
+
+        setQuizBtn?.addEventListener('click', async () => {
+            const selectedQuiz = quizSelect.value;
+            const value = Number(quizInput.value);
+            if (!selectedQuiz) {
+                this.showInfo('Please select a quiz', 'error');
+                return;
+            }
+            if (!Number.isFinite(value) || value < 0 || value > 100) {
+                this.showInfo('Please enter a valid quiz pass percentage (0-100)', 'error');
+                return;
+            }
+            try {
+                const response = await this.apiService.updateSingleQuizPassPercentage(selectedQuiz, value);
+                if (!response?.success) throw new Error(response?.message || 'Failed to save quiz pass percentage');
+                await this.loadPassSettings();
+                await this.updateUsersList();
+                this.displayPassSettings();
+                this.showInfo(`Pass percentage for ${this.formatQuizName(selectedQuiz)} set to ${value}%`, 'success');
+            } catch (error) {
+                this.showInfo(`Failed to save quiz pass percentage: ${error.message}`, 'error');
+            }
+        });
+
+        resetQuizBtn?.addEventListener('click', async () => {
+            const selectedQuiz = quizSelect.value;
+            if (!selectedQuiz) {
+                this.showInfo('Please select a quiz', 'error');
+                return;
+            }
+            try {
+                const response = await this.apiService.resetQuizPassPercentage(selectedQuiz);
+                if (!response?.success) throw new Error(response?.message || 'Failed to reset quiz pass percentage');
+                await this.loadPassSettings();
+                await this.updateUsersList();
+                this.displayPassSettings();
+                this.showInfo(`Pass percentage for ${this.formatQuizName(selectedQuiz)} reset to default`, 'success');
+            } catch (error) {
+                this.showInfo(`Failed to reset quiz pass percentage: ${error.message}`, 'error');
+            }
+        });
+    }
+
+    generateQuizPassList(quizPercentages) {
+        const entries = Object.entries(quizPercentages || {});
+        if (!entries.length) {
+            return '<p class="no-custom-timers">No quiz-specific pass settings configured yet.</p>';
+        }
+
+        entries.sort((a, b) => this.formatQuizName(a[0]).localeCompare(this.formatQuizName(b[0])));
+        return `
+            <table class="timer-table">
+                <thead>
+                    <tr>
+                        <th>Quiz</th>
+                        <th>Pass Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${entries.map(([quizName, percentage]) => `
+                        <tr>
+                            <td>${this.formatQuizName(quizName)}</td>
+                            <td>${percentage}%</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
 
 
     // Helper method to generate HTML for the list of guide settings
@@ -7474,15 +7679,15 @@ export class Admin2Dashboard {
                     } else if (!badge.earned && badge.scorePercentage !== undefined && badge.scorePercentage > 0) {
                         // Check if this is a failed quiz (has score but not earned) or in-progress
                         if (badge.isFromQuizResults || badge.hasCompletedAllQuestions) {
-                            // Quiz completed but failed (< 80%)
+                            // Quiz completed but failed (below configured pass threshold)
                             scoreInfoHtml = `<div class="badge-score-failed">Failed</div>`;
                         } else {
                             // In-progress quiz
-                            scoreInfoHtml = `<div class="badge-score-progress">Current: ${badge.scorePercentage}% (Need: 80%)</div>`;
+                            scoreInfoHtml = `<div class="badge-score-progress">Current: ${badge.scorePercentage}% (Need: ${this.getPassPercentageForQuiz(badge.quizId)}%)</div>`;
                         }
                     } else if (!badge.earned) {
                         // Not started
-                        scoreInfoHtml = `<div class="badge-score-requirement">Requires: 80%+ score</div>`;
+                        scoreInfoHtml = `<div class="badge-score-requirement">Requires: ${this.getPassPercentageForQuiz(badge.quizId)}%+ score</div>`;
                     }
                     
                     // Get badge image path
@@ -8084,7 +8289,7 @@ export class Admin2Dashboard {
                     
                     let status = 'Not Started';
                     if (questionsAnswered === 15) {
-                        status = score >= 70 ? 'Passed' : 'Failed';
+                        status = this.isPassingScore(score, quizType) ? 'Passed' : 'Failed';
                         totalQuestionsAnswered += 15;
                     } else if (questionsAnswered > 0) {
                         status = 'In Progress';
@@ -8151,7 +8356,7 @@ export class Admin2Dashboard {
                 
                 let status = 'Not Started';
                 if (questionsAnswered === 15) {
-                    status = score >= 70 ? 'Passed' : 'Failed';
+                    status = this.isPassingScore(score, quizType) ? 'Passed' : 'Failed';
                     categoryQuestionsAnswered += 15;
                 } else if (questionsAnswered > 0) {
                     status = 'In Progress';
@@ -8228,7 +8433,7 @@ export class Admin2Dashboard {
                         const percentage = Math.round((questionsAnswered / 15) * 100);
                         displayValue = `In Progress (${percentage}%)`;
                     } else if (score > 0) {
-                        const status = score >= 80 ? 'Pass' : 'Fail';
+                        const status = this.isPassingScore(score, quizType) ? 'Pass' : 'Fail';
                         displayValue = `${status} (${score}%)`;
                     }
                     
@@ -8291,7 +8496,7 @@ export class Admin2Dashboard {
                     const percentage = Math.round((questionsAnswered / 15) * 100);
                     displayValue = `In Progress (${percentage}%)`;
                 } else if (score > 0) {
-                    const status = score >= 80 ? 'Pass' : 'Fail';
+                    const status = this.isPassingScore(score, quizType) ? 'Pass' : 'Fail';
                     displayValue = `${status} (${score}%)`;
                 }
                 
@@ -8345,7 +8550,7 @@ export class Admin2Dashboard {
                 const percentage = Math.round((questionsAnswered / 15) * 100);
                 displayValue = `In Progress (${percentage}%)`;
             } else if (score > 0) {
-                const status = score >= 80 ? 'Pass' : 'Fail';
+                const status = this.isPassingScore(score, quizName) ? 'Pass' : 'Fail';
                 displayValue = `${status} (${score}%)`;
             }
             
@@ -8429,7 +8634,7 @@ export class Admin2Dashboard {
         return data;
     }
 
-    // Add conditional formatting to Excel sheets (green for >= 80%, red for < 80%)
+    // Add conditional formatting to Excel sheets (green for >= default pass threshold)
     addConditionalFormatting(sheet, data) {
         if (!sheet['!ref'] || !data || data.length < 2) {
             console.log('No data to format or invalid sheet reference');
@@ -8475,7 +8680,7 @@ export class Admin2Dashboard {
                     }
                     
                     // Apply styling based on score
-                    if (score >= 80) {
+                    if (score >= (typeof this.passSettings?.defaultPercentage === 'number' ? this.passSettings.defaultPercentage : 70)) {
                         // Green background for high scores
                         sheet[cellRef].s = { fill: { fgColor: { rgb: '00FF00' } } };
                         console.log(`Applied GREEN formatting to cell ${cellRef} with value ${cellValue}`);
@@ -8524,7 +8729,7 @@ export class Admin2Dashboard {
             
             let status = 'Not Started';
             if (questionsAnswered === 15) {
-                status = score >= 70 ? 'Passed' : 'Failed';
+                status = this.isPassingScore(score, quizName) ? 'Passed' : 'Failed';
             } else if (questionsAnswered > 0) {
                 status = 'In Progress';
             }
@@ -8623,7 +8828,7 @@ export class Admin2Dashboard {
                     // Determine status
                     let status = "Not Started";
                     if (questionsAnswered === 15) {
-                        status = score >= 70 ? "Pass" : "Fail";
+                        status = this.isPassingScore(score, quizType) ? "Pass" : "Fail";
                     } else if (questionsAnswered > 0) {
                         status = "Incomplete";
                     }
@@ -8766,7 +8971,7 @@ export class Admin2Dashboard {
                     // Determine status
                     let status = "Not Started";
                     if (questionsAnswered === 15) {
-                        status = score >= 70 ? "Pass" : "Fail";
+                        status = this.isPassingScore(score, quizType) ? "Pass" : "Fail";
                     } else if (questionsAnswered > 0) {
                         status = "Incomplete";
                     }

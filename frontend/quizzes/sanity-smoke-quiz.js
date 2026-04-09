@@ -11,7 +11,6 @@ export class SanitySmokeQuiz extends BaseQuiz {
         const config = {
             maxXP: 300,
             totalQuestions: 15,
-            passPercentage: 70,
             performanceThresholds: [
                 { threshold: 90, message: '🏆 Outstanding! You\'re a sanity smoke testing expert!' },
                 { threshold: 80, message: '👏 Great job! You\'ve shown strong sanity smoke testing instincts!' },

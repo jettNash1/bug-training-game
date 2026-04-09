@@ -127,6 +127,10 @@ class IndexPage {
             showQuestionFeedback: true,
             showIndexStatus: true
         };
+        this.passSettings = {
+            defaultPercentage: 70,
+            quizPercentages: {}
+        };
         
         // Bind methods
         this.initialize = this.initialize.bind(this);
@@ -242,6 +246,7 @@ class IndexPage {
             
             // Load quiz configuration
             await this.loadQuizConfiguration();
+            await this.loadQuizPassSettings();
             
             // Initialize quiz list with retry logic
             await this.initializeWithRetry();
@@ -533,6 +538,7 @@ class IndexPage {
             const questionsAnswered = quizScore?.questionsAnswered || 0;
             const score = quizScore?.score || 0;
             const scorePercentage = quizScore?.scorePercentage || 0;
+            const passPercentage = this.getPassPercentageForQuiz(quizId);
 
             // console.log(`[Index] - Questions answered: ${questionsAnswered}`);
             // console.log(`[Index] - Score: ${score}`);
@@ -549,7 +555,7 @@ class IndexPage {
                     // Show pass/fail status (original behavior)
                     const effectiveScore = (score !== undefined && score !== null) ? score : (scorePercentage !== undefined && scorePercentage !== null ? scorePercentage : 0);
                     // console.log(`[Index] - Quiz completed with effective score: ${effectiveScore}`);
-                    if (effectiveScore >= 80) {
+                    if (effectiveScore >= passPercentage) {
                         statusClass = 'completed-perfect';
                     } else {
                         statusClass = 'completed-partial';
@@ -609,7 +615,7 @@ class IndexPage {
                         // Show pass/fail status (original behavior)
                         const effectiveScore = (score !== undefined && score !== null) ? score : (scorePercentage !== undefined && scorePercentage !== null ? scorePercentage : 0);
                         
-                        if (effectiveScore >= 80) {
+                        if (effectiveScore >= passPercentage) {
                             passFail.textContent = 'PASS';
                             passFail.className = 'quiz-pass-fail pass';
                             passFail.style.display = '';
@@ -619,7 +625,7 @@ class IndexPage {
                             passFail.style.display = '';
                         }
                         
-                        // console.log(`[Index] - Pass/Fail indicator: ${effectiveScore >= 80 ? 'PASS' : 'FAIL'} (score: ${effectiveScore}%)`);
+                        // console.log(`[Index] - Pass/Fail indicator: ${effectiveScore >= passPercentage ? 'PASS' : 'FAIL'} (score: ${effectiveScore}%, pass: ${passPercentage}%)`);
                     } else {
                         // Hide pass/fail indicator when configuration is disabled
                         passFail.style.display = 'none';
@@ -648,6 +654,17 @@ class IndexPage {
 
         // Ensure guide buttons are updated after progress update
         await this.loadGuideSettingsAndAddButtons();
+    }
+
+    getPassPercentageForQuiz(quizName) {
+        const normalizedQuizName = this.quizProgressService.normalizeQuizName(quizName);
+        const quizSpecific = this.passSettings?.quizPercentages?.[normalizedQuizName];
+        if (typeof quizSpecific === 'number' && Number.isFinite(quizSpecific)) {
+            return quizSpecific;
+        }
+        return typeof this.passSettings?.defaultPercentage === 'number'
+            ? this.passSettings.defaultPercentage
+            : 70;
     }
 
     updateCategoryProgress() {
@@ -1545,6 +1562,28 @@ class IndexPage {
             console.error('[Index] Error loading quiz configuration:', error);
             // Keep default values
         }
+    }
+
+    async loadQuizPassSettings() {
+        try {
+            const response = await this.apiService.getQuizPassSettings();
+            if (response?.success && response.data) {
+                this.passSettings = {
+                    defaultPercentage: typeof response.data.defaultPercentage === 'number'
+                        ? response.data.defaultPercentage
+                        : 70,
+                    quizPercentages: response.data.quizPercentages || {}
+                };
+                return;
+            }
+        } catch (error) {
+            console.warn('[Index] Failed to load quiz pass settings, using defaults:', error);
+        }
+
+        this.passSettings = {
+            defaultPercentage: 70,
+            quizPercentages: {}
+        };
     }
 }
 

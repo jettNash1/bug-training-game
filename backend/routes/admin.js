@@ -2005,6 +2005,131 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
     }
 });
 
+// Get quiz pass settings (public for quiz/homepage consistency)
+router.get('/settings/quiz-pass', async (req, res) => {
+    try {
+        const passSetting = await Setting.findOne({ key: 'quizPassSettings' });
+
+        const defaultSettings = {
+            defaultPercentage: 70,
+            quizPercentages: {},
+            updatedAt: new Date()
+        };
+
+        const settings = passSetting ? passSetting.value : defaultSettings;
+
+        return res.json({
+            success: true,
+            data: {
+                defaultPercentage: typeof settings.defaultPercentage === 'number'
+                    ? settings.defaultPercentage
+                    : 70,
+                quizPercentages: settings.quizPercentages || {},
+                updatedAt: passSetting ? passSetting.updatedAt : new Date()
+            }
+        });
+    } catch (error) {
+        console.error('[PASS SETTINGS] Error retrieving quiz pass settings:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve quiz pass settings'
+        });
+    }
+});
+
+// Update quiz pass settings for admin
+router.post('/settings/quiz-pass', auth, async (req, res) => {
+    try {
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { defaultPercentage, quizPercentages } = req.body;
+
+        if (
+            defaultPercentage !== undefined &&
+            (
+                typeof defaultPercentage !== 'number' ||
+                !Number.isFinite(defaultPercentage) ||
+                defaultPercentage < 0 ||
+                defaultPercentage > 100
+            )
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: 'Default percentage must be a number between 0 and 100'
+            });
+        }
+
+        if (quizPercentages !== undefined && (typeof quizPercentages !== 'object' || quizPercentages === null)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Quiz percentages must be an object'
+            });
+        }
+
+        if (quizPercentages) {
+            for (const [quizName, percentage] of Object.entries(quizPercentages)) {
+                if (
+                    typeof percentage !== 'number' ||
+                    !Number.isFinite(percentage) ||
+                    percentage < 0 ||
+                    percentage > 100
+                ) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Pass percentage for ${quizName} must be between 0 and 100`
+                    });
+                }
+            }
+        }
+
+        let passSetting = await Setting.findOne({ key: 'quizPassSettings' });
+
+        if (!passSetting) {
+            passSetting = new Setting({
+                key: 'quizPassSettings',
+                value: {
+                    defaultPercentage: defaultPercentage !== undefined ? defaultPercentage : 70,
+                    quizPercentages: quizPercentages || {},
+                    updatedAt: new Date()
+                }
+            });
+        } else {
+            if (defaultPercentage !== undefined) {
+                passSetting.value.defaultPercentage = defaultPercentage;
+            }
+            if (quizPercentages !== undefined) {
+                passSetting.value.quizPercentages = quizPercentages;
+            }
+            passSetting.value.updatedAt = new Date();
+            passSetting.markModified('value');
+        }
+
+        const savedSetting = await passSetting.save();
+
+        return res.json({
+            success: true,
+            message: 'Quiz pass settings updated successfully',
+            data: {
+                defaultPercentage: savedSetting.value.defaultPercentage,
+                quizPercentages: savedSetting.value.quizPercentages || {},
+                updatedAt: savedSetting.value.updatedAt
+            }
+        });
+    } catch (error) {
+        console.error('[PASS SETTINGS] Error updating quiz pass settings:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to update quiz pass settings',
+            error: error.message
+        });
+    }
+});
+
 // Quiz Configuration Endpoints
 
 // Get quiz configuration settings

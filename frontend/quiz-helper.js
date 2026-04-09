@@ -7,7 +7,9 @@ export class BaseQuiz {
     constructor(config) {
         this.config = config;
         this.totalQuestions = config.totalQuestions || 15;
-        this.passPercentage = config.passPercentage || 70;
+        // Pass threshold is centrally configured by admin settings (default 70).
+        // Per-quiz hardcoded config values are intentionally ignored.
+        this.passPercentage = 70;
         // Many quiz implementations pass `maxXP` in their config; without this,
         // score calculation divides by `undefined`, producing `NaN%` at the end.
         this.maxXP = (typeof config.maxXP === 'number' && Number.isFinite(config.maxXP)) ? config.maxXP : 300;
@@ -2182,6 +2184,32 @@ export class BaseQuiz {
         }
     }
 
+    async initializePassSettings() {
+        try {
+            const response = await this.apiService.getQuizPassSettings();
+            if (!response?.success || !response.data) {
+                return;
+            }
+
+            const normalizedQuizName = this.quizName ? this.normalizeQuizName(this.quizName) : null;
+            const defaultPercentage = typeof response.data.defaultPercentage === 'number'
+                ? response.data.defaultPercentage
+                : 70;
+            const quizPercentages = response.data.quizPercentages || {};
+            const quizSpecificPercentage = normalizedQuizName ? quizPercentages[normalizedQuizName] : undefined;
+
+            if (typeof quizSpecificPercentage === 'number' && Number.isFinite(quizSpecificPercentage)) {
+                this.passPercentage = quizSpecificPercentage;
+            } else {
+                this.passPercentage = defaultPercentage;
+            }
+
+            console.log(`[Quiz] Pass percentage configured to ${this.passPercentage}% for quiz: ${normalizedQuizName || this.quizName}`);
+        } catch (error) {
+            console.warn('[Quiz] Failed to load pass settings, keeping current pass percentage:', error);
+        }
+    }
+
     async initializeSettings() {
         // Make sure we have the quiz name set
         if (!this.quizName) {
@@ -2195,6 +2223,9 @@ export class BaseQuiz {
         
         // Initialize quiz configuration
         await this.initializeQuizConfiguration();
+
+        // Initialize pass percentage settings
+        await this.initializePassSettings();
         
         // Initialize guide settings
         if (this.quizName) {

@@ -11,7 +11,6 @@ export class NonFunctionalTestingQuiz extends BaseQuiz {
         const config = {
             maxXP: 300,
             totalQuestions: 15,
-            passPercentage: 70,
             performanceThresholds: [
                 { threshold: 90, message: '🏆 Outstanding! You\'re a non-functional testing expert!' },
                 { threshold: 80, message: '👏 Great job! You\'ve shown strong non-functional testing instincts!' },

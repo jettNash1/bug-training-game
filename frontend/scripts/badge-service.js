@@ -4,6 +4,10 @@ export class BadgeService {
     constructor(apiService) {
         this.apiService = apiService;
         this.cachedCategories = null;
+        this.passSettings = {
+            defaultPercentage: 70,
+            quizPercentages: {}
+        };
         // Define badge image mapping - only for quizzes that actually exist in QUIZ_CATEGORIES
         this.badgeImageMapping = {
             // Core QA Skills
@@ -73,8 +77,42 @@ export class BadgeService {
         }, 0);
     }
 
+    async loadPassSettings() {
+        try {
+            const response = await this.apiService.getQuizPassSettings();
+            if (response?.success && response.data) {
+                this.passSettings = {
+                    defaultPercentage: typeof response.data.defaultPercentage === 'number'
+                        ? response.data.defaultPercentage
+                        : 70,
+                    quizPercentages: response.data.quizPercentages || {}
+                };
+                return;
+            }
+        } catch (error) {
+            console.warn('[Badges] Failed to load pass settings, using defaults:', error);
+        }
+        this.passSettings = {
+            defaultPercentage: 70,
+            quizPercentages: {}
+        };
+    }
+
+    getPassPercentageForQuiz(quizId) {
+        const normalizedQuizId = this.apiService.normalizeQuizName(quizId);
+        const quizSpecific = this.passSettings?.quizPercentages?.[normalizedQuizId];
+        if (typeof quizSpecific === 'number' && Number.isFinite(quizSpecific)) {
+            return quizSpecific;
+        }
+        return typeof this.passSettings?.defaultPercentage === 'number'
+            ? this.passSettings.defaultPercentage
+            : 70;
+    }
+
     async getUserBadges() {
         try {
+            await this.loadPassSettings();
+
             // 1. Grab user data
             console.log('Fetching user data...');
             const userData = await this.apiService.getUserData();
@@ -118,14 +156,15 @@ export class BadgeService {
             // Process quiz completion status for each visible quiz
             const badges = visibleQuizIds.map(quizId => {
                 const progress = quizProgress[quizId] || {};
+                const passPercentageForQuiz = this.getPassPercentageForQuiz(quizId);
                 
-                // Check if quiz is complete AND has achieved 80% or higher score
+                // Check if quiz is complete AND has achieved 70% or higher score
                 const hasCompletedAllQuestions = progress && (
                     (progress.questionHistory && progress.questionHistory.length === 15) ||
                     (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
                 );
                 
-                // Calculate score percentage - need at least 80% to earn badge
+                // Calculate score percentage - need at least 70% to earn badge
                 let scorePercentage = 0;
                 const TOTAL_QUIZ_QUESTIONS = 15; // Standard number of questions per quiz
                 
@@ -152,8 +191,8 @@ export class BadgeService {
                     }
                 }
                 
-                // Badge is earned only if completed all questions AND achieved 80%+ score
-                const isCompleted = hasCompletedAllQuestions && scorePercentage >= 80;
+                // Badge is earned only if completed all questions AND achieved configured pass score
+                const isCompleted = hasCompletedAllQuestions && scorePercentage >= passPercentageForQuiz;
 
                 // Determine the badge image path based on quiz type
                 let imagePath;
@@ -184,13 +223,14 @@ export class BadgeService {
                 return {
                     id: `quiz-${quizId}`,
                     name: `${this.formatQuizName(quizId)} Master`,
-                    description: `Complete the ${this.formatQuizName(quizId)} quiz with 80%+ score`,
+                    description: `Complete the ${this.formatQuizName(quizId)} quiz with ${passPercentageForQuiz}%+ score`,
                     icon: 'fa-solid fa-check-circle',
                     earned: isCompleted,
                     completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || new Date().toISOString()) : null,
                     quizId: quizId,
                     imagePath: imagePath,
                     scorePercentage: Math.round(scorePercentage),
+                    requiredPassPercentage: passPercentageForQuiz,
                     isComplete: hasCompletedAllQuestions,
                     questionsAnswered: progress.questionHistory ? progress.questionHistory.length : (progress.questionsAnswered || 0)
                 };
@@ -387,8 +427,9 @@ export class BadgeService {
             const quizResult = quizResults.find(result => result.quizName === quiz.id);
             const progress = quizProgress[quiz.id];
             
-            // Check completion status - must complete all questions AND achieve 80%+ score
+            // Check completion status - must complete all questions AND achieve configured pass score
             const hasCompletedAllQuestions = quizResult && quizResult.questionsAnswered === 15;
+            const passPercentageForQuiz = this.getPassPercentageForQuiz(quiz.id);
             
             // Calculate score percentage
             let scorePercentage = 0;
@@ -407,21 +448,22 @@ export class BadgeService {
                   }
             }
             
-            // Badge is earned only if completed all questions AND achieved 80%+ score
-            const isCompleted = hasCompletedAllQuestions && scorePercentage >= 80;
+            // Badge is earned only if completed all questions AND achieved configured pass score
+            const isCompleted = hasCompletedAllQuestions && scorePercentage >= passPercentageForQuiz;
             const completionDate = isCompleted ? (quizResult?.completedAt || progress?.completedAt || null) : null;
 
             quizCompletionBadges.push({
                 id: `quiz-${quiz.id}`,
                 name: `${quiz.name} Master`,
-                description: `Complete the ${quiz.name} quiz with 80%+ score`,
+                description: `Complete the ${quiz.name} quiz with ${passPercentageForQuiz}%+ score`,
                 icon: 'fa-solid fa-check-circle',
                 earned: isCompleted,
                 completionDate: completionDate,
                 quizId: quiz.id,
                 // Add image path to the badge data
                 imagePath: this.getBadgeImage(`quiz-${quiz.id}`),
-                scorePercentage: Math.round(scorePercentage)
+                scorePercentage: Math.round(scorePercentage),
+                requiredPassPercentage: passPercentageForQuiz
             });
         }
 

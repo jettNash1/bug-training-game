@@ -663,6 +663,38 @@ router.get('/settings/quiz-timer', auth, async (req, res) => {
     }
 });
 
+// Get quiz pass settings for users
+router.get('/settings/quiz-pass', auth, async (req, res) => {
+    try {
+        const passSetting = await Setting.findOne({ key: 'quizPassSettings' });
+
+        const defaultSettings = {
+            defaultPercentage: 70,
+            quizPercentages: {},
+            updatedAt: new Date()
+        };
+
+        const settings = passSetting ? passSetting.value : defaultSettings;
+
+        return res.json({
+            success: true,
+            data: {
+                defaultPercentage: typeof settings.defaultPercentage === 'number'
+                    ? settings.defaultPercentage
+                    : 70,
+                quizPercentages: settings.quizPercentages || {},
+                updatedAt: passSetting ? passSetting.updatedAt : new Date()
+            }
+        });
+    } catch (error) {
+        console.error('Error retrieving quiz pass settings:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve quiz pass settings'
+        });
+    }
+});
+
 // Get guide settings for a specific quiz
 router.get('/guide-settings/:quizName', auth, async (req, res) => {
     try {

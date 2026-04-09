@@ -1201,10 +1201,17 @@ export class APIService {
                 visibleQuizzes = allQuizzes.filter(q => !hiddenQuizzes.includes(q));
             }
             console.log(`[Badges] Processing ${visibleQuizzes.length} visible quizzes for user ${username}`);
+
+            const passSettingsResponse = await this.getQuizPassSettings();
+            const passSettings = passSettingsResponse?.data || { defaultPercentage: 70, quizPercentages: {} };
             
             // Generate badges for all visible quizzes
             const badges = visibleQuizzes.map(quizId => {
                 const progress = quizProgress[quizId] || {};
+                const normalizedQuizId = this.normalizeQuizName(quizId);
+                const passPercentageForQuiz = typeof passSettings.quizPercentages?.[normalizedQuizId] === 'number'
+                    ? passSettings.quizPercentages[normalizedQuizId]
+                    : passSettings.defaultPercentage;
                 
                 // Also check quizResults for completed quizzes
                 const quizResult = quizResults.find(result => result.quizName === quizId);
@@ -1221,7 +1228,7 @@ export class APIService {
                     progressExperience: progress.experience
                 });
                 
-                // Check if quiz is complete AND has achieved 80% or higher score
+                // Check if quiz is complete AND has achieved 70% or higher score
                 let hasCompletedAllQuestions = false;
                 let scorePercentage = 0;
                 let completionDate = null;
@@ -1260,8 +1267,8 @@ export class APIService {
                     isFromQuizResults = false;
                 }
                 
-                // Badge is earned only if completed all questions AND achieved 80%+ score
-                const isCompleted = hasCompletedAllQuestions && scorePercentage >= 80;
+                // Badge is earned only if completed all questions AND achieved configured pass score
+                const isCompleted = hasCompletedAllQuestions && scorePercentage >= passPercentageForQuiz;
                 
                 console.log(`[Badges] Quiz ${quizId} final result:`, {
                     isCompleted,
@@ -1274,12 +1281,13 @@ export class APIService {
                 return {
                     id: `quiz-${quizId}`,
                     name: this.formatQuizName(quizId) + ' Master',
-                    description: `Complete the ${this.formatQuizName(quizId)} quiz with 80%+ score`,
+                    description: `Complete the ${this.formatQuizName(quizId)} quiz with ${passPercentageForQuiz}%+ score`,
                     icon: 'fa-solid fa-check-circle',
                     earned: isCompleted,
                     completionDate: isCompleted ? (completionDate || new Date().toISOString()) : null,
                     quizId: quizId,
                     scorePercentage: Math.round(scorePercentage),
+                    requiredPassPercentage: passPercentageForQuiz,
                     hasCompletedAllQuestions: hasCompletedAllQuestions,
                     isFromQuizResults: isFromQuizResults
                 };
@@ -1715,6 +1723,156 @@ export class APIService {
                 error: error
             };
         }
+    }
+
+    // Quiz pass settings methods
+    async getQuizPassSettings() {
+        const defaults = {
+            defaultPercentage: 70,
+            quizPercentages: {},
+            updatedAt: new Date().toISOString()
+        };
+
+        try {
+            // Try admin endpoint first
+            try {
+                const adminResponse = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-pass`);
+                if (adminResponse?.success && adminResponse.data) {
+                    return {
+                        success: true,
+                        data: {
+                            defaultPercentage: typeof adminResponse.data.defaultPercentage === 'number'
+                                ? adminResponse.data.defaultPercentage
+                                : 70,
+                            quizPercentages: adminResponse.data.quizPercentages || {},
+                            updatedAt: adminResponse.data.updatedAt || new Date().toISOString()
+                        }
+                    };
+                }
+            } catch (adminError) {
+                console.warn('[API] Admin pass settings fetch failed, trying user/public endpoints:', adminError.message);
+            }
+
+            // Try user endpoint
+            try {
+                const userResponse = await this.fetchWithAuth(`${this.baseUrl}/users/settings/quiz-pass`);
+                if (userResponse?.success && userResponse.data) {
+                    return {
+                        success: true,
+                        data: {
+                            defaultPercentage: typeof userResponse.data.defaultPercentage === 'number'
+                                ? userResponse.data.defaultPercentage
+                                : 70,
+                            quizPercentages: userResponse.data.quizPercentages || {},
+                            updatedAt: userResponse.data.updatedAt || new Date().toISOString()
+                        }
+                    };
+                }
+            } catch (userError) {
+                console.warn('[API] User pass settings fetch failed, trying public endpoint:', userError.message);
+            }
+
+            // Try public endpoint
+            try {
+                const response = await fetch(`${this.baseUrl}/admin/settings/quiz-pass`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data?.success && data.data) {
+                        return {
+                            success: true,
+                            data: {
+                                defaultPercentage: typeof data.data.defaultPercentage === 'number'
+                                    ? data.data.defaultPercentage
+                                    : 70,
+                                quizPercentages: data.data.quizPercentages || {},
+                                updatedAt: data.data.updatedAt || new Date().toISOString()
+                            }
+                        };
+                    }
+                }
+            } catch (publicError) {
+                console.warn('[API] Public pass settings fetch failed:', publicError.message);
+            }
+
+            return { success: true, data: defaults, source: 'defaults' };
+        } catch (error) {
+            console.error('[API] Failed to fetch quiz pass settings:', error);
+            return { success: true, data: defaults, source: 'defaults' };
+        }
+    }
+
+    async updateQuizPassSettings(defaultPercentage, quizPercentages = {}) {
+        const defaultValue = Number(defaultPercentage);
+        if (!Number.isFinite(defaultValue) || defaultValue < 0 || defaultValue > 100) {
+            throw new Error('Default pass percentage must be between 0 and 100');
+        }
+
+        const validatedQuizPercentages = {};
+        for (const [quizName, percentage] of Object.entries(quizPercentages || {})) {
+            const value = Number(percentage);
+            if (Number.isFinite(value) && value >= 0 && value <= 100) {
+                validatedQuizPercentages[this.normalizeQuizName(quizName)] = value;
+            }
+        }
+
+        const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-pass`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                defaultPercentage: defaultValue,
+                quizPercentages: validatedQuizPercentages
+            })
+        });
+
+        return response;
+    }
+
+    async updateSingleQuizPassPercentage(quizName, percentage) {
+        const normalizedQuizName = this.normalizeQuizName(quizName);
+        const value = Number(percentage);
+        if (!Number.isFinite(value) || value < 0 || value > 100) {
+            throw new Error('Pass percentage must be between 0 and 100');
+        }
+
+        const settingsResponse = await this.getQuizPassSettings();
+        if (!settingsResponse.success || !settingsResponse.data) {
+            throw new Error('Failed to load current pass settings');
+        }
+
+        const quizPercentages = { ...(settingsResponse.data.quizPercentages || {}) };
+        quizPercentages[normalizedQuizName] = value;
+
+        return this.updateQuizPassSettings(settingsResponse.data.defaultPercentage, quizPercentages);
+    }
+
+    async resetQuizPassPercentage(quizName) {
+        const normalizedQuizName = this.normalizeQuizName(quizName);
+
+        const settingsResponse = await this.getQuizPassSettings();
+        if (!settingsResponse.success || !settingsResponse.data) {
+            throw new Error('Failed to load current pass settings');
+        }
+
+        const quizPercentages = { ...(settingsResponse.data.quizPercentages || {}) };
+        delete quizPercentages[normalizedQuizName];
+
+        return this.updateQuizPassSettings(settingsResponse.data.defaultPercentage, quizPercentages);
+    }
+
+    async getQuizPassPercentage(quizName) {
+        const settingsResponse = await this.getQuizPassSettings();
+        const settings = settingsResponse?.data || { defaultPercentage: 70, quizPercentages: {} };
+        const normalizedQuizName = this.normalizeQuizName(quizName);
+        const quizSpecific = settings.quizPercentages?.[normalizedQuizName];
+        if (typeof quizSpecific === 'number' && Number.isFinite(quizSpecific)) {
+            return quizSpecific;
+        }
+        return typeof settings.defaultPercentage === 'number' ? settings.defaultPercentage : 70;
     }
 
     // Schedule-related methods

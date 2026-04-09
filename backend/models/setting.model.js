@@ -58,6 +58,45 @@ settingSchema.pre('save', function(next) {
             value.quizTimers = {};
         }
     }
+
+    if (this.key === 'quizPassSettings') {
+        const value = this.value;
+
+        // Ensure value is an object
+        if (!value || typeof value !== 'object') {
+            next(new Error('Quiz pass settings must be an object'));
+            return;
+        }
+
+        // Validate default percentage
+        if (
+            typeof value.defaultPercentage !== 'number' ||
+            !Number.isFinite(value.defaultPercentage) ||
+            value.defaultPercentage < 0 ||
+            value.defaultPercentage > 100
+        ) {
+            next(new Error('Default pass percentage must be between 0 and 100'));
+            return;
+        }
+
+        // Initialize per-quiz object if undefined
+        if (!value.quizPercentages || typeof value.quizPercentages !== 'object') {
+            value.quizPercentages = {};
+        }
+
+        // Validate per-quiz percentages
+        for (const [quiz, percentage] of Object.entries(value.quizPercentages)) {
+            if (
+                typeof percentage !== 'number' ||
+                !Number.isFinite(percentage) ||
+                percentage < 0 ||
+                percentage > 100
+            ) {
+                next(new Error(`Pass percentage for quiz ${quiz} must be between 0 and 100`));
+                return;
+            }
+        }
+    }
     
     this.updatedAt = new Date();
     next();

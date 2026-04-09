@@ -8,6 +8,10 @@ export class QuizUser {
         this.api = new APIService();
         this.quizResults = [];
         this.quizProgress = {};
+        this.passSettings = {
+            defaultPercentage: 70,
+            quizPercentages: {}
+        };
     }
 
     async loadUserData() {
@@ -365,6 +369,8 @@ export class QuizUser {
 
     async loadAndDisplayProgress() {
         try {
+            await this.loadPassSettings();
+
             // Fetch user's quiz results from the server
             const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/progress`);
             
@@ -401,7 +407,7 @@ export class QuizUser {
         if (!categoryCard) return;
 
         const completedQuizzes = this.quizResults.filter(result => 
-            quizIds.includes(result.quizName) && result.score >= 70
+            quizIds.includes(result.quizName) && result.score >= this.getPassPercentageForQuiz(result.quizName)
         ).length;
 
         const progressText = categoryCard.querySelector('.progress-text');
@@ -416,6 +422,37 @@ export class QuizUser {
             progressBar.style.width = `${percentage}%`;
             progressBar.setAttribute('aria-valuenow', percentage);
         }
+    }
+
+    async loadPassSettings() {
+        try {
+            const response = await this.api.getQuizPassSettings();
+            if (response?.success && response.data) {
+                this.passSettings = {
+                    defaultPercentage: typeof response.data.defaultPercentage === 'number'
+                        ? response.data.defaultPercentage
+                        : 70,
+                    quizPercentages: response.data.quizPercentages || {}
+                };
+            }
+        } catch (error) {
+            console.warn('[QuizUser] Failed to load pass settings, using default 70:', error);
+            this.passSettings = {
+                defaultPercentage: 70,
+                quizPercentages: {}
+            };
+        }
+    }
+
+    getPassPercentageForQuiz(quizName) {
+        const normalizedQuizName = this.normalizeQuizName(quizName);
+        const quizSpecific = this.passSettings?.quizPercentages?.[normalizedQuizName];
+        if (typeof quizSpecific === 'number' && Number.isFinite(quizSpecific)) {
+            return quizSpecific;
+        }
+        return typeof this.passSettings?.defaultPercentage === 'number'
+            ? this.passSettings.defaultPercentage
+            : 70;
     }
 
     startQuizTimer() {
