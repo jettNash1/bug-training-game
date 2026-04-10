@@ -33,18 +33,12 @@ const port = process.env.PORT || 10000;
 
 // Define allowed origins with wildcards for subdomains
 const allowedOrigins = [
-  'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
-  'https://learning-hub.s3-website.eu-west-2.amazonaws.com',
-  'https://bug-training-game.onrender.com',
-  'http://bug-training-game.onrender.com',
-  'https://bug-training-game-api.onrender.com',
-  'http://bug-training-game-api.onrender.com',
-  'http://localhost:3000',
-  'http://localhost:5000',
+  'https://learning-hub.zoonou.com',
+  'https://learning-hub-api.zoonou.com',
   'http://localhost:8080',
-  'http://127.0.0.1:5000',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:8080'
+  'http://localhost:10000',
+  'http://127.0.0.1:8080',
+  'http://127.0.0.1:10000'
 ];
 
 // Add origins from environment variable if present
@@ -70,21 +64,15 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // Always allow the S3 website
-    if (origin === 'http://learning-hub.s3-website.eu-west-2.amazonaws.com') {
-      console.log('Allowing S3 website');
-      return callback(null, true);
-    }
-
     // In development, allow all localhost origins
     if (process.env.NODE_ENV !== 'production' && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
       console.log('Allowing localhost origin in development');
       return callback(null, true);
     }
 
-    // Allow Render domains in production
-    if (process.env.NODE_ENV === 'production' && origin.includes('.onrender.com')) {
-      console.log('Allowing Render domain:', origin);
+    // Allow Zoonou domains in production
+    if (process.env.NODE_ENV === 'production' && origin.endsWith('.zoonou.com')) {
+      console.log('Allowing Zoonou domain:', origin);
       return callback(null, true);
     }
 

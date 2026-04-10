@@ -145,7 +145,7 @@ In the Render service dashboard, go to **"Environment"** and add:
 | `ADMIN_PASSWORD_2` | *(optional)* Second admin password | |
 | `ADMIN_USERNAME_3` | *(optional)* Third admin username | |
 | `ADMIN_PASSWORD_3` | *(optional)* Third admin password | |
-| `ALLOWED_ORIGINS` | `http://learning-hub.s3-website.eu-west-2.amazonaws.com` | The S3 frontend URL |
+| `ALLOWED_ORIGINS` | `https://learning-hub.zoonou.com,https://learning-hub-api.zoonou.com` | Frontend and API allowed origins |
 
 **Generate secure secrets** by running locally:
 
@@ -158,10 +158,10 @@ Run this twice to get two different values for `JWT_SECRET` and `JWT_REFRESH_SEC
 ### 2.4 Deploy and Verify
 
 1. Click **"Create Web Service"** -- Render builds and deploys automatically.
-2. Note your service URL (e.g. `https://bug-training-game-api.onrender.com`).
+2. Note your service URL (e.g. `https://learning-hub-api.zoonou.com`).
 3. Verify by visiting:
    ```
-   https://bug-training-game-api.onrender.com/health
+   https://learning-hub-api.zoonou.com/health
    ```
    Expected response:
    ```json
@@ -210,7 +210,7 @@ If the S3 bucket `learning-hub` does not already exist:
 
 4. The frontend URL will be:
    ```
-   http://learning-hub.s3-website.eu-west-2.amazonaws.com/
+   https://learning-hub.zoonou.com/
    ```
 
 ### 3.2 EC2 Instance Setup (if creating from scratch)
@@ -305,36 +305,31 @@ aws s3 sync . s3://learning-hub --exclude "node_modules/*" --exclude ".git/*" --
   ```
 - **Frontend**: Visit the S3 URL in a browser:
   ```
-  http://learning-hub.s3-website.eu-west-2.amazonaws.com/
+  https://learning-hub.zoonou.com/
   ```
 
 ---
 
 ## 5. Updating Codebase URLs
 
-After creating your Render service, you may need to update hardcoded URLs if the service name differs from the original. The following files contain Render URLs:
+After creating your deployment, you may need to update hardcoded URLs if hostnames change. The following files contain environment URL logic:
 
 ### `frontend/config.js`
 
-- Line 3: `window.location.hostname === 'bug-training-game.onrender.com'`
-- Line 13: `return 'https://bug-training-game-api.onrender.com';`
-- Line 40: `'https://bug-training-game.onrender.com'`
+- Production API endpoint: `https://learning-hub-api.zoonou.com`
+- Local development API endpoint: `http://localhost:10000`
 
 ### `frontend/api-service.js`
 
-- References to `bug-training-game-api.onrender.com`
+- References to your production API host (`learning-hub-api.zoonou.com`)
 
 ### `backend/server.js`
 
-- Lines 38-41: CORS `allowedOrigins` array contains:
-  - `https://bug-training-game.onrender.com`
-  - `http://bug-training-game.onrender.com`
-  - `https://bug-training-game-api.onrender.com`
-  - `http://bug-training-game-api.onrender.com`
+- CORS `allowedOrigins` should include:
+  - `https://learning-hub.zoonou.com`
+  - `https://learning-hub-api.zoonou.com`
 
-Replace all instances of `bug-training-game.onrender.com` and `bug-training-game-api.onrender.com` with your new Render service URL.
-
-> **Note**: The AWS S3 origin (`http://learning-hub.s3-website.eu-west-2.amazonaws.com`) is already present in the CORS configuration and does not need changing unless the bucket name changes.
+Ensure all production references point to `learning-hub.zoonou.com` (frontend) and `learning-hub-api.zoonou.com` (API).
 
 ---
 
@@ -368,7 +363,7 @@ Replace all instances of `bug-training-game.onrender.com` and `bug-training-game
 
 6. Access the app at `http://localhost:8080`.
 
-> **Note**: The frontend `config.js` sends API requests to `http://localhost:3000` in development. Either set `PORT=3000` in your `.env`, or update line 17 of `frontend/config.js` to match your port.
+> **Note**: The frontend `config.js` sends API requests to `http://localhost:10000` in development. Ensure your backend runs on port `10000` (or update config accordingly).
 
 ---
 

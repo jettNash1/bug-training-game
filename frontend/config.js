@@ -1,20 +1,18 @@
 // Environment detection
-const isProd = window.location.hostname.includes('render.com') || 
-               window.location.hostname === 'bug-training-game.onrender.com' ||
-               window.location.hostname.includes('amazonaws.com') ||
-               window.location.hostname.includes('cloudfront.net') ||
-               window.location.hostname.includes('s3-website') ||
-               window.location.hostname.includes('learning-hub');
+const isLocal =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1';
+const isProd = !isLocal;
 
 // Get the API endpoint based on environment
 const getApiEndpoint = () => {
-    // Always use the Render API endpoint in production
+    // Use the canonical production API endpoint
     if (isProd) {
-        return 'https://bug-training-game-api.onrender.com';
+        return 'https://learning-hub-api.zoonou.com';
     }
     
     // Local development
-    return 'http://localhost:3000';
+    return 'http://localhost:10000';
 };
 
 // Configuration object
@@ -35,9 +33,9 @@ console.log('App configuration:', {
 // Configuration settings for the application
 export const CONFIG = {
     // API Configuration
-    API_BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:3000'
-        : 'https://bug-training-game.onrender.com',
+    API_BASE_URL: isLocal
+        ? 'http://localhost:10000'
+        : 'https://learning-hub-api.zoonou.com',
     
     // Automatic Cache Control - No manual updates needed!
     APP_VERSION: 'auto', // Auto-generated from build timestamp

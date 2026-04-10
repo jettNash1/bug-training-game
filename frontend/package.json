@@ -9,5 +9,5 @@
   "dependencies": {
     "http-server": "^14.1.1"
   },
-  "proxy": "http://localhost:3000"
+  "proxy": "http://localhost:10000"
 } 
