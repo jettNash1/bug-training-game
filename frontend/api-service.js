@@ -954,13 +954,16 @@ export class APIService {
         }
     }
 
-    async getQuizQuestions(username, quizName) {
+    async getQuizQuestions(username, quizName, options = {}) {
         const cacheKey = `getQuizQuestions_${username}_${quizName}`;
-        
-        return this.deduplicatedRequest(cacheKey, async () => {
+
+        const fetchFn = async () => {
             try {
                 console.log(`Fetching quiz questions for ${username}/${quizName}`);
-                const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users/${username}/quiz-questions/${quizName}`);
+                const cacheBust = options.bypassCache ? `?_=${Date.now()}` : '';
+                const response = await this.fetchWithAdminAuth(
+                    `${this.baseUrl}/admin/users/${username}/quiz-questions/${encodeURIComponent(quizName)}${cacheBust}`
+                );
                 console.log('Raw quiz questions response:', response);
                 
                 // If the response itself is not successful
@@ -1004,7 +1007,14 @@ export class APIService {
                 console.error(`Failed to fetch quiz questions for ${username}/${quizName}:`, error);
                 throw error;
             }
-        });
+        };
+
+        if (options.bypassCache) {
+            this.clearQuizQuestionsCache(username, quizName);
+            return fetchFn();
+        }
+
+        return this.deduplicatedRequest(cacheKey, fetchFn);
     }
 
     async getQuizScenarios(quizName) {

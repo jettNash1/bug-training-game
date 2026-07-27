@@ -1,6 +1,8 @@
-import { APIService } from './api-service.js';
+import { APIService } from './api-service.js?v=score-fix-20260727';
 import { QUIZ_CATEGORIES } from './quiz-list.js';
 import { QuizProgressService } from './services/QuizProgressService.js';
+
+export const ADMIN2_SCORE_FIX_VERSION = 'score-fix-20260727';
 
 export class Admin2Dashboard {
     constructor() {
@@ -28,6 +30,8 @@ export class Admin2Dashboard {
         
         // Store the dashboard instance globally for easier access
         window.adminDashboard = this;
+
+        console.info(`[Admin2] Loaded ${ADMIN2_SCORE_FIX_VERSION} — quiz card scores use the same API as View Questions`);
         
         // Only initialize the dashboard if we're not on the login page
         const currentPath = window.location.pathname;
@@ -3395,21 +3399,18 @@ export class Admin2Dashboard {
     // Override the parent showUserDetails method for a tabbed interface like standard admin
     async fetchAndUpdateQuizScore(username, quizType, quizCard) {
         try {
-            this.apiService.clearQuizQuestionsCache(username, quizType);
-            const response = await this.apiService.getQuizQuestions(username, quizType);
-
-            if (!response.success || !response.data?.questionHistory?.length) {
-                console.warn(`[Admin] Failed to get question history from API for ${username}/${quizType}:`, response);
+            const quizData = await this.fetchQuizDisplayData(username, quizType);
+            if (!quizData) {
+                console.warn(`[Admin] Failed to get question history from API for ${username}/${quizType}`);
                 return;
             }
 
-            const calculatedScore = this.normalizeQuizScore(response.data.score);
             const scoreElement = quizCard.querySelector('.stat-row:nth-child(2) span');
             if (scoreElement) {
-                scoreElement.textContent = `${calculatedScore}%`;
+                scoreElement.textContent = `${quizData.score}%`;
             }
 
-            if (this.isPassingScore(calculatedScore, quizType)) {
+            if (this.isPassingScore(quizData.score, quizType)) {
                 quizCard.className = 'quiz-card completed-perfect';
                 quizCard.style.backgroundColor = '#C8E6C9';
             } else {
@@ -3419,6 +3420,22 @@ export class Admin2Dashboard {
         } catch (error) {
             console.error(`[Admin] Error fetching question history for ${username}/${quizType}:`, error);
         }
+    }
+
+    async fetchQuizDisplayData(username, quizType) {
+        const response = await this.apiService.getQuizQuestions(username, quizType, { bypassCache: true });
+        if (!response.success || !response.data) {
+            return null;
+        }
+
+        const questionHistory = response.data.questionHistory || [];
+        return {
+            score: this.normalizeQuizScore(response.data.score),
+            questionsAnswered: response.data.totalQuestions || questionHistory.length,
+            questionHistory,
+            experience: response.data.experience || 0,
+            lastActive: response.data.lastActive
+        };
     }
 
     async showUserDetails(username) {
@@ -3542,10 +3559,12 @@ export class Admin2Dashboard {
                         status,
                         backgroundColor,
                         statusClass,
-                        lastActive
+                        lastActive,
+                        needsApiScore
                     } = quizStats;
 
                     const attemptCount = user.quizAttempts?.[quizLower] || 0;
+                    const scoreDisplay = needsApiScore ? '...' : `${score}%`;
                     
                     // Create quiz card
                     const quizCard = document.createElement('div');
@@ -3555,7 +3574,7 @@ export class Admin2Dashboard {
                         <h3>${this.formatQuizName(quizType)}</h3>
                         <div class="quiz-stats">
                         <div class="stat-row"><strong>Status:</strong> <span>${status}</span></div>
-                        <div class="stat-row"><strong>Score:</strong> <span>${score}%</span></div>
+                        <div class="stat-row"><strong>Score:</strong> <span>${scoreDisplay}</span></div>
                         <div class="stat-row"><strong>Questions:</strong> <span>${questionsAnswered}/15</span></div>
                         <div class="stat-row"><strong>Attempts:</strong> <span>${attemptCount}</span></div>
                         <div class="stat-row"><strong>Last Active:</strong> <span>${this.formatDate(lastActive)}</span></div>
@@ -3589,6 +3608,12 @@ export class Admin2Dashboard {
                             </button>
                         </div>
                     `;
+
+                    if (needsApiScore) {
+                        this.fetchAndUpdateQuizScore(username, quizType, quizCard).catch(error => {
+                            console.warn(`[Admin] Failed to fetch API score for ${username}/${quizType}:`, error);
+                        });
+                    }
                 
                 return quizCard;
             };
@@ -4446,19 +4471,12 @@ export class Admin2Dashboard {
             }
 
             console.log('Showing quiz questions for:', { username, quizType });
-            
-            this.apiService.clearQuizQuestionsCache(username, quizType);
 
-            // Get quiz results from API
-            try {
-                const apiService = this.apiService;
-                const response = await apiService.getQuizQuestions(username, quizType);
-                console.log('Quiz questions API response:', response);
-                
-                if (response.success && response.data) {
-                    // Map the API response to the format expected by the UI
-                    const apiQuestionHistory = response.data.questionHistory || [];
-                    const questionHistory = apiQuestionHistory.map(item => {
+            const quizData = await this.fetchQuizDisplayData(username, quizType);
+            console.log('Quiz questions API response:', quizData);
+
+            if (quizData) {
+                    const questionHistory = (quizData.questionHistory || []).map(item => {
                         const isPassed = this.isCorrectQuestionResult(item);
                         const isTimedOut = item.timedOut === true;
                         
@@ -4471,8 +4489,6 @@ export class Admin2Dashboard {
                             const match = outcomeText.match(/The correct answer was: "([^"]+)"/);
                             if (match && match[1]) {
                                 correctAnswer = match[1];
-                            } else {
-                                //Nothing
                             }
                         } else if (isPassed) {
                             correctAnswer = item.selectedAnswer?.text || '';
@@ -4488,8 +4504,8 @@ export class Admin2Dashboard {
                         };
                     });
                     
-                    const questionsAnswered = response.data.totalQuestions || 0;
-                    const quizScore = this.normalizeQuizScore(response.data.score);
+                    const questionsAnswered = quizData.questionsAnswered || 0;
+                    const quizScore = quizData.score;
                     const quizStatus = questionsAnswered >= 15 ? 'Completed' : (questionsAnswered > 0 ? 'In Progress' : 'Not Started');
                     
                     console.log('Mapped question history:', questionHistory);
@@ -4723,9 +4739,7 @@ export class Admin2Dashboard {
                             }
                         }
                     });
-                }
-            } catch (error) {
-                console.error('Error fetching quiz questions:', error);
+            } else {
                 this.showError('Failed to load quiz questions. Please try again.');
             }
         } catch (error) {
@@ -6157,10 +6171,14 @@ export class Admin2Dashboard {
 
         let questionsAnswered = this.getQuestionsAnsweredCount(progress, result);
         let score = 0;
+        let needsApiScore = false;
 
         if (freshQuizData) {
             score = this.normalizeQuizScore(freshQuizData.score);
             questionsAnswered = freshQuizData.questionsAnswered || questionsAnswered;
+        } else if (questionsAnswered >= 15) {
+            // Completed quizzes must use the same API score as View Questions
+            needsApiScore = true;
         } else {
             const questionHistory = this.resolveQuizQuestionHistory(progress, result);
             if (questionHistory) {
@@ -6177,12 +6195,15 @@ export class Admin2Dashboard {
 
         if (questionsAnswered > 0) {
             if (questionsAnswered === 15) {
-                if (this.isPassingScore(score, quizType)) {
+                if (!needsApiScore && this.isPassingScore(score, quizType)) {
                     backgroundColor = '#C8E6C9';
                     statusClass = 'completed-perfect';
-                } else {
+                } else if (!needsApiScore) {
                     backgroundColor = '#FFE0B2';
                     statusClass = 'completed-partial';
+                } else {
+                    backgroundColor = '#FFF8E7';
+                    statusClass = 'in-progress';
                 }
             } else {
                 backgroundColor = '#FFF8E7';
@@ -6198,17 +6219,42 @@ export class Admin2Dashboard {
             status,
             backgroundColor,
             statusClass,
+            needsApiScore,
             experience: result?.experience || progress?.experience || 0,
             lastActive: result?.completedAt || result?.lastActive || progress?.lastUpdated || 'Never'
         };
     }
 
     getCompletedQuizTypesForUser(user) {
-        return this.quizTypes.filter(quizType => {
+        const completedLower = new Set();
+
+        for (const quizType of this.quizTypes) {
             const quizLower = quizType.toLowerCase();
             const { progress, result } = this.getQuizProgressAndResult(user, quizLower);
-            return this.getQuestionsAnsweredCount(progress, result) >= 15;
+            if (this.getQuestionsAnsweredCount(progress, result) >= 15) {
+                completedLower.add(quizLower);
+            }
+        }
+
+        (user.quizResults || []).forEach(result => {
+            const quizLower = result.quizName?.toLowerCase();
+            if (!quizLower) return;
+            const answered = result.questionsAnswered || result.questionHistory?.length || 0;
+            if (answered >= 15) {
+                completedLower.add(quizLower);
+            }
         });
+
+        Object.entries(user.quizProgress || {}).forEach(([key, progress]) => {
+            const answered = progress?.questionsAnswered || progress?.questionHistory?.length || 0;
+            if (answered >= 15) {
+                completedLower.add(String(key).toLowerCase());
+            }
+        });
+
+        return [...completedLower].map(quizLower =>
+            this.quizTypes.find(quizType => quizType.toLowerCase() === quizLower) || quizLower
+        );
     }
 
     async fetchFreshQuizScoresForUser(username, user) {
@@ -6224,22 +6270,11 @@ export class Admin2Dashboard {
         const fetchPromises = completedQuizTypes.map(async (quizType) => {
             const quizLower = quizType.toLowerCase();
 
-            this.apiService.clearQuizQuestionsCache(username, quizType);
-
             try {
-                const response = await this.apiService.getQuizQuestions(username, quizType);
-                if (!response.success || !response.data) {
+                const quizData = await this.fetchQuizDisplayData(username, quizType);
+                if (!quizData) {
                     return;
                 }
-
-                const questionHistory = response.data.questionHistory || [];
-                const quizData = {
-                    score: this.normalizeQuizScore(response.data.score),
-                    questionsAnswered: response.data.totalQuestions || questionHistory.length,
-                    questionHistory,
-                    experience: response.data.experience || 0,
-                    lastActive: response.data.lastActive
-                };
 
                 quizScoresMap.set(quizLower, quizData);
 
@@ -6250,7 +6285,7 @@ export class Admin2Dashboard {
                     user.quizProgress[quizLower] = {};
                 }
 
-                user.quizProgress[quizLower].questionHistory = questionHistory;
+                user.quizProgress[quizLower].questionHistory = quizData.questionHistory;
                 user.quizProgress[quizLower].questionsAnswered = quizData.questionsAnswered;
                 if (quizData.experience) {
                     user.quizProgress[quizLower].experience = quizData.experience;
