@@ -3395,50 +3395,26 @@ export class Admin2Dashboard {
     // Override the parent showUserDetails method for a tabbed interface like standard admin
     async fetchAndUpdateQuizScore(username, quizType, quizCard) {
         try {
-            console.log(`[Admin] Fetching detailed question history for ${username}/${quizType}`);
-            
-            // Fetch the detailed question history from the API
+            this.apiService.clearQuizQuestionsCache(username, quizType);
             const response = await this.apiService.getQuizQuestions(username, quizType);
-            
-            if (response.success && response.data && response.data.questionHistory) {
-                const questionHistory = response.data.questionHistory;
-                
-                // Use the same logic as the "View Questions" section to determine correct answers
-                // An answer is correct if the status is 'passed'
-                const correctAnswers = this.countCorrectAnswers(questionHistory);
-                const calculatedScore = Math.round((correctAnswers / questionHistory.length) * 100);
-                
-                console.log(`[Admin] Successfully calculated score from fetched question history:`, {
-                    username,
-                    quizType,
-                    totalQuestions: questionHistory.length,
-                    correctAnswers,
-                    calculatedScore,
-                    questionStatuses: questionHistory.map(item => ({ status: item.status, passed: this.isCorrectQuestionResult(item) }))
-                });
-                
-                // Update the quiz card with the correct score
-                const scoreElement = quizCard.querySelector('.stat-row:nth-child(2) span'); // The score value in the second stat row
-                if (scoreElement) {
-                    scoreElement.textContent = `${calculatedScore}%`;
-                }
-                
-                // Update the card styling based on the new score (matching index page colors)
-                if (calculatedScore >= 70) {
-                    quizCard.className = 'quiz-card completed-perfect';
-                    quizCard.style.backgroundColor = '#C8E6C9'; // Light green (matches index page)
-                } else {
-                    quizCard.className = 'quiz-card completed-partial';
-                    quizCard.style.backgroundColor = '#FFE0B2'; // Light orange (matches index page)
-                }
-                
-                console.log(`[Admin] Updated quiz card for ${username}/${quizType} with score ${calculatedScore}%`);
-                
-                // Note: User card statistics are not updated here to maintain consistency
-                // The main user card will continue to show the data from when the page loaded
-                
-            } else {
+
+            if (!response.success || !response.data?.questionHistory?.length) {
                 console.warn(`[Admin] Failed to get question history from API for ${username}/${quizType}:`, response);
+                return;
+            }
+
+            const calculatedScore = this.normalizeQuizScore(response.data.score);
+            const scoreElement = quizCard.querySelector('.stat-row:nth-child(2) span');
+            if (scoreElement) {
+                scoreElement.textContent = `${calculatedScore}%`;
+            }
+
+            if (this.isPassingScore(calculatedScore, quizType)) {
+                quizCard.className = 'quiz-card completed-perfect';
+                quizCard.style.backgroundColor = '#C8E6C9';
+            } else {
+                quizCard.className = 'quiz-card completed-partial';
+                quizCard.style.backgroundColor = '#FFE0B2';
             }
         } catch (error) {
             console.error(`[Admin] Error fetching question history for ${username}/${quizType}:`, error);
@@ -3447,80 +3423,23 @@ export class Admin2Dashboard {
 
     async showUserDetails(username) {
         try {
-            // Fetch fresh user data from API to ensure we have the latest progress
             console.log(`[Admin] Fetching fresh data for user: ${username}`);
             const progressResponse = await this.apiService.getUserProgress(username);
-            
+
             if (!progressResponse.success || !progressResponse.data) {
                 throw new Error('Failed to fetch user progress');
             }
-            
-            // The API returns the complete user object in response.data
-            // Use it directly as it contains all necessary fields
+
             const user = progressResponse.data;
-            
+
             console.log(`[Admin] Loaded fresh data for ${username}:`, {
                 quizProgressKeys: Object.keys(user.quizProgress || {}),
                 quizResultsCount: (user.quizResults || []).length,
                 quizAttempts: user.quizAttempts,
                 hasQuizPreviousScores: !!user.quizPreviousScores
             });
-            
-            // Fetch question history for all completed quizzes to get accurate scores
-            console.log(`[Admin] Fetching question history for completed quizzes...`);
-            const completedQuizzes = [];
-            
-            // Check quizProgress for completed quizzes (15 questions answered)
-            if (user.quizProgress) {
-                for (const [quizName, progress] of Object.entries(user.quizProgress)) {
-                    const hasQuestionHistory = progress.questionHistory && 
-                                              Array.isArray(progress.questionHistory) && 
-                                              progress.questionHistory.length > 0;
-                    
-                    if (progress.questionsAnswered === 15 && !hasQuestionHistory) {
-                        completedQuizzes.push(quizName);
-                    }
-                }
-            }
-            
-            // Fetch question history for completed quizzes in parallel
-            if (completedQuizzes.length > 0) {
-                console.log(`[Admin] Fetching question history for ${completedQuizzes.length} completed quizzes:`, completedQuizzes);
-                const questionHistoryPromises = completedQuizzes.map(async (quizName) => {
-                    try {
-                        const response = await this.apiService.getQuizQuestions(username, quizName);
-                        if (response.success && response.data?.questionHistory) {
-                            return { quizName, questionHistory: response.data.questionHistory };
-                        }
-                    } catch (error) {
-                        console.warn(`[Admin] Failed to fetch question history for ${username}/${quizName}:`, error);
-                    }
-                    return null;
-                });
-                
-                const results = await Promise.all(questionHistoryPromises);
-                
-                // Merge question history into user.quizProgress
-                results.forEach(result => {
-                    if (result && result.questionHistory) {
-                        // quizName from result is already the key from user.quizProgress (lowercase)
-                        const quizKey = result.quizName;
-                        if (!user.quizProgress[quizKey]) {
-                            console.warn(`[Admin] Quiz ${quizKey} not found in quizProgress, creating entry`);
-                            user.quizProgress[quizKey] = {};
-                        }
-                        user.quizProgress[quizKey].questionHistory = result.questionHistory;
-                        console.log(`[Admin] ✓ Added question history to ${username}/${quizKey} (${result.questionHistory.length} questions)`);
-                        console.log(`[Admin] Verification: user.quizProgress['${quizKey}'].questionHistory.length = ${user.quizProgress[quizKey].questionHistory?.length}`);
-                    }
-                });
-                
-                console.log(`[Admin] Quiz progress after merging:`, Object.keys(user.quizProgress).map(key => ({
-                    quiz: key,
-                    hasHistory: !!user.quizProgress[key].questionHistory,
-                    historyLength: user.quizProgress[key].questionHistory?.length || 0
-                })));
-            }
+
+            const quizScoresMap = await this.fetchFreshQuizScoresForUser(username, user);
             
             // Update the cached user in this.users array with fresh data
             const userIndex = this.users.findIndex(u => u.username === username);
@@ -3614,95 +3533,19 @@ export class Admin2Dashboard {
                         inHiddenQuizzes: hiddenQuizzes.includes(quizLower),
                         isVisible
                     });
-                
-                    // DEBUG: Log all quiz progress keys to find mismatches
-                    console.log(`[Admin] DEBUGGING ${quizType}:`, {
-                        quizType,
-                        quizLower,
-                        allQuizProgressKeys: Object.keys(user.quizProgress || {}),
-                        lookingForKey: quizLower
-                    });
-                    
-                    const quizProgress = user.quizProgress?.[quizLower] || {};
-                    const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                
-                // Use data from either progress or results, prioritizing results
-                const questionsAnswered = quizResult?.questionsAnswered || 
-                                        quizResult?.questionHistory?.length ||
-                                        quizProgress?.questionsAnswered || 
-                                        quizProgress?.questionHistory?.length || 0;
-                const experience = quizResult?.experience || quizProgress?.experience || 0;
-                    
-                    // Calculate score from question history if available
-                    let score = 0;
-                    const questionHistory = quizResult?.questionHistory || quizProgress?.questionHistory;
-                    
-                    console.log(`[Admin] Score calculation for ${quizType}:`, {
-                        quizLower,
-                        quizResult: quizResult ? 'found' : 'not found',
-                        quizProgress: Object.keys(quizProgress).length > 0 ? 'found' : 'empty/not found',
-                        quizProgressData: quizProgress,
-                        hasQuizProgressQuestionHistory: !!quizProgress?.questionHistory,
-                        quizProgressQuestionHistoryLength: quizProgress?.questionHistory?.length || 0,
-                        questionHistory: questionHistory ? `array of ${questionHistory.length}` : 'not found',
-                        questionsAnswered
-                    });
-                    
-                    if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                        // Calculate score from question history
-                        // Check for both 'status === passed' (from getQuizQuestions API) and 'isCorrect === true' (from quizProgress)
-                        const correctAnswers = questionHistory.filter(item => {
-                            if (!item) return false;
-                            // Check both possible formats
-                            return this.isCorrectQuestionResult(item);
-                        }).length;
-                        score = Math.round((correctAnswers / questionHistory.length) * 100);
-                        
-                        console.log(`[Admin] Calculated score from question history:`, {
-                            totalQuestions: questionHistory.length,
-                            correctAnswers,
-                            calculatedScore: score,
-                            sampleItem: questionHistory[0] // Log first item to see structure
-                        });
-                    } else {
-                        // No question history available - quiz not completed or in progress
-                        console.log(`[Admin] No question history available for ${quizType} - score remains 0`);
-                    }
-                    const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
-                    
-                    // Get attempt count for this quiz
+
+                    const freshQuizData = quizScoresMap.get(quizLower) || null;
+                    const quizStats = this.getQuizCardStats(user, quizType, freshQuizData);
+                    const {
+                        questionsAnswered,
+                        score,
+                        status,
+                        backgroundColor,
+                        statusClass,
+                        lastActive
+                    } = quizStats;
+
                     const attemptCount = user.quizAttempts?.[quizLower] || 0;
-                    
-                    const status = questionsAnswered === 15 ? 'Completed' : 
-                                questionsAnswered > 0 ? 'In Progress' : 
-                                'Not Started';
-                    
-                    // Determine background color based on status and score (matching index page colors)
-                    let backgroundColor = '#fff'; // Default white for not started (matches index page)
-                    if (questionsAnswered > 0) {
-                        if (questionsAnswered === 15) {
-                            // All questions completed
-                            if (this.isPassingScore(score, quizType)) {
-                                backgroundColor = '#C8E6C9'; // Light green for 70% or higher (matches index page)
-                            } else {
-                                backgroundColor = '#FFE0B2'; // Light orange for completed but less than 70% (matches index page)
-                            }
-                        } else {
-                            backgroundColor = '#FFF8E7'; // Light cream/yellow for in progress (matches index page)
-                        }
-                    }
-                    
-                    // Determine quiz status class
-                    let statusClass = 'not-started';
-                    if (questionsAnswered === 15) {
-                        if (this.isPassingScore(score, quizType)) {
-                            statusClass = 'completed-perfect'; // 70% or higher score
-                        } else {
-                            statusClass = 'completed-partial'; // Completed but less than 70%
-                        }
-                    } else if (questionsAnswered > 0) {
-                        statusClass = 'in-progress';
-                    }
                     
                     // Create quiz card
                     const quizCard = document.createElement('div');
@@ -3746,16 +3589,6 @@ export class Admin2Dashboard {
                             </button>
                         </div>
                     `;
-                    
-                    // If we need to fetch score data asynchronously, do it after adding to DOM
-                    if (questionsAnswered === 15 && !questionHistory && score === 0) {
-                        console.log(`[Admin] Triggering async score fetch for ${username}/${quizType}`);
-                    setTimeout(() => {
-                        this.fetchAndUpdateQuizScore(username, quizType, quizCard).catch(error => {
-                            console.warn(`[Admin] Failed to fetch question history for ${username}/${quizType}:`, error);
-                        });
-                    }, 100);
-                }
                 
                 return quizCard;
             };
@@ -3763,15 +3596,9 @@ export class Admin2Dashboard {
             // Sort categories by completion count (most completed first)
             const sortedCategories = Object.entries(categorizedQuizzes)
                 .map(([category, quizzes]) => {
-                    // Calculate category completion stats
                     const completedCount = quizzes.reduce((acc, quizName) => {
-                        const quizLower = quizName.toLowerCase();
-                        const quizProgress = user.quizProgress?.[quizLower] || {};
-                        const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                        const questionsAnswered = quizResult?.questionsAnswered || 
-                                                quizResult?.questionHistory?.length ||
-                                                quizProgress?.questionsAnswered || 
-                                                quizProgress?.questionHistory?.length || 0;
+                        const freshQuizData = quizScoresMap.get(quizName.toLowerCase()) || null;
+                        const { questionsAnswered } = this.getQuizCardStats(user, quizName, freshQuizData);
                         return acc + (questionsAnswered === 15 ? 1 : 0);
                     }, 0);
                     
@@ -3808,28 +3635,12 @@ export class Admin2Dashboard {
                 
                 // Helper function to get quiz status for sorting
                 const getQuizStatus = (quizName) => {
-                    const quizLower = quizName.toLowerCase();
-                    const quizProgress = user.quizProgress?.[quizLower] || {};
-                    const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                    const questionsAnswered = quizResult?.questionsAnswered || 
-                                            quizResult?.questionHistory?.length ||
-                                            quizProgress?.questionsAnswered || 
-                                            quizProgress?.questionHistory?.length || 0;
-                    
-                    if (questionsAnswered === 0) return 3; // Not started - last
-                    if (questionsAnswered < 15) return 2; // In progress
-                    
-                    // Completed - check if passed or failed
-                    const questionHistory = quizResult?.questionHistory || quizProgress?.questionHistory;
-                    if (questionHistory && Array.isArray(questionHistory) && questionHistory.length > 0) {
-                        const correctAnswers = questionHistory.filter(item => {
-                            if (!item) return false;
-                            return this.isCorrectQuestionResult(item);
-                        }).length;
-                        const score = Math.round((correctAnswers / questionHistory.length) * 100);
-                        return this.isPassingScore(score, quizName) ? 1 : 0; // 1 = Passed, 0 = Failed (show failed first)
-                    }
-                    return 1; // Default to passed if no history
+                    const freshQuizData = quizScoresMap.get(quizName.toLowerCase()) || null;
+                    const { questionsAnswered, score } = this.getQuizCardStats(user, quizName, freshQuizData);
+
+                    if (questionsAnswered === 0) return 3;
+                    if (questionsAnswered < 15) return 2;
+                    return this.isPassingScore(score, quizName) ? 1 : 0;
                 };
                 
                 // Sort quizzes within category: Failed, Passed, In Progress, Not Started
@@ -4636,6 +4447,8 @@ export class Admin2Dashboard {
 
             console.log('Showing quiz questions for:', { username, quizType });
             
+            this.apiService.clearQuizQuestionsCache(username, quizType);
+
             // Get quiz results from API
             try {
                 const apiService = this.apiService;
@@ -4676,9 +4489,7 @@ export class Admin2Dashboard {
                     });
                     
                     const questionsAnswered = response.data.totalQuestions || 0;
-                    const rawQuizScore = response.data.score || 0;
-                    // Ensure score is displayed as percentage (convert if it's in decimal format)
-                    const quizScore = rawQuizScore < 1 && rawQuizScore > 0 ? Math.round(rawQuizScore * 100) : Math.round(rawQuizScore);
+                    const quizScore = this.normalizeQuizScore(response.data.score);
                     const quizStatus = questionsAnswered >= 15 ? 'Completed' : (questionsAnswered > 0 ? 'In Progress' : 'Not Started');
                     
                     console.log('Mapped question history:', questionHistory);
@@ -6303,9 +6114,170 @@ export class Admin2Dashboard {
         return Number(score) >= threshold;
     }
 
+    getQuizProgressAndResult(user, quizLower) {
+        const progress = user.quizProgress?.[quizLower] || {};
+        const result = user.quizResults?.find(r => r.quizName?.toLowerCase() === quizLower) || null;
+        return { progress, result };
+    }
+
+    getQuestionsAnsweredCount(progress, result) {
+        return progress?.questionsAnswered ||
+            progress?.questionHistory?.length ||
+            result?.questionsAnswered ||
+            result?.questionHistory?.length ||
+            0;
+    }
+
+    resolveQuizQuestionHistory(progress, result) {
+        if (Array.isArray(progress?.questionHistory) && progress.questionHistory.length > 0) {
+            return progress.questionHistory;
+        }
+        if (Array.isArray(result?.questionHistory) && result.questionHistory.length > 0) {
+            return result.questionHistory;
+        }
+        return null;
+    }
+
+    normalizeQuizScore(rawScore) {
+        const score = Number(rawScore) || 0;
+        return score > 0 && score < 1 ? Math.round(score * 100) : Math.round(score);
+    }
+
+    calculateQuizScoreFromHistory(questionHistory) {
+        if (!Array.isArray(questionHistory) || questionHistory.length === 0) {
+            return 0;
+        }
+        const correctAnswers = this.countCorrectAnswers(questionHistory);
+        return Math.round((correctAnswers / questionHistory.length) * 100);
+    }
+
+    getQuizCardStats(user, quizType, freshQuizData = null) {
+        const quizLower = quizType.toLowerCase();
+        const { progress, result } = this.getQuizProgressAndResult(user, quizLower);
+
+        let questionsAnswered = this.getQuestionsAnsweredCount(progress, result);
+        let score = 0;
+
+        if (freshQuizData) {
+            score = this.normalizeQuizScore(freshQuizData.score);
+            questionsAnswered = freshQuizData.questionsAnswered || questionsAnswered;
+        } else {
+            const questionHistory = this.resolveQuizQuestionHistory(progress, result);
+            if (questionHistory) {
+                score = this.calculateQuizScoreFromHistory(questionHistory);
+            }
+        }
+
+        const status = questionsAnswered === 15 ? 'Completed'
+            : questionsAnswered > 0 ? 'In Progress'
+            : 'Not Started';
+
+        let backgroundColor = '#fff';
+        let statusClass = 'not-started';
+
+        if (questionsAnswered > 0) {
+            if (questionsAnswered === 15) {
+                if (this.isPassingScore(score, quizType)) {
+                    backgroundColor = '#C8E6C9';
+                    statusClass = 'completed-perfect';
+                } else {
+                    backgroundColor = '#FFE0B2';
+                    statusClass = 'completed-partial';
+                }
+            } else {
+                backgroundColor = '#FFF8E7';
+                statusClass = 'in-progress';
+            }
+        }
+
+        return {
+            progress,
+            result,
+            questionsAnswered,
+            score,
+            status,
+            backgroundColor,
+            statusClass,
+            experience: result?.experience || progress?.experience || 0,
+            lastActive: result?.completedAt || result?.lastActive || progress?.lastUpdated || 'Never'
+        };
+    }
+
+    getCompletedQuizTypesForUser(user) {
+        return this.quizTypes.filter(quizType => {
+            const quizLower = quizType.toLowerCase();
+            const { progress, result } = this.getQuizProgressAndResult(user, quizLower);
+            return this.getQuestionsAnsweredCount(progress, result) >= 15;
+        });
+    }
+
+    async fetchFreshQuizScoresForUser(username, user) {
+        const completedQuizTypes = this.getCompletedQuizTypesForUser(user);
+        const quizScoresMap = new Map();
+
+        if (completedQuizTypes.length === 0) {
+            return quizScoresMap;
+        }
+
+        console.log(`[Admin] Fetching fresh quiz scores for ${username} (${completedQuizTypes.length} completed quizzes)`);
+
+        const fetchPromises = completedQuizTypes.map(async (quizType) => {
+            const quizLower = quizType.toLowerCase();
+
+            this.apiService.clearQuizQuestionsCache(username, quizType);
+
+            try {
+                const response = await this.apiService.getQuizQuestions(username, quizType);
+                if (!response.success || !response.data) {
+                    return;
+                }
+
+                const questionHistory = response.data.questionHistory || [];
+                const quizData = {
+                    score: this.normalizeQuizScore(response.data.score),
+                    questionsAnswered: response.data.totalQuestions || questionHistory.length,
+                    questionHistory,
+                    experience: response.data.experience || 0,
+                    lastActive: response.data.lastActive
+                };
+
+                quizScoresMap.set(quizLower, quizData);
+
+                if (!user.quizProgress) {
+                    user.quizProgress = {};
+                }
+                if (!user.quizProgress[quizLower]) {
+                    user.quizProgress[quizLower] = {};
+                }
+
+                user.quizProgress[quizLower].questionHistory = questionHistory;
+                user.quizProgress[quizLower].questionsAnswered = quizData.questionsAnswered;
+                if (quizData.experience) {
+                    user.quizProgress[quizLower].experience = quizData.experience;
+                }
+            } catch (error) {
+                console.warn(`[Admin] Failed to fetch fresh quiz score for ${username}/${quizType}:`, error);
+            }
+        });
+
+        await Promise.all(fetchPromises);
+
+        console.log(`[Admin] Fresh quiz scores loaded for ${username}:`, [...quizScoresMap.entries()].map(([quiz, data]) => ({
+            quiz,
+            score: data.score,
+            questionsAnswered: data.questionsAnswered
+        })));
+
+        return quizScoresMap;
+    }
+
     isCorrectQuestionResult(item) {
         if (!item) return false;
-        return item.status === 'passed' || item.isCorrect === true;
+        if (item.status === 'passed' || item.isCorrect === true) return true;
+        if (item.status === 'failed' || item.isCorrect === false) return false;
+
+        const experience = Number(item.selectedAnswer?.experience ?? item.experience ?? 0);
+        return experience > 0;
     }
 
     countCorrectAnswers(questionHistory) {
