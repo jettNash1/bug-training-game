@@ -607,6 +607,13 @@ router.get('/data', auth, async (req, res) => {
             allowedQuizzes: user.allowedQuizzes || [],
             hiddenQuizzes: user.hiddenQuizzes || []
         };
+
+        try {
+            responseData.quizCatalog = await getOrCreateCatalog(Setting);
+        } catch (catalogError) {
+            console.error('Failed to attach quiz catalog to user data:', catalogError);
+            responseData.quizCatalog = null;
+        }
         
         // Only include detailed quiz data when requested
         if (includeQuizDetails) {
@@ -731,7 +738,7 @@ router.get('/settings/quiz-catalog', auth, async (req, res) => {
         const catalog = await getOrCreateCatalog(Setting);
         return res.json({
             success: true,
-            data: catalog
+            data: JSON.parse(JSON.stringify(catalog))
         });
     } catch (error) {
         console.error('Error retrieving quiz catalog:', error);

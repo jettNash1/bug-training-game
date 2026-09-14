@@ -1,6 +1,6 @@
 import { config } from './config.js';
 import { getAuthToken, setAuthToken, clearTokens, setRefreshToken } from './auth.js';
-import { DEFAULT_QUIZ_CATEGORIES } from './quiz-catalog.js';
+import { DEFAULT_QUIZ_CATEGORIES } from './quiz-catalog.js?v=quiz-catalog-20260914';
 
 export class APIService {
     constructor() {
@@ -1142,7 +1142,8 @@ export class APIService {
                         allowedQuizzes,
                         hiddenQuizzes,
                         quizResults: data.data.quizResults || [],
-                        quizProgress: data.data.quizProgress || {}
+                        quizProgress: data.data.quizProgress || {},
+                        quizCatalog: data.data.quizCatalog || null
                     }
                 };
             } catch (error) {
@@ -1359,6 +1360,21 @@ export class APIService {
 
     async getQuizCatalog() {
         try {
+            const userToken = localStorage.getItem('token');
+            if (userToken) {
+                try {
+                    const userResponse = await this.fetchWithAuth(`${this.baseUrl}/users/settings/quiz-catalog`);
+                    if (userResponse?.data) {
+                        return {
+                            success: true,
+                            data: userResponse.data
+                        };
+                    }
+                } catch (userError) {
+                    console.warn('[QuizCatalog] User catalog fetch failed:', userError.message);
+                }
+            }
+
             const adminToken = localStorage.getItem('adminToken');
             if (adminToken) {
                 try {
@@ -1370,21 +1386,13 @@ export class APIService {
                         };
                     }
                 } catch (adminError) {
-                    console.warn('[QuizCatalog] Admin catalog fetch failed, trying user API:', adminError.message);
+                    console.warn('[QuizCatalog] Admin catalog fetch failed:', adminError.message);
                 }
-            }
-
-            const userResponse = await this.fetchWithAuth(`${this.baseUrl}/users/settings/quiz-catalog`);
-            if (userResponse?.success && userResponse.data) {
-                return {
-                    success: true,
-                    data: userResponse.data
-                };
             }
 
             return {
                 success: false,
-                message: userResponse?.message || 'Failed to load quiz catalog',
+                message: 'Failed to load quiz catalog',
                 data: null
             };
         } catch (error) {

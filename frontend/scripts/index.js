@@ -1,7 +1,7 @@
-import { APIService } from '../api-service.js';
-import { QuizUser } from '../QuizUser.js';
+import { APIService } from '../api-service.js?v=quiz-catalog-20260914';
+import { QuizUser } from '../QuizUser.js?v=quiz-catalog-20260914';
 import { QuizProgressService } from '../services/QuizProgressService.js';
-import { QuizList } from '../quiz-list.js';
+import { QuizList } from '../quiz-list.js?v=quiz-catalog-20260914';
 import { checkAuth, clearAuthenticationCache } from '../auth.js';
 import { cacheManager } from './cache-manager.js';
 

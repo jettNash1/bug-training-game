@@ -1,6 +1,6 @@
 import { config } from './config.js';
-import { APIService } from './api-service.js';
-import { getQuizCategories } from './quiz-catalog.js';
+import { APIService } from './api-service.js?v=quiz-catalog-20260914';
+import { getQuizCategories } from './quiz-catalog.js?v=quiz-catalog-20260914';
 
 export class QuizUser {
     constructor(username) {

@@ -1,9 +1,12 @@
-import { APIService } from './api-service.js';
+import { APIService } from './api-service.js?v=quiz-catalog-20260914';
 import { QuizProgressService } from './services/QuizProgressService.js';
 import {
     DEFAULT_QUIZ_CATEGORIES,
-    getQuizCategories
-} from './quiz-catalog.js';
+    catalogToMap,
+    getQuizCategories,
+    normalizeCatalogPayload,
+    setCachedCatalog
+} from './quiz-catalog.js?v=quiz-catalog-20260914';
 
 export const QUIZ_CATEGORIES = DEFAULT_QUIZ_CATEGORIES;
 
@@ -12,7 +15,6 @@ export class QuizList {
         this.apiService = new APIService();
         this.quizProgressService = new QuizProgressService();
         this.quizTypes = Object.values(QUIZ_CATEGORIES).flat();
-        this.init();
     }
 
     async init() {
@@ -27,7 +29,14 @@ export class QuizList {
                 throw new Error('Failed to get user data');
             }
 
-            const quizCategories = await getQuizCategories(this.apiService);
+            const catalogFromUser = normalizeCatalogPayload(userData.data?.quizCatalog);
+            let quizCategories;
+            if (catalogFromUser) {
+                setCachedCatalog(catalogFromUser, true);
+                quizCategories = catalogToMap(catalogFromUser);
+            } else {
+                quizCategories = await getQuizCategories(this.apiService);
+            }
             this.quizTypes = Object.values(quizCategories).flat();
 
             const { userType, allowedQuizzes = [], hiddenQuizzes = [] } = userData.data;

@@ -82,14 +82,32 @@ function getDefaultCatalog() {
 }
 
 function cloneCatalog(catalog) {
-    const categories = Array.isArray(catalog?.categories) ? catalog.categories : [];
+    const rawCategories = catalog?.categories;
+    const categories = Array.isArray(rawCategories)
+        ? rawCategories
+        : (rawCategories && typeof rawCategories === 'object'
+            ? Object.keys(rawCategories)
+                .sort((a, b) => Number(a) - Number(b))
+                .map((key) => rawCategories[key])
+                .filter((item) => item && typeof item === 'object')
+            : []);
     return {
         categories: categories.map((category) => ({
             id: category.id,
             name: category.name,
-            quizzes: Array.isArray(category.quizzes) ? [...category.quizzes] : []
+            quizzes: Array.isArray(category.quizzes)
+                ? [...category.quizzes]
+                : (category.quizzes && typeof category.quizzes === 'object'
+                    ? Object.keys(category.quizzes)
+                        .sort((a, b) => Number(a) - Number(b))
+                        .map((key) => category.quizzes[key])
+                    : [])
         }))
     };
+}
+
+function toPlainCatalog(catalog) {
+    return JSON.parse(JSON.stringify(cloneCatalog(catalog)));
 }
 
 function normalizeQuizId(quizId) {
@@ -344,7 +362,7 @@ async function getOrCreateCatalog(Setting) {
             description: 'Quiz category layout and quiz-to-category assignment'
         });
         await setting.save();
-        return cloneCatalog(setting.value);
+        return toPlainCatalog(setting.value);
     }
 
     const repaired = repairCatalog(setting.value);
@@ -355,7 +373,7 @@ async function getOrCreateCatalog(Setting) {
         setting.markModified('value');
         await setting.save();
     }
-    return cloneCatalog(repaired);
+    return toPlainCatalog(repaired);
 }
 
 async function saveCatalog(Setting, catalog) {
@@ -372,7 +390,7 @@ async function saveCatalog(Setting, catalog) {
         setting.markModified('value');
     }
     const saved = await setting.save();
-    return cloneCatalog(saved.value);
+    return toPlainCatalog(saved.value);
 }
 
 module.exports = {
@@ -385,6 +403,7 @@ module.exports = {
     uniqueSlug,
     getDefaultCatalog,
     cloneCatalog,
+    toPlainCatalog,
     normalizeCatalog,
     repairCatalog,
     validateCatalog,

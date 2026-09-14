@@ -3062,7 +3062,7 @@ export class Admin2Dashboard {
         this.quizCatalog = nextCatalog;
         this.quizCategories = catalogToMap(nextCatalog);
         this.quizTypes = flattenCatalogQuizIds(nextCatalog);
-        setCachedCatalog(nextCatalog);
+        setCachedCatalog(nextCatalog, true);
         return nextCatalog;
     }
 

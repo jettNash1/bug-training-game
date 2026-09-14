@@ -58,7 +58,8 @@ export function getDefaultCatalog() {
 }
 
 export function catalogToMap(catalog) {
-    const categories = Array.isArray(catalog?.categories) ? catalog.categories : [];
+    const normalized = normalizeCatalogPayload(catalog);
+    const categories = Array.isArray(normalized?.categories) ? normalized.categories : [];
     return categories.reduce((map, category) => {
         if (!category?.name) {
             return map;
@@ -66,6 +67,61 @@ export function catalogToMap(catalog) {
         map[category.name] = Array.isArray(category.quizzes) ? [...category.quizzes] : [];
         return map;
     }, {});
+}
+
+export function normalizeCatalogPayload(payload) {
+    if (!payload) {
+        return null;
+    }
+
+    let data = payload;
+    if (data.categories == null && data.data && typeof data.data === 'object') {
+        data = data.data;
+    }
+    if (data.categories == null && data.data && typeof data.data === 'object') {
+        data = data.data;
+    }
+
+    if (Array.isArray(data?.categories)) {
+        return {
+            categories: data.categories.map((category) => ({
+                id: category.id || slugifyCategoryName(category.name),
+                name: category.name,
+                quizzes: Array.isArray(category.quizzes) ? [...category.quizzes] : []
+            }))
+        };
+    }
+
+    if (data?.categories && typeof data.categories === 'object') {
+        const list = Object.keys(data.categories)
+            .sort((a, b) => Number(a) - Number(b))
+            .map((key) => data.categories[key])
+            .filter((item) => item && typeof item === 'object' && item.name);
+        if (list.length > 0) {
+            return {
+                categories: list.map((category) => ({
+                    id: category.id || slugifyCategoryName(category.name),
+                    name: category.name,
+                    quizzes: Array.isArray(category.quizzes) ? [...category.quizzes] : []
+                }))
+            };
+        }
+    }
+
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const entries = Object.entries(data).filter(([, quizzes]) => Array.isArray(quizzes));
+        if (entries.length > 0) {
+            return {
+                categories: entries.map(([name, quizzes]) => ({
+                    id: slugifyCategoryName(name),
+                    name,
+                    quizzes: [...quizzes]
+                }))
+            };
+        }
+    }
+
+    return null;
 }
 
 export function flattenCatalogQuizIds(catalog) {
@@ -78,6 +134,7 @@ export function flattenCatalogQuizIds(catalog) {
 let cachedCatalog = null;
 let cachedMap = null;
 let inflightRequest = null;
+let cachedFromNetwork = false;
 
 async function resolveApiService(apiService) {
     if (apiService) {
@@ -87,17 +144,17 @@ async function resolveApiService(apiService) {
     return new module.APIService();
 }
 
-export function setCachedCatalog(catalog) {
-    cachedCatalog = catalog && Array.isArray(catalog.categories)
-        ? {
-            categories: catalog.categories.map((category) => ({
-                id: category.id,
-                name: category.name,
-                quizzes: Array.isArray(category.quizzes) ? [...category.quizzes] : []
-            }))
-        }
-        : getDefaultCatalog();
+export function setCachedCatalog(catalog, fromNetwork = false) {
+    const normalized = normalizeCatalogPayload(catalog) || getDefaultCatalog();
+    cachedCatalog = {
+        categories: normalized.categories.map((category) => ({
+            id: category.id,
+            name: category.name,
+            quizzes: Array.isArray(category.quizzes) ? [...category.quizzes] : []
+        }))
+    };
     cachedMap = catalogToMap(cachedCatalog);
+    cachedFromNetwork = fromNetwork && Boolean(normalizeCatalogPayload(catalog));
     return cachedCatalog;
 }
 
@@ -113,10 +170,11 @@ export function invalidateQuizCatalogCache() {
     cachedCatalog = null;
     cachedMap = null;
     inflightRequest = null;
+    cachedFromNetwork = false;
 }
 
 export async function getQuizCatalog(apiService) {
-    if (cachedCatalog) {
+    if (cachedCatalog && cachedFromNetwork) {
         return cachedCatalog;
     }
 
@@ -128,16 +186,18 @@ export async function getQuizCatalog(apiService) {
         try {
             const service = await resolveApiService(apiService);
             const response = await service.getQuizCatalog();
-            if (response?.success && Array.isArray(response.data?.categories)) {
-                return setCachedCatalog(response.data);
+            const catalog = normalizeCatalogPayload(response?.data) || normalizeCatalogPayload(response);
+            if (response?.success !== false && catalog) {
+                return setCachedCatalog(catalog, true);
             }
+            console.warn('[QuizCatalog] Catalog response was missing categories; using defaults');
         } catch (error) {
             console.warn('[QuizCatalog] Failed to load catalog, using defaults', error);
         } finally {
             inflightRequest = null;
         }
 
-        return setCachedCatalog(getDefaultCatalog());
+        return getDefaultCatalog();
     })();
 
     return inflightRequest;
