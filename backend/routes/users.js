@@ -5,6 +5,7 @@ const Setting = require('../models/setting.model');
 const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
+const { getOrCreateCatalog } = require('../utils/quiz-catalog');
 
 // Register new user
 router.post('/register', async (req, res) => {
@@ -720,6 +721,23 @@ router.get('/guide-settings/:quizName', auth, async (req, res) => {
         return res.status(500).json({
             success: false,
             message: 'Failed to retrieve guide settings'
+        });
+    }
+});
+
+// Get quiz catalog (category layout and quiz assignment)
+router.get('/settings/quiz-catalog', auth, async (req, res) => {
+    try {
+        const catalog = await getOrCreateCatalog(Setting);
+        return res.json({
+            success: true,
+            data: catalog
+        });
+    } catch (error) {
+        console.error('Error retrieving quiz catalog:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve quiz catalog'
         });
     }
 });

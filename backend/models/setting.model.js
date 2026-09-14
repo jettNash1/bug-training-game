@@ -97,6 +97,16 @@ settingSchema.pre('save', function(next) {
             }
         }
     }
+
+    if (this.key === 'quizCatalog') {
+        try {
+            const { validateCatalog } = require('../utils/quiz-catalog');
+            this.value = validateCatalog(this.value);
+        } catch (error) {
+            next(error);
+            return;
+        }
+    }
     
     this.updatedAt = new Date();
     next();

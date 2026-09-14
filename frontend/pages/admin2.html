@@ -193,6 +193,12 @@
                                 <span>Quiz Configuration</span>
                             </button>
                         </li>
+                        <li class="menu-item" data-section="quiz-catalog-section">
+                            <button>
+                                <i class="fas fa-layer-group"></i>
+                                <span>Quiz Catalog</span>
+                            </button>
+                        </li>
                         <li class="menu-item" data-section="create-account-section">
                             <button>
                                 <i class="fas fa-user-plus"></i>
@@ -502,6 +508,27 @@
                             </div>
 
                             <div class="info-card">
+                                <h3><i class="fas fa-layer-group"></i> Quiz Catalog</h3>
+                                <div class="info-content">
+                                    <h4>Category Management</h4>
+                                    <p>Use Quiz Catalog to control how quizzes are grouped on the hub without changing quiz content.</p>
+                                    <ul>
+                                        <li><strong>Add Category:</strong> Enter a name and click Add Category. New categories start empty and stay visible in Admin until quizzes are assigned.</li>
+                                        <li><strong>Rename:</strong> Edit a category name and click Save. The hub heading updates immediately for all users.</li>
+                                        <li><strong>Reorder:</strong> Use the up and down arrows to change category display order on the hub.</li>
+                                        <li><strong>Remove:</strong> Empty categories can be deleted after confirmation. Categories that still contain quizzes require a destination category so those quizzes are moved first.</li>
+                                    </ul>
+
+                                    <h4>Quiz Placement</h4>
+                                    <ul>
+                                        <li><strong>Reassign Category:</strong> Use the category dropdown next to a quiz to display it in a different section, for example moving Exploratory into Interviews.</li>
+                                        <li><strong>Reorder Quizzes:</strong> Use the up and down arrows to change quiz order inside a category.</li>
+                                        <li><strong>Immediate Save:</strong> Each change is saved as soon as you make it, the same way timer and pass settings work.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
                                 <h3><i class="fas fa-user-plus"></i> Create Account</h3>
                                 <div class="info-content">
                                     <h4>Account Creation</h4>
@@ -510,7 +537,7 @@
                                         <li><strong>Username & Password:</strong> Set secure login credentials (usernames must be unique)</li>
                                         <li><strong>Default Visibility:</strong> All quizzes are hidden by default for maximum control</li>
                                         <li><strong>Quiz Visibility Controls:</strong> Select which quizzes the user can see on their dashboard</li>
-                                        <li><strong>Category Organization:</strong> Quizzes grouped into 5 functional categories for easy management</li>
+                                        <li><strong>Category Organization:</strong> Quizzes grouped by the live Quiz Catalog for easy management</li>
                                         <li><strong>Expandable Categories:</strong> Click category headers to show/hide quiz selections</li>
                                         <li><strong>Select All/None:</strong> Bulk toggle buttons for each category</li>
                                         <li><strong>Individual Selection:</strong> Fine-tune access by selecting specific quizzes</li>
@@ -518,13 +545,7 @@
                                     </ul>
                                     
                                     <h4>Quiz Categories</h4>
-                                    <ul>
-                                        <li><strong>Core QA Skills:</strong> Communication & Collaboration, Initiative & Proactivity, Tester Mindset, Time Management</li>
-                                        <li><strong>Test Execution:</strong> Build Verification, Exploratory, Fully Scripted, Locale Testing, Non-Functional, Sanity & Smoke, Standard Script Testing, Test Support, Test Types & Tricks</li>
-                                        <li><strong>Project Management:</strong> Issue Tracking Tools, Issue Verification, Raising Tickets, Reports, Risk Analysis, Risk Management, Script Metrics & Troubleshooting, Ticket Template</li>
-                                        <li><strong>Content Testing:</strong> CMS Testing, Content Copy Proofing, Email Testing</li>
-                                        <li><strong>Interviews:</strong> Automation Interview, Functional Interview (specialized assessment quizzes)</li>
-                                    </ul>
+                                    <p>Category names and quiz grouping follow the current Quiz Catalog. Use that section to add, rename, reorder, or reassign categories instead of relying on a fixed list.</p>
                                     
                                     <h4>Post-Creation Management</h4>
                                     <ul>
@@ -788,6 +809,36 @@
                         </div>
                     </div>
 
+                    <!-- Quiz Catalog Section -->
+                    <div id="quiz-catalog-section" class="content-section">
+                        <h2>Quiz Catalog</h2>
+                        <p class="section-description">Create and arrange quiz categories, then choose where each quiz appears on the hub.</p>
+                        <div class="settings-panel catalog-settings-panel">
+                            <div class="settings-card">
+                                <h3><i class="fas fa-folder-open"></i> Categories</h3>
+                                <p>Add, rename, reorder, or remove categories. Category order here is the hub display order.</p>
+                                <div class="catalog-add-row">
+                                    <label for="new-category-name" class="visually-hidden">New category name</label>
+                                    <input type="text"
+                                           id="new-category-name"
+                                           class="settings-input"
+                                           maxlength="80"
+                                           placeholder="New category name"
+                                           aria-label="New category name">
+                                    <button type="button" id="add-category-btn" class="action-button" aria-label="Add category">
+                                        Add Category
+                                    </button>
+                                </div>
+                                <div id="catalog-categories-container"></div>
+                            </div>
+                            <div class="settings-card">
+                                <h3><i class="fas fa-th-list"></i> Quiz Placement</h3>
+                                <p>Move quizzes between categories and change their order within a category.</p>
+                                <div id="catalog-quizzes-container"></div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Create Account Section -->
                     <div id="create-account-section" class="content-section">
                         <h2>Create Account</h2>
@@ -938,26 +989,7 @@
                                     </div>
                                     
                                     <div id="categoryCheckboxList" class="checkbox-list">
-                                        <div class="checkbox-item">
-                                            <input type="checkbox" id="category-core-qa" class="category-checkbox" value="Core QA Skills">
-                                            <label for="category-core-qa">Core QA Skills</label>
-                                        </div>
-                                        <div class="checkbox-item">
-                                            <input type="checkbox" id="category-test-execution" class="category-checkbox" value="Test Execution">
-                                            <label for="category-test-execution">Test Execution</label>
-                                        </div>
-                                        <div class="checkbox-item">
-                                            <input type="checkbox" id="category-project-management" class="category-checkbox" value="Project Management">
-                                            <label for="category-project-management">Project Management</label>
-                                        </div>
-                                        <div class="checkbox-item">
-                                            <input type="checkbox" id="category-content-testing" class="category-checkbox" value="Content Testing">
-                                            <label for="category-content-testing">Content Testing</label>
-                                        </div>
-                                        <div class="checkbox-item">
-                                            <input type="checkbox" id="category-interview-prep" class="category-checkbox" value="Interviews">
-                                            <label for="category-interview-prep">Interviews</label>
-                                        </div>
+                                        <!-- Categories are populated from the live quiz catalog -->
                                     </div>
                                     
                                     <div class="selected-count">
@@ -3507,6 +3539,155 @@
             background-color: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
+        }
+
+        .catalog-settings-panel {
+            align-items: start;
+        }
+
+        .catalog-add-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            margin: 1rem 0 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .catalog-add-row .settings-input,
+        .catalog-rename-input,
+        .catalog-category-select,
+        .settings-input {
+            padding: 0.55rem 0.75rem;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            color: #2c3e50;
+            background: #fff;
+        }
+
+        .catalog-add-row .settings-input {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .catalog-category-row,
+        .catalog-quiz-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .catalog-category-row .catalog-rename-input {
+            flex: 1;
+            min-width: 160px;
+        }
+
+        .catalog-quiz-name {
+            flex: 1;
+            min-width: 140px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .catalog-category-select {
+            min-width: 180px;
+        }
+
+        .catalog-row-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .catalog-icon-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 6px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .catalog-icon-btn:hover:not(:disabled) {
+            background: #2980b9;
+        }
+
+        .catalog-icon-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .catalog-icon-btn:focus-visible,
+        .catalog-add-row .action-button:focus-visible,
+        .catalog-category-row .action-button:focus-visible {
+            outline: 3px solid #f1c40f;
+            outline-offset: 2px;
+        }
+
+        .catalog-placement-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .catalog-placement-group h4 {
+            margin: 0 0 0.75rem;
+            color: #2c3e50;
+        }
+
+        .catalog-empty-state {
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 0.5rem 0;
+        }
+
+        .catalog-delete-modal {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 480px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .catalog-delete-modal h3 {
+            margin: 0 0 0.75rem;
+            color: #2c3e50;
+        }
+
+        .catalog-delete-modal p {
+            color: #5d6d7e;
+            margin: 0 0 1rem;
+        }
+
+        .catalog-delete-modal .catalog-category-select {
+            width: 100%;
+            margin-bottom: 1.25rem;
+        }
+
+        .catalog-delete-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
         }
     </style>
 </body>

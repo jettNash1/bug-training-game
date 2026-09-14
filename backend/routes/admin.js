@@ -10,6 +10,17 @@ const ScheduledReset = require('../models/scheduledReset.model');
 const AutoReset = require('../models/autoReset.model');
 const QuizUser = require('../models/quizUser.model');
 const CacheInvalidation = require('../models/cacheInvalidation.model');
+const {
+    CatalogError,
+    cloneCatalog,
+    createCategory,
+    deleteCategory,
+    getOrCreateCatalog,
+    moveQuiz,
+    renameCategory,
+    reorderCategory,
+    saveCatalog
+} = require('../utils/quiz-catalog');
 
 // In-memory cache for invalidation tracking (fallback)
 const cacheInvalidations = new Map();
@@ -2268,6 +2279,156 @@ router.post('/settings/quiz-configuration', auth, async (req, res) => {
             message: 'Failed to update quiz configuration',
             error: error.message
         });
+    }
+});
+
+function sendCatalogError(res, error, fallbackMessage) {
+    if (error instanceof CatalogError) {
+        return res.status(error.statusCode || 400).json({
+            success: false,
+            message: error.message
+        });
+    }
+    console.error(fallbackMessage, error);
+    return res.status(500).json({
+        success: false,
+        message: fallbackMessage
+    });
+}
+
+function requireAdminUser(req, res) {
+    if (!req.user || !req.user.isAdmin) {
+        res.status(403).json({
+            success: false,
+            message: 'Admin access required'
+        });
+        return false;
+    }
+    return true;
+}
+
+// Get quiz catalog (category layout and quiz assignment)
+router.get('/settings/quiz-catalog', auth, async (req, res) => {
+    try {
+        if (!requireAdminUser(req, res)) {
+            return;
+        }
+
+        const catalog = await getOrCreateCatalog(Setting);
+        return res.json({
+            success: true,
+            data: catalog
+        });
+    } catch (error) {
+        return sendCatalogError(res, error, 'Failed to retrieve quiz catalog');
+    }
+});
+
+// Replace the full quiz catalog after validation
+router.post('/settings/quiz-catalog', auth, async (req, res) => {
+    try {
+        if (!requireAdminUser(req, res)) {
+            return;
+        }
+
+        const catalog = await saveCatalog(Setting, req.body);
+        return res.json({
+            success: true,
+            message: 'Quiz catalog updated successfully',
+            data: catalog
+        });
+    } catch (error) {
+        return sendCatalogError(res, error, 'Failed to update quiz catalog');
+    }
+});
+
+// Create a category at the end of the list
+router.post('/settings/quiz-catalog/categories', auth, async (req, res) => {
+    try {
+        if (!requireAdminUser(req, res)) {
+            return;
+        }
+
+        const catalog = cloneCatalog(await getOrCreateCatalog(Setting));
+        createCategory(catalog, req.body?.name);
+        const saved = await saveCatalog(Setting, catalog);
+        return res.json({
+            success: true,
+            message: 'Category created successfully',
+            data: saved
+        });
+    } catch (error) {
+        return sendCatalogError(res, error, 'Failed to create category');
+    }
+});
+
+// Rename and/or reorder a category
+router.patch('/settings/quiz-catalog/categories/:id', auth, async (req, res) => {
+    try {
+        if (!requireAdminUser(req, res)) {
+            return;
+        }
+
+        const catalog = cloneCatalog(await getOrCreateCatalog(Setting));
+        if (Object.prototype.hasOwnProperty.call(req.body || {}, 'name')) {
+            renameCategory(catalog, req.params.id, req.body.name);
+        }
+        if (Object.prototype.hasOwnProperty.call(req.body || {}, 'index')) {
+            reorderCategory(catalog, req.params.id, req.body.index);
+        }
+        const saved = await saveCatalog(Setting, catalog);
+        return res.json({
+            success: true,
+            message: 'Category updated successfully',
+            data: saved
+        });
+    } catch (error) {
+        return sendCatalogError(res, error, 'Failed to update category');
+    }
+});
+
+// Delete a category, moving quizzes to another category when needed
+router.delete('/settings/quiz-catalog/categories/:id', auth, async (req, res) => {
+    try {
+        if (!requireAdminUser(req, res)) {
+            return;
+        }
+
+        const catalog = cloneCatalog(await getOrCreateCatalog(Setting));
+        deleteCategory(catalog, req.params.id, req.body?.moveQuizzesTo);
+        const saved = await saveCatalog(Setting, catalog);
+        return res.json({
+            success: true,
+            message: 'Category removed successfully',
+            data: saved
+        });
+    } catch (error) {
+        return sendCatalogError(res, error, 'Failed to remove category');
+    }
+});
+
+// Move or reorder a quiz within the catalog
+router.patch('/settings/quiz-catalog/quizzes/:quizId', auth, async (req, res) => {
+    try {
+        if (!requireAdminUser(req, res)) {
+            return;
+        }
+
+        const { categoryId, index } = req.body || {};
+        if (!categoryId) {
+            throw new CatalogError('Destination category is required');
+        }
+
+        const catalog = cloneCatalog(await getOrCreateCatalog(Setting));
+        moveQuiz(catalog, req.params.quizId, categoryId, index);
+        const saved = await saveCatalog(Setting, catalog);
+        return res.json({
+            success: true,
+            message: 'Quiz placement updated successfully',
+            data: saved
+        });
+    } catch (error) {
+        return sendCatalogError(res, error, 'Failed to update quiz placement');
     }
 });
 

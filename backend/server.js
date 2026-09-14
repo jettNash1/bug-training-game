@@ -87,7 +87,7 @@ const corsOptions = {
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
   exposedHeaders: ['Authorization'],
   maxAge: 86400 // 24 hours
@@ -220,14 +220,20 @@ async function initializeSystemSettings() {
         // Import Setting model
         const Setting = require('./models/setting.model');
         
+        const { getDefaultCatalog } = require('./utils/quiz-catalog');
+
         // Default settings
         const defaultSettings = [
             {
                 key: 'quizTimerSeconds',
                 value: 60,
                 description: 'Time allowed for each quiz question in seconds (0-300, 0 = disabled)'
+            },
+            {
+                key: 'quizCatalog',
+                value: getDefaultCatalog(),
+                description: 'Quiz category layout and quiz-to-category assignment'
             }
-            // Add other default settings here as needed
         ];
         
         // Initialize each setting (only if it doesn't exist)

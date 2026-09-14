@@ -1,6 +1,6 @@
 import { config } from './config.js';
 import { APIService } from './api-service.js';
-import { QUIZ_CATEGORIES } from './quiz-list.js';
+import { getQuizCategories } from './quiz-catalog.js';
 
 export class QuizUser {
     constructor(username) {
@@ -386,8 +386,8 @@ export class QuizUser {
             // Debug: Log all quiz results
             console.log("All quiz results:", JSON.stringify(this.quizResults, null, 2));
             
-            // Update progress bars for each category using QUIZ_CATEGORIES
-            Object.entries(QUIZ_CATEGORIES).forEach(([categoryName, quizzes]) => {
+            const quizCategories = await getQuizCategories(this.api);
+            Object.entries(quizCategories).forEach(([categoryName, quizzes]) => {
                 this.updateCategoryProgress(categoryName, quizzes);
             });
 

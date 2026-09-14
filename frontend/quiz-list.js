@@ -1,44 +1,11 @@
 import { APIService } from './api-service.js';
 import { QuizProgressService } from './services/QuizProgressService.js';
+import {
+    DEFAULT_QUIZ_CATEGORIES,
+    getQuizCategories
+} from './quiz-catalog.js';
 
-export const QUIZ_CATEGORIES = {
-    'Core QA Skills': [
-        'tester-mindset',
-        'communication',
-        'time-management'
-    ],
-    'Test Execution': [
-        'test-types-tricks',
-        'build-verification',
-        'sanity-smoke',
-        'locale-testing',
-        'exploratory',
-        'standard-script-testing',
-        'fully-scripted',
-        'non-functional',
-        'issue-verification',
-        'raising-tickets',
-        'reports',
-        'script-metrics-troubleshooting',
-        'test-support',
-        'ticket-template'
-    ],
-    'Project Management': [
-        'risk-analysis',
-        'risk-management',
-        'issue-tracking-tools',
-    ],
-    'Content Testing': [
-        'cms-testing',
-        'email-testing',
-        'content-copy',
-    ],
-    'Interviews': [
-        'automation-interview',
-        'functional-interview',
-        'initiative'
-    ]
-};
+export const QUIZ_CATEGORIES = DEFAULT_QUIZ_CATEGORIES;
 
 export class QuizList {
     constructor() {
@@ -59,6 +26,9 @@ export class QuizList {
             if (!userData.success) {
                 throw new Error('Failed to get user data');
             }
+
+            const quizCategories = await getQuizCategories(this.apiService);
+            this.quizTypes = Object.values(quizCategories).flat();
 
             const { userType, allowedQuizzes = [], hiddenQuizzes = [] } = userData.data;
             
@@ -82,7 +52,7 @@ export class QuizList {
             });
 
             // Create categories HTML
-            const categoriesHTML = Object.entries(QUIZ_CATEGORIES).map(([category, quizzes]) => {
+            const categoriesHTML = Object.entries(quizCategories).map(([category, quizzes]) => {
                 // Filter visible quizzes for this category
                 const visibleQuizzes = quizzes.filter(quiz => {
                     const quizLower = quiz.toLowerCase();

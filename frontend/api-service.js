@@ -1,6 +1,6 @@
 import { config } from './config.js';
 import { getAuthToken, setAuthToken, clearTokens, setRefreshToken } from './auth.js';
-import { QUIZ_CATEGORIES } from './quiz-list.js';
+import { DEFAULT_QUIZ_CATEGORIES } from './quiz-catalog.js';
 
 export class APIService {
     constructor() {
@@ -146,20 +146,17 @@ export class APIService {
             if (!response.ok) {
                 const statusText = response.statusText || `HTTP error ${response.status}`;
                 console.error(`Admin fetch error: ${statusText}`, fullUrl);
-                
+
+                let errorMessage = `Request failed: ${statusText}`;
                 try {
-                    // Attempt to parse error details from the response
                     const errorData = await response.json();
                     if (errorData && errorData.message) {
-                        throw new Error(errorData.message);
+                        errorMessage = errorData.message;
                     }
                 } catch (jsonError) {
-                    // If JSON parsing fails, throw a generic error with the status
-                    throw new Error(`Request failed: ${statusText}`);
+                    // Keep the generic status message when the body is not JSON
                 }
-                
-                // Fallback if no error is thrown above
-                throw new Error(`Request failed: ${statusText}`);
+                throw new Error(errorMessage);
             }
             
             try {
@@ -628,8 +625,7 @@ export class APIService {
         // Normalize to lowercase and trim
         const lowerName = typeof quizName === 'string' ? quizName.toLowerCase().trim() : '';
         
-        // Get the list of known quiz names from QUIZ_CATEGORIES
-        const knownQuizNames = Object.values(QUIZ_CATEGORIES).flat().map(name => name.toLowerCase());
+        const knownQuizNames = Object.values(DEFAULT_QUIZ_CATEGORIES).flat().map(name => name.toLowerCase());
         
         // If it's an exact match with our known list, return it directly
         if (knownQuizNames.includes(lowerName)) {
@@ -1192,8 +1188,7 @@ export class APIService {
             const hiddenQuizzes = user.hiddenQuizzes || [];
             const quizProgress = user.quizProgress || {};
             const quizResults = user.quizResults || [];
-            // Use QUIZ_CATEGORIES as the master list of all quizzes
-            const allQuizzes = Object.values(QUIZ_CATEGORIES).flat().map(q => q.toLowerCase());
+            const allQuizzes = Object.values(DEFAULT_QUIZ_CATEGORIES).flat().map(q => q.toLowerCase());
             // Determine visible quizzes for this user
             let visibleQuizzes;
             if (allowedQuizzes.length > 0) {
@@ -1360,6 +1355,82 @@ export class APIService {
             .split(/[-_]/) // Split on either hyphen or underscore
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
+    }
+
+    async getQuizCatalog() {
+        try {
+            const adminToken = localStorage.getItem('adminToken');
+            if (adminToken) {
+                try {
+                    const adminResponse = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-catalog`);
+                    if (adminResponse?.success && adminResponse.data) {
+                        return {
+                            success: true,
+                            data: adminResponse.data
+                        };
+                    }
+                } catch (adminError) {
+                    console.warn('[QuizCatalog] Admin catalog fetch failed, trying user API:', adminError.message);
+                }
+            }
+
+            const userResponse = await this.fetchWithAuth(`${this.baseUrl}/users/settings/quiz-catalog`);
+            if (userResponse?.success && userResponse.data) {
+                return {
+                    success: true,
+                    data: userResponse.data
+                };
+            }
+
+            return {
+                success: false,
+                message: userResponse?.message || 'Failed to load quiz catalog',
+                data: null
+            };
+        } catch (error) {
+            console.error('[QuizCatalog] Failed to load quiz catalog:', error);
+            return {
+                success: false,
+                message: error.message || 'Failed to load quiz catalog',
+                data: null
+            };
+        }
+    }
+
+    async createQuizCatalogCategory(name) {
+        return this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-catalog/categories`, {
+            method: 'POST',
+            body: JSON.stringify({ name })
+        });
+    }
+
+    async updateQuizCatalogCategory(categoryId, updates) {
+        return this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-catalog/categories/${encodeURIComponent(categoryId)}`, {
+            method: 'PATCH',
+            body: JSON.stringify(updates)
+        });
+    }
+
+    async deleteQuizCatalogCategory(categoryId, moveQuizzesTo) {
+        const payload = {};
+        if (moveQuizzesTo) {
+            payload.moveQuizzesTo = moveQuizzesTo;
+        }
+        return this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-catalog/categories/${encodeURIComponent(categoryId)}`, {
+            method: 'DELETE',
+            body: JSON.stringify(payload)
+        });
+    }
+
+    async updateQuizCatalogPlacement(quizId, categoryId, index) {
+        const payload = { categoryId };
+        if (typeof index === 'number') {
+            payload.index = index;
+        }
+        return this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-catalog/quizzes/${encodeURIComponent(quizId)}`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload)
+        });
     }
 
     // Quiz timer settings methods

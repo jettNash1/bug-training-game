@@ -1,4 +1,4 @@
-import { QUIZ_CATEGORIES } from '../quiz-list.js';
+import { DEFAULT_QUIZ_CATEGORIES, formatQuizDisplayName, getQuizCatalog } from '../quiz-catalog.js';
 
 export class BadgeService {
     constructor(apiService) {
@@ -8,7 +8,7 @@ export class BadgeService {
             defaultPercentage: 70,
             quizPercentages: {}
         };
-        // Define badge image mapping - only for quizzes that actually exist in QUIZ_CATEGORIES
+        // Define badge image mapping - only for quizzes that actually exist in DEFAULT_QUIZ_CATEGORIES
         this.badgeImageMapping = {
             // Core QA Skills
             'tester-mindset': 'tester-mindset.svg',
@@ -131,7 +131,7 @@ export class BadgeService {
             const allQuizIds = new Set(Object.keys(quizProgress));
             
             // Add real quiz IDs from the quiz categories
-            const realQuizIds = Object.values(QUIZ_CATEGORIES).flat();
+            const realQuizIds = Object.values(DEFAULT_QUIZ_CATEGORIES).flat();
             realQuizIds.forEach(id => allQuizIds.add(id));
             
             console.log('Real quiz IDs from categories:', realQuizIds);
@@ -382,34 +382,21 @@ export class BadgeService {
         }
 
         try {
-            // Create a custom fetch options object with a longer timeout
-            const options = {
-                signal: (new AbortController()).signal,
-                timeout: 15000 // Increase timeout to 15 seconds
-            };
-
-            const response = await this.apiService.fetchWithAuth('categories', options);
-            if (!response.success) {
-                throw new Error('Failed to fetch categories');
-            }
-            
-            // Transform into a more usable structure
+            const catalog = await getQuizCatalog(this.apiService);
             const categories = {};
-            
-            response.data.forEach(category => {
-                categories[category.name] = category.quizzes.map(quiz => ({
-                    id: quiz.id,
-                    name: quiz.name,
-                    hidden: quiz.hidden || false
+
+            (catalog.categories || []).forEach((category) => {
+                categories[category.name] = (category.quizzes || []).map((quizId) => ({
+                    id: quizId,
+                    name: formatQuizDisplayName(quizId),
+                    hidden: false
                 }));
             });
-            
-            // Cache the categories
+
             this.cachedCategories = categories;
             return categories;
         } catch (error) {
             console.error('Error fetching category structure:', error);
-            // Don't use fallback structure, throw the error to handle it properly
             throw error;
         }
     }

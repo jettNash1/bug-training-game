@@ -1,5 +1,13 @@
 import { APIService } from './api-service.js?v=score-fix-20260727';
-import { QUIZ_CATEGORIES } from './quiz-list.js';
+import {
+    catalogToMap,
+    DEFAULT_QUIZ_CATEGORIES,
+    flattenCatalogQuizIds,
+    getDefaultCatalog,
+    getQuizCatalog,
+    invalidateQuizCatalogCache,
+    setCachedCatalog
+} from './quiz-catalog.js';
 import { QuizProgressService } from './services/QuizProgressService.js';
 
 export const ADMIN2_SCORE_FIX_VERSION = 'score-fix-20260727';
@@ -13,7 +21,9 @@ export class Admin2Dashboard {
         // Copy initialization properties from AdminDashboard
         this.userScores = new Map();
         this.users = [];
-        this.quizTypes = Object.values(QUIZ_CATEGORIES).flat();
+        this.quizCatalog = getDefaultCatalog();
+        this.quizCategories = DEFAULT_QUIZ_CATEGORIES;
+        this.quizTypes = flattenCatalogQuizIds(this.quizCatalog);
         
         this.timerSettings = {
             secondsPerQuestion: 60, // Default value
@@ -133,6 +143,7 @@ export class Admin2Dashboard {
             // Always load timer settings before displaying the UI
             await this.loadTimerSettings();
             await this.loadPassSettings();
+            await this.loadQuizCatalog();
             await this.updateUsersList();
 
             // Set up all UI components
@@ -986,19 +997,21 @@ export class Admin2Dashboard {
         const exportCategorySimplifiedBtn = document.getElementById('exportCategorySimplified');
         const selectAllCategoriesBtn = document.getElementById('selectAllCategories');
         const deselectAllCategoriesBtn = document.getElementById('deselectAllCategories');
-        
-        // Handle category checkbox changes
-        const categoryCheckboxes = document.querySelectorAll('.category-checkbox');
-        categoryCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                this.updateCategoryExportButton();
+        const categoryCheckboxList = document.getElementById('categoryCheckboxList');
+
+        if (categoryCheckboxList && !categoryCheckboxList.dataset.catalogBound) {
+            categoryCheckboxList.dataset.catalogBound = 'true';
+            categoryCheckboxList.addEventListener('change', (event) => {
+                if (event.target.classList.contains('category-checkbox')) {
+                    this.updateCategoryExportButton();
+                }
             });
-        });
+        }
         
         // Handle select all categories
         if (selectAllCategoriesBtn) {
             selectAllCategoriesBtn.addEventListener('click', () => {
-                categoryCheckboxes.forEach(checkbox => {
+                document.querySelectorAll('.category-checkbox').forEach(checkbox => {
                     checkbox.checked = true;
                 });
                 this.updateCategoryExportButton();
@@ -1008,7 +1021,7 @@ export class Admin2Dashboard {
         // Handle deselect all categories
         if (deselectAllCategoriesBtn) {
             deselectAllCategoriesBtn.addEventListener('click', () => {
-                categoryCheckboxes.forEach(checkbox => {
+                document.querySelectorAll('.category-checkbox').forEach(checkbox => {
                     checkbox.checked = false;
                 });
                 this.updateCategoryExportButton();
@@ -1097,6 +1110,9 @@ export class Admin2Dashboard {
                 this.displayGuideSettings();
                 this.displayPassSettings();
                 break;
+            case 'quiz-catalog-section':
+                this.setupQuizCatalogSection();
+                break;
             case 'scenarios-section':
                 this.setupScenariosList();
                 break;
@@ -1116,6 +1132,7 @@ export class Admin2Dashboard {
                 setTimeout(() => this.initializeQuizVisibility(), 300);
                 break;
             case 'export-section':
+                this.populateExportCategoryCheckboxes();
                 // Initialize custom export when export section is activated
                 setTimeout(() => this.initializeCustomExport(), 300);
                 break;
@@ -2680,7 +2697,7 @@ export class Admin2Dashboard {
         `;
 
         // Use all quizzes from QUIZ_CATEGORIES for the form
-        const allQuizzes = Object.values(QUIZ_CATEGORIES).flat();
+        const allQuizzes = Object.values(this.getQuizCategoriesMap()).flat();
         renderForm(allQuizzes);
 
         // Function to render the form with quiz types
@@ -2866,7 +2883,7 @@ export class Admin2Dashboard {
             const categoriesContainer = scenariosList.querySelector('.scenario-categories');
             
             // Use QUIZ_CATEGORIES from quiz-list.js for consistent categorization
-            const categories = { ...QUIZ_CATEGORIES };
+            const categories = { ...this.getQuizCategoriesMap() };
             
             // Initialize categories with empty arrays for any missing quizzes
             const uncategorizedQuizzes = [];
@@ -2968,7 +2985,7 @@ export class Admin2Dashboard {
     // Legacy categorizeQuiz method - now uses QUIZ_CATEGORIES for consistency
     categorizeQuiz(quizName) {
         // First check if the quiz exists in QUIZ_CATEGORIES
-        for (const [categoryName, categoryQuizzes] of Object.entries(QUIZ_CATEGORIES)) {
+        for (const [categoryName, categoryQuizzes] of Object.entries(this.getQuizCategoriesMap())) {
             if (categoryQuizzes.includes(quizName)) {
                 return categoryName;
             }
@@ -3031,9 +3048,460 @@ export class Admin2Dashboard {
         }
     }
 
+    getQuizCategoriesMap() {
+        if (this.quizCategories && Object.keys(this.quizCategories).length > 0) {
+            return this.quizCategories;
+        }
+        return DEFAULT_QUIZ_CATEGORIES;
+    }
+
+    applyQuizCatalog(catalog) {
+        const nextCatalog = catalog && Array.isArray(catalog.categories)
+            ? catalog
+            : getDefaultCatalog();
+        this.quizCatalog = nextCatalog;
+        this.quizCategories = catalogToMap(nextCatalog);
+        this.quizTypes = flattenCatalogQuizIds(nextCatalog);
+        setCachedCatalog(nextCatalog);
+        return nextCatalog;
+    }
+
+    async loadQuizCatalog() {
+        try {
+            invalidateQuizCatalogCache();
+            const catalog = await getQuizCatalog(this.apiService);
+            this.applyQuizCatalog(catalog);
+            this.populateExportCategoryCheckboxes();
+            return this.quizCatalog;
+        } catch (error) {
+            console.warn('[QuizCatalog] Failed to load live catalog, using defaults', error);
+            this.applyQuizCatalog(getDefaultCatalog());
+            this.populateExportCategoryCheckboxes();
+            return this.quizCatalog;
+        }
+    }
+
     // Helper method to provide hardcoded quiz types
     getHardcodedQuizTypes() {
-        return Object.values(QUIZ_CATEGORIES).flat();
+        return Object.values(this.getQuizCategoriesMap()).flat();
+    }
+
+    escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    async setupQuizCatalogSection() {
+        const addButton = document.getElementById('add-category-btn');
+        const nameInput = document.getElementById('new-category-name');
+
+        if (addButton && !addButton.dataset.catalogBound) {
+            addButton.dataset.catalogBound = 'true';
+            addButton.addEventListener('click', () => this.handleCreateCatalogCategory());
+        }
+
+        if (nameInput && !nameInput.dataset.catalogBound) {
+            nameInput.dataset.catalogBound = 'true';
+            nameInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    this.handleCreateCatalogCategory();
+                }
+            });
+        }
+
+        await this.loadQuizCatalog();
+        this.renderQuizCatalog();
+    }
+
+    renderQuizCatalog() {
+        this.renderCatalogCategories();
+        this.renderCatalogQuizzes();
+    }
+
+    renderCatalogCategories() {
+        const container = document.getElementById('catalog-categories-container');
+        if (!container) {
+            return;
+        }
+
+        const categories = this.quizCatalog?.categories || [];
+        if (categories.length === 0) {
+            container.innerHTML = '<p class="catalog-empty-state">No categories yet. Add one to get started.</p>';
+            return;
+        }
+
+        container.innerHTML = categories.map((category, index) => {
+            const name = this.escapeHtml(category.name);
+            const canMoveUp = index > 0;
+            const canMoveDown = index < categories.length - 1;
+            return `
+                <div class="catalog-category-row" data-category-id="${this.escapeHtml(category.id)}">
+                    <input type="text"
+                           class="catalog-rename-input"
+                           value="${name}"
+                           maxlength="80"
+                           aria-label="Rename ${name}">
+                    <div class="catalog-row-actions">
+                        <button type="button"
+                                class="catalog-icon-btn"
+                                data-action="move-category-up"
+                                aria-label="Move ${name} up"
+                                tabindex="0"
+                                ${canMoveUp ? '' : 'disabled'}>
+                            <i class="fas fa-arrow-up" aria-hidden="true"></i>
+                        </button>
+                        <button type="button"
+                                class="catalog-icon-btn"
+                                data-action="move-category-down"
+                                aria-label="Move ${name} down"
+                                tabindex="0"
+                                ${canMoveDown ? '' : 'disabled'}>
+                            <i class="fas fa-arrow-down" aria-hidden="true"></i>
+                        </button>
+                        <button type="button"
+                                class="action-button secondary"
+                                data-action="save-category-name"
+                                aria-label="Save name for ${name}">
+                            Save
+                        </button>
+                        <button type="button"
+                                class="action-button danger"
+                                data-action="remove-category"
+                                aria-label="Remove ${name}">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.querySelectorAll('.catalog-category-row').forEach((row) => {
+            const categoryId = row.dataset.categoryId;
+            const input = row.querySelector('.catalog-rename-input');
+            row.querySelector('[data-action="move-category-up"]')?.addEventListener('click', () => {
+                this.handleReorderCatalogCategory(categoryId, -1);
+            });
+            row.querySelector('[data-action="move-category-down"]')?.addEventListener('click', () => {
+                this.handleReorderCatalogCategory(categoryId, 1);
+            });
+            row.querySelector('[data-action="save-category-name"]')?.addEventListener('click', () => {
+                this.handleRenameCatalogCategory(categoryId, input?.value);
+            });
+            row.querySelector('[data-action="remove-category"]')?.addEventListener('click', () => {
+                this.handleRemoveCatalogCategory(categoryId);
+            });
+            input?.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    this.handleRenameCatalogCategory(categoryId, input.value);
+                }
+            });
+        });
+    }
+
+    renderCatalogQuizzes() {
+        const container = document.getElementById('catalog-quizzes-container');
+        if (!container) {
+            return;
+        }
+
+        const categories = this.quizCatalog?.categories || [];
+        if (categories.length === 0) {
+            container.innerHTML = '<p class="catalog-empty-state">Create a category before placing quizzes.</p>';
+            return;
+        }
+
+        const categoryOptions = categories.map((category) => (
+            `<option value="${this.escapeHtml(category.id)}">${this.escapeHtml(category.name)}</option>`
+        )).join('');
+
+        container.innerHTML = categories.map((category) => {
+            const quizzes = category.quizzes || [];
+            const quizRows = quizzes.length === 0
+                ? '<p class="catalog-empty-state">No quizzes in this category yet.</p>'
+                : quizzes.map((quizId, index) => {
+                    const quizName = this.escapeHtml(this.formatQuizName(quizId));
+                    return `
+                        <div class="catalog-quiz-row" data-quiz-id="${this.escapeHtml(quizId)}" data-category-id="${this.escapeHtml(category.id)}">
+                            <span class="catalog-quiz-name">${quizName}</span>
+                            <label class="visually-hidden" for="catalog-quiz-category-${this.escapeHtml(quizId)}">Category for ${quizName}</label>
+                            <select id="catalog-quiz-category-${this.escapeHtml(quizId)}"
+                                    class="catalog-category-select"
+                                    aria-label="Move ${quizName} to another category">
+                                ${categoryOptions}
+                            </select>
+                            <div class="catalog-row-actions">
+                                <button type="button"
+                                        class="catalog-icon-btn"
+                                        data-action="move-quiz-up"
+                                        aria-label="Move ${quizName} up"
+                                        tabindex="0"
+                                        ${index === 0 ? 'disabled' : ''}>
+                                    <i class="fas fa-arrow-up" aria-hidden="true"></i>
+                                </button>
+                                <button type="button"
+                                        class="catalog-icon-btn"
+                                        data-action="move-quiz-down"
+                                        aria-label="Move ${quizName} down"
+                                        tabindex="0"
+                                        ${index === quizzes.length - 1 ? 'disabled' : ''}>
+                                    <i class="fas fa-arrow-down" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            return `
+                <div class="catalog-placement-group">
+                    <h4>${this.escapeHtml(category.name)}</h4>
+                    ${quizRows}
+                </div>
+            `;
+        }).join('');
+
+        container.querySelectorAll('.catalog-quiz-row').forEach((row) => {
+            const quizId = row.dataset.quizId;
+            const currentCategoryId = row.dataset.categoryId;
+            const select = row.querySelector('.catalog-category-select');
+            if (select) {
+                select.value = currentCategoryId;
+                select.addEventListener('change', () => {
+                    if (select.value !== currentCategoryId) {
+                        this.handleMoveCatalogQuiz(quizId, select.value);
+                    }
+                });
+            }
+            row.querySelector('[data-action="move-quiz-up"]')?.addEventListener('click', () => {
+                this.handleReorderCatalogQuiz(quizId, currentCategoryId, -1);
+            });
+            row.querySelector('[data-action="move-quiz-down"]')?.addEventListener('click', () => {
+                this.handleReorderCatalogQuiz(quizId, currentCategoryId, 1);
+            });
+        });
+    }
+
+    async handleCatalogMutation(action, successMessage) {
+        try {
+            const response = await action();
+            if (!response?.success || !response.data) {
+                throw new Error(response?.message || 'Quiz catalog update failed');
+            }
+            this.applyQuizCatalog(response.data);
+            this.renderQuizCatalog();
+            this.showSuccess(successMessage);
+            return true;
+        } catch (error) {
+            console.error('[QuizCatalog] Mutation failed:', error);
+            this.showError(error.message || 'Failed to update the quiz catalog');
+            return false;
+        }
+    }
+
+    async handleCreateCatalogCategory() {
+        const input = document.getElementById('new-category-name');
+        const name = input?.value?.trim();
+        if (!name) {
+            this.showError('Enter a category name before adding it');
+            return;
+        }
+
+        const addButton = document.getElementById('add-category-btn');
+        if (addButton) {
+            addButton.disabled = true;
+        }
+
+        const succeeded = await this.handleCatalogMutation(
+            () => this.apiService.createQuizCatalogCategory(name),
+            `Created category "${name}"`
+        );
+
+        if (succeeded && input) {
+            input.value = '';
+        }
+        if (addButton) {
+            addButton.disabled = false;
+        }
+    }
+
+    async handleRenameCatalogCategory(categoryId, name) {
+        const trimmedName = String(name || '').trim();
+        const category = (this.quizCatalog?.categories || []).find((item) => item.id === categoryId);
+        if (!category) {
+            this.showError('Category not found');
+            return;
+        }
+        if (!trimmedName) {
+            this.showError('Category name is required');
+            return;
+        }
+        if (trimmedName === category.name) {
+            return;
+        }
+
+        await this.handleCatalogMutation(
+            () => this.apiService.updateQuizCatalogCategory(categoryId, { name: trimmedName }),
+            `Renamed category to "${trimmedName}"`
+        );
+    }
+
+    async handleReorderCatalogCategory(categoryId, offset) {
+        const categories = this.quizCatalog?.categories || [];
+        const currentIndex = categories.findIndex((category) => category.id === categoryId);
+        if (currentIndex === -1) {
+            return;
+        }
+        const nextIndex = currentIndex + offset;
+        if (nextIndex < 0 || nextIndex >= categories.length) {
+            return;
+        }
+
+        await this.handleCatalogMutation(
+            () => this.apiService.updateQuizCatalogCategory(categoryId, { index: nextIndex }),
+            'Category order updated'
+        );
+    }
+
+    async handleRemoveCatalogCategory(categoryId) {
+        const categories = this.quizCatalog?.categories || [];
+        const category = categories.find((item) => item.id === categoryId);
+        if (!category) {
+            this.showError('Category not found');
+            return;
+        }
+
+        if (categories.length <= 1) {
+            this.showError('At least one category is required');
+            return;
+        }
+
+        if ((category.quizzes || []).length === 0) {
+            if (!confirm(`Remove the empty category "${category.name}"?`)) {
+                return;
+            }
+            await this.handleCatalogMutation(
+                () => this.apiService.deleteQuizCatalogCategory(categoryId),
+                `Removed category "${category.name}"`
+            );
+            return;
+        }
+
+        this.showCatalogDeleteModal(category, categories.filter((item) => item.id !== categoryId));
+    }
+
+    showCatalogDeleteModal(category, destinations) {
+        document.getElementById('catalog-delete-overlay')?.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'catalog-delete-overlay';
+        overlay.className = 'user-details-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-labelledby', 'catalog-delete-title');
+
+        const quizCount = (category.quizzes || []).length;
+        overlay.innerHTML = `
+            <div class="catalog-delete-modal">
+                <h3 id="catalog-delete-title">Move quizzes before removing ${this.escapeHtml(category.name)}</h3>
+                <p>${quizCount} quiz${quizCount === 1 ? '' : 'zes'} will be moved to the category you select.</p>
+                <label for="catalog-delete-destination">Destination category</label>
+                <select id="catalog-delete-destination" class="catalog-category-select" aria-label="Destination category">
+                    ${destinations.map((item) => (
+                        `<option value="${this.escapeHtml(item.id)}">${this.escapeHtml(item.name)}</option>`
+                    )).join('')}
+                </select>
+                <div class="catalog-delete-actions">
+                    <button type="button" class="action-button secondary" id="catalog-delete-cancel" aria-label="Cancel category removal">Cancel</button>
+                    <button type="button" class="action-button danger" id="catalog-delete-confirm" aria-label="Move quizzes and remove category">Move and Remove</button>
+                </div>
+            </div>
+        `;
+
+        const closeModal = () => overlay.remove();
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) {
+                closeModal();
+            }
+        });
+        overlay.querySelector('#catalog-delete-cancel')?.addEventListener('click', closeModal);
+        overlay.querySelector('#catalog-delete-confirm')?.addEventListener('click', async () => {
+            const destinationId = overlay.querySelector('#catalog-delete-destination')?.value;
+            if (!destinationId) {
+                this.showError('Choose a destination category');
+                return;
+            }
+            const succeeded = await this.handleCatalogMutation(
+                () => this.apiService.deleteQuizCatalogCategory(category.id, destinationId),
+                `Moved quizzes and removed "${category.name}"`
+            );
+            if (succeeded) {
+                closeModal();
+            }
+        });
+
+        document.body.appendChild(overlay);
+        overlay.querySelector('#catalog-delete-destination')?.focus();
+    }
+
+    async handleMoveCatalogQuiz(quizId, categoryId) {
+        await this.handleCatalogMutation(
+            () => this.apiService.updateQuizCatalogPlacement(quizId, categoryId),
+            `${this.formatQuizName(quizId)} moved`
+        );
+    }
+
+    async handleReorderCatalogQuiz(quizId, categoryId, offset) {
+        const category = (this.quizCatalog?.categories || []).find((item) => item.id === categoryId);
+        if (!category) {
+            return;
+        }
+        const currentIndex = category.quizzes.indexOf(quizId);
+        if (currentIndex === -1) {
+            return;
+        }
+        const nextIndex = currentIndex + offset;
+        if (nextIndex < 0 || nextIndex >= category.quizzes.length) {
+            return;
+        }
+
+        await this.handleCatalogMutation(
+            () => this.apiService.updateQuizCatalogPlacement(quizId, categoryId, nextIndex),
+            `${this.formatQuizName(quizId)} order updated`
+        );
+    }
+
+    populateExportCategoryCheckboxes() {
+        const container = document.getElementById('categoryCheckboxList');
+        if (!container) {
+            return;
+        }
+
+        const categories = Object.keys(this.getQuizCategoriesMap());
+        const previouslySelected = new Set(
+            Array.from(container.querySelectorAll('.category-checkbox:checked')).map((checkbox) => checkbox.value)
+        );
+
+        container.innerHTML = categories.map((categoryName) => {
+            const checkboxId = `category-${categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+            const checked = previouslySelected.has(categoryName) ? 'checked' : '';
+            return `
+                <div class="checkbox-item">
+                    <input type="checkbox"
+                           id="${checkboxId}"
+                           class="category-checkbox"
+                           value="${this.escapeHtml(categoryName)}"
+                           ${checked}>
+                    <label for="${checkboxId}">${this.escapeHtml(categoryName)}</label>
+                </div>
+            `;
+        }).join('');
+
+        this.updateCategoryExportButton?.();
     }
 
     // Add fetchQuizScenarios method to match the parent class
@@ -4155,21 +4623,21 @@ export class Admin2Dashboard {
         if (!quizTypes || !Array.isArray(quizTypes)) {
             console.error('Invalid quizTypes provided to categorizeQuizzesForForm:', quizTypes);
             // Use QUIZ_CATEGORIES as fallback
-            quizTypes = Object.values(QUIZ_CATEGORIES).flat();
+            quizTypes = Object.values(this.getQuizCategoriesMap()).flat();
         }
 
         // Build a set for quick lookup
         const quizTypeSet = new Set(quizTypes.map(q => q.toLowerCase()));
         const categorized = {};
         // 1. Add categories and quizzes in QUIZ_CATEGORIES order
-        Object.entries(QUIZ_CATEGORIES).forEach(([category, quizzes]) => {
+        Object.entries(this.getQuizCategoriesMap()).forEach(([category, quizzes]) => {
             const filtered = quizzes.filter(q => quizTypeSet.has(q.toLowerCase()));
             if (filtered.length > 0) {
                 categorized[category] = filtered;
             }
         });
         // 2. Find any quizzes not in QUIZ_CATEGORIES
-        const allCategoryQuizzes = new Set(Object.values(QUIZ_CATEGORIES).flat().map(q => q.toLowerCase()));
+        const allCategoryQuizzes = new Set(Object.values(this.getQuizCategoriesMap()).flat().map(q => q.toLowerCase()));
         const otherQuizzes = quizTypes.filter(q => !allCategoryQuizzes.has(q.toLowerCase()));
         if (otherQuizzes.length > 0) {
             categorized['Other'] = otherQuizzes;
@@ -8037,7 +8505,7 @@ export class Admin2Dashboard {
             // Collect all quizzes from selected categories
             const allQuizzes = [];
             selectedCategories.forEach(categoryName => {
-                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                const categoryQuizzes = this.getQuizCategoriesMap()[categoryName] || [];
                 allQuizzes.push(...categoryQuizzes);
             });
 
@@ -8051,7 +8519,7 @@ export class Admin2Dashboard {
             
             // Create individual category overview sheets
             for (const categoryName of selectedCategories) {
-                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                const categoryQuizzes = this.getQuizCategoriesMap()[categoryName] || [];
                 if (categoryQuizzes.length > 0) {
                     const categoryOverviewData = this.createCategoryOverviewData(categoryName, categoryQuizzes);
                     const categoryOverviewSheet = XLSX.utils.aoa_to_sheet(categoryOverviewData);
@@ -8152,7 +8620,7 @@ export class Admin2Dashboard {
             // Collect all quizzes from selected categories
             const allQuizzes = [];
             selectedCategories.forEach(categoryName => {
-                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                const categoryQuizzes = this.getQuizCategoriesMap()[categoryName] || [];
                 allQuizzes.push(...categoryQuizzes);
             });
 
@@ -8168,7 +8636,7 @@ export class Admin2Dashboard {
             
             // Create individual category simplified sheets
             for (const categoryName of selectedCategories) {
-                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                const categoryQuizzes = this.getQuizCategoriesMap()[categoryName] || [];
                 if (categoryQuizzes.length > 0) {
                     const categorySimplifiedData = this.createSimplifiedCategoryData(categoryName, categoryQuizzes);
                     const categorySimplifiedSheet = XLSX.utils.aoa_to_sheet(categorySimplifiedData);
@@ -8311,7 +8779,7 @@ export class Admin2Dashboard {
         
         // Add columns for each category
         selectedCategories.forEach(categoryName => {
-            const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+            const categoryQuizzes = this.getQuizCategoriesMap()[categoryName] || [];
             categoryQuizzes.forEach(quizName => {
                 const formattedName = this.formatQuizName(quizName);
                 header.push(`${formattedName} Questions`, `${formattedName} Score%`, `${formattedName} Status`);
@@ -8334,7 +8802,7 @@ export class Admin2Dashboard {
             
             // Add data for each category
             selectedCategories.forEach(categoryName => {
-                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                const categoryQuizzes = this.getQuizCategoriesMap()[categoryName] || [];
                 totalQuestions += categoryQuizzes.length * 15; // 15 questions per quiz
                 
                 categoryQuizzes.forEach(quizType => {
@@ -8457,7 +8925,7 @@ export class Admin2Dashboard {
         // Header row - empty first column, then quiz names
         const header = [''];
         selectedCategories.forEach(categoryName => {
-            const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+            const categoryQuizzes = this.getQuizCategoriesMap()[categoryName] || [];
             categoryQuizzes.forEach(quizName => {
                 const formattedName = this.formatQuizName(quizName);
                 header.push(formattedName);
@@ -8472,7 +8940,7 @@ export class Admin2Dashboard {
             const row = [user.username];
             
             selectedCategories.forEach(categoryName => {
-                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                const categoryQuizzes = this.getQuizCategoriesMap()[categoryName] || [];
                 
                 categoryQuizzes.forEach(quizType => {
                     const quizLower = quizType.toLowerCase();
@@ -8668,7 +9136,7 @@ export class Admin2Dashboard {
         // Header row - empty first column, then quiz names
         const header = ['', 'Username'];
         selectedCategories.forEach(categoryName => {
-            const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+            const categoryQuizzes = this.getQuizCategoriesMap()[categoryName] || [];
             categoryQuizzes.forEach(quizName => {
                 const formattedName = this.formatQuizName(quizName);
                 header.push(formattedName);
@@ -8681,7 +9149,7 @@ export class Admin2Dashboard {
             const row = ['', user.username];
             
             selectedCategories.forEach(categoryName => {
-                const categoryQuizzes = QUIZ_CATEGORIES[categoryName] || [];
+                const categoryQuizzes = this.getQuizCategoriesMap()[categoryName] || [];
                 
                 categoryQuizzes.forEach(quizType => {
                     const quizLower = quizType.toLowerCase();
@@ -9139,11 +9607,11 @@ export class Admin2Dashboard {
 
         // Use the imported QUIZ_CATEGORIES from quiz-list.js
 
-        const allQuizzes = Object.values(QUIZ_CATEGORIES).flat();
+        const allQuizzes = Object.values(this.getQuizCategoriesMap()).flat();
         
         // Group by category for better organization
         let html = '';
-        Object.entries(QUIZ_CATEGORIES).forEach(([category, quizzes]) => {
+        Object.entries(this.getQuizCategoriesMap()).forEach(([category, quizzes]) => {
             html += `<div class="quiz-category-group">
                 <div class="category-header">
                     <strong>${category}</strong>
